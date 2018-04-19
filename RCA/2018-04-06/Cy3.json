@@ -1,0 +1,1577 @@
+[
+    {
+        "raw_data": [
+            [
+                {
+                    "y": 470, 
+                    "x": 206, 
+                    "timestamp": 9491
+                }, 
+                {
+                    "y": 347, 
+                    "x": 170, 
+                    "timestamp": 11831
+                }, 
+                {
+                    "y": 269, 
+                    "x": 189, 
+                    "timestamp": 13631
+                }, 
+                {
+                    "y": 236, 
+                    "x": 398, 
+                    "timestamp": 15312
+                }, 
+                {
+                    "y": 167, 
+                    "x": 141, 
+                    "timestamp": 17336
+                }, 
+                {
+                    "y": 80, 
+                    "x": 166, 
+                    "timestamp": 18616
+                }, 
+                {
+                    "y": 103, 
+                    "x": 196, 
+                    "timestamp": 19609
+                }, 
+                {
+                    "y": 104, 
+                    "x": 301, 
+                    "timestamp": 20776
+                }
+            ]
+        ], 
+        "height": 500, 
+        "width": 500, 
+        "worker_id": "A19HF68K3BLYW", 
+        "annotation_type": "crosshairs", 
+        "time_when_completed": "Sat Apr 14 13:08:58 PDT 2018", 
+        "image_filename": "cy3_500pxroi.png"
+    }, 
+    {
+        "raw_data": [
+            [
+                {
+                    "y": 268, 
+                    "x": 188, 
+                    "timestamp": 7744
+                }, 
+                {
+                    "y": 347, 
+                    "x": 172, 
+                    "timestamp": 9779
+                }, 
+                {
+                    "y": 470, 
+                    "x": 208, 
+                    "timestamp": 11754
+                }, 
+                {
+                    "y": 169, 
+                    "x": 142, 
+                    "timestamp": 13354
+                }, 
+                {
+                    "y": 77, 
+                    "x": 164, 
+                    "timestamp": 14956
+                }, 
+                {
+                    "y": 103, 
+                    "x": 198, 
+                    "timestamp": 16115
+                }, 
+                {
+                    "y": 104, 
+                    "x": 302, 
+                    "timestamp": 17297
+                }, 
+                {
+                    "y": 240, 
+                    "x": 397, 
+                    "timestamp": 18471
+                }
+            ]
+        ], 
+        "height": 500, 
+        "width": 500, 
+        "worker_id": "A2L63M32P04N5E", 
+        "annotation_type": "crosshairs", 
+        "time_when_completed": "Sat Apr 14 13:09:03 PDT 2018", 
+        "image_filename": "cy3_500pxroi.png"
+    }, 
+    {
+        "raw_data": [
+            [
+                {
+                    "y": 469, 
+                    "x": 208, 
+                    "timestamp": 24982
+                }, 
+                {
+                    "y": 347, 
+                    "x": 172, 
+                    "timestamp": 28007
+                }, 
+                {
+                    "y": 268, 
+                    "x": 188, 
+                    "timestamp": 34400
+                }, 
+                {
+                    "y": 235, 
+                    "x": 398, 
+                    "timestamp": 37577
+                }, 
+                {
+                    "y": 100, 
+                    "x": 301, 
+                    "timestamp": 41243
+                }, 
+                {
+                    "y": 169, 
+                    "x": 144, 
+                    "timestamp": 44318
+                }, 
+                {
+                    "y": 102, 
+                    "x": 197, 
+                    "timestamp": 46786
+                }, 
+                {
+                    "y": 78, 
+                    "x": 166, 
+                    "timestamp": 50911
+                }, 
+                {
+                    "y": 61, 
+                    "x": 333, 
+                    "timestamp": 65487
+                }
+            ]
+        ], 
+        "height": 500, 
+        "width": 500, 
+        "worker_id": "ATJ482OKWM6Z4", 
+        "annotation_type": "crosshairs", 
+        "time_when_completed": "Sat Apr 14 13:09:44 PDT 2018", 
+        "image_filename": "cy3_500pxroi.png"
+    }, 
+    {
+        "raw_data": [
+            [
+                {
+                    "y": 344, 
+                    "x": 171, 
+                    "timestamp": 24454
+                }, 
+                {
+                    "y": 469, 
+                    "x": 208, 
+                    "timestamp": 33265
+                }, 
+                {
+                    "y": 349, 
+                    "x": 246, 
+                    "timestamp": 34925
+                }, 
+                {
+                    "y": 269, 
+                    "x": 188, 
+                    "timestamp": 37773
+                }, 
+                {
+                    "y": 236, 
+                    "x": 398, 
+                    "timestamp": 39745
+                }, 
+                {
+                    "y": 168, 
+                    "x": 142, 
+                    "timestamp": 42566
+                }, 
+                {
+                    "y": 104, 
+                    "x": 198, 
+                    "timestamp": 43983
+                }, 
+                {
+                    "y": 80, 
+                    "x": 167, 
+                    "timestamp": 45578
+                }, 
+                {
+                    "y": 104, 
+                    "x": 302, 
+                    "timestamp": 47335
+                }, 
+                {
+                    "y": 170, 
+                    "x": 272, 
+                    "timestamp": 48725
+                }, 
+                {
+                    "y": 63, 
+                    "x": 332, 
+                    "timestamp": 50943
+                }, 
+                {
+                    "y": 97, 
+                    "x": 228, 
+                    "timestamp": 52287
+                }, 
+                {
+                    "y": 145, 
+                    "x": 207, 
+                    "timestamp": 53381
+                }, 
+                {
+                    "y": 72, 
+                    "x": 443, 
+                    "timestamp": 98979
+                }, 
+                {
+                    "y": 177, 
+                    "x": 90, 
+                    "timestamp": 100583
+                }, 
+                {
+                    "y": 119, 
+                    "x": 58, 
+                    "timestamp": 102526
+                }
+            ]
+        ], 
+        "height": 500, 
+        "width": 500, 
+        "worker_id": "A3L8LSM7V7KX3T", 
+        "annotation_type": "crosshairs", 
+        "time_when_completed": "Sat Apr 14 13:13:31 PDT 2018", 
+        "image_filename": "cy3_500pxroi.png"
+    }, 
+    {
+        "raw_data": [
+            [
+                {
+                    "y": 470, 
+                    "x": 208, 
+                    "timestamp": 3748
+                }, 
+                {
+                    "y": 347, 
+                    "x": 169, 
+                    "timestamp": 5692
+                }, 
+                {
+                    "y": 270, 
+                    "x": 186, 
+                    "timestamp": 7356
+                }, 
+                {
+                    "y": 168, 
+                    "x": 141, 
+                    "timestamp": 8590
+                }, 
+                {
+                    "y": 105, 
+                    "x": 197, 
+                    "timestamp": 10583
+                }, 
+                {
+                    "y": 79, 
+                    "x": 165, 
+                    "timestamp": 12115
+                }, 
+                {
+                    "y": 104, 
+                    "x": 301, 
+                    "timestamp": 13607
+                }, 
+                {
+                    "y": 62, 
+                    "x": 330, 
+                    "timestamp": 14981
+                }, 
+                {
+                    "y": 237, 
+                    "x": 397, 
+                    "timestamp": 16879
+                }
+            ]
+        ], 
+        "height": 500, 
+        "width": 500, 
+        "worker_id": "A13TQF2KGKHAEH", 
+        "annotation_type": "crosshairs", 
+        "time_when_completed": "Sat Apr 14 13:18:46 PDT 2018", 
+        "image_filename": "cy3_500pxroi.png"
+    }, 
+    {
+        "raw_data": [
+            [
+                {
+                    "y": 471, 
+                    "x": 208, 
+                    "timestamp": 33972
+                }, 
+                {
+                    "y": 347, 
+                    "x": 172, 
+                    "timestamp": 39783
+                }, 
+                {
+                    "y": 270, 
+                    "x": 187, 
+                    "timestamp": 42150
+                }, 
+                {
+                    "y": 169, 
+                    "x": 142, 
+                    "timestamp": 45350
+                }, 
+                {
+                    "y": 80, 
+                    "x": 166, 
+                    "timestamp": 47606
+                }, 
+                {
+                    "y": 105, 
+                    "x": 197, 
+                    "timestamp": 49174
+                }, 
+                {
+                    "y": 104, 
+                    "x": 302, 
+                    "timestamp": 51936
+                }, 
+                {
+                    "y": 237, 
+                    "x": 399, 
+                    "timestamp": 58092
+                }, 
+                {
+                    "y": 172, 
+                    "x": 271, 
+                    "timestamp": 127425
+                }, 
+                {
+                    "y": 98, 
+                    "x": 227, 
+                    "timestamp": 129297
+                }, 
+                {
+                    "y": 63, 
+                    "x": 331, 
+                    "timestamp": 130554
+                }, 
+                {
+                    "y": 70, 
+                    "x": 443, 
+                    "timestamp": 131850
+                }, 
+                {
+                    "y": 178, 
+                    "x": 91, 
+                    "timestamp": 133418
+                }
+            ]
+        ], 
+        "height": 500, 
+        "width": 500, 
+        "worker_id": "AQITX9NQ7QTFL", 
+        "annotation_type": "crosshairs", 
+        "time_when_completed": "Sat Apr 14 13:20:44 PDT 2018", 
+        "image_filename": "cy3_500pxroi.png"
+    }, 
+    {
+        "raw_data": [
+            [
+                {
+                    "y": 346, 
+                    "x": 173, 
+                    "timestamp": 2444
+                }, 
+                {
+                    "y": 269, 
+                    "x": 187, 
+                    "timestamp": 3837
+                }, 
+                {
+                    "y": 168, 
+                    "x": 140, 
+                    "timestamp": 6016
+                }, 
+                {
+                    "y": 79, 
+                    "x": 165, 
+                    "timestamp": 9173
+                }, 
+                {
+                    "y": 105, 
+                    "x": 199, 
+                    "timestamp": 11041
+                }, 
+                {
+                    "y": 104, 
+                    "x": 301, 
+                    "timestamp": 13078
+                }, 
+                {
+                    "y": 61, 
+                    "x": 330, 
+                    "timestamp": 14398
+                }, 
+                {
+                    "y": 71, 
+                    "x": 444, 
+                    "timestamp": 16161
+                }, 
+                {
+                    "y": 235, 
+                    "x": 397, 
+                    "timestamp": 17606
+                }, 
+                {
+                    "y": 468, 
+                    "x": 208, 
+                    "timestamp": 19354
+                }, 
+                {
+                    "y": 347, 
+                    "x": 246, 
+                    "timestamp": 20734
+                }, 
+                {
+                    "y": 170, 
+                    "x": 269, 
+                    "timestamp": 22484
+                }, 
+                {
+                    "y": 98, 
+                    "x": 224, 
+                    "timestamp": 23542
+                }, 
+                {
+                    "y": 177, 
+                    "x": 93, 
+                    "timestamp": 25005
+                }, 
+                {
+                    "y": 119, 
+                    "x": 56, 
+                    "timestamp": 26885
+                }
+            ]
+        ], 
+        "height": 500, 
+        "width": 500, 
+        "worker_id": "A1SGIACNC9DUV3", 
+        "annotation_type": "crosshairs", 
+        "time_when_completed": "Sat Apr 14 13:21:52 PDT 2018", 
+        "image_filename": "cy3_500pxroi.png"
+    }, 
+    {
+        "raw_data": [
+            [
+                {
+                    "y": 237, 
+                    "x": 397, 
+                    "timestamp": 10014
+                }, 
+                {
+                    "y": 268, 
+                    "x": 185, 
+                    "timestamp": 11729
+                }, 
+                {
+                    "y": 345, 
+                    "x": 172, 
+                    "timestamp": 13761
+                }, 
+                {
+                    "y": 470, 
+                    "x": 208, 
+                    "timestamp": 15121
+                }, 
+                {
+                    "y": 171, 
+                    "x": 138, 
+                    "timestamp": 16710
+                }, 
+                {
+                    "y": 77, 
+                    "x": 167, 
+                    "timestamp": 18889
+                }, 
+                {
+                    "y": 102, 
+                    "x": 198, 
+                    "timestamp": 19965
+                }, 
+                {
+                    "y": 106, 
+                    "x": 300, 
+                    "timestamp": 21592
+                }
+            ]
+        ], 
+        "height": 500, 
+        "width": 500, 
+        "worker_id": "A2UHGQXYWCWDN6", 
+        "annotation_type": "crosshairs", 
+        "time_when_completed": "Sat Apr 14 13:47:15 PDT 2018", 
+        "image_filename": "cy3_500pxroi.png"
+    }, 
+    {
+        "raw_data": [
+            [
+                {
+                    "y": 468, 
+                    "x": 209, 
+                    "timestamp": 3078
+                }, 
+                {
+                    "y": 344, 
+                    "x": 171, 
+                    "timestamp": 5008
+                }, 
+                {
+                    "y": 269, 
+                    "x": 186, 
+                    "timestamp": 7252
+                }, 
+                {
+                    "y": 237, 
+                    "x": 399, 
+                    "timestamp": 9462
+                }, 
+                {
+                    "y": 102, 
+                    "x": 305, 
+                    "timestamp": 11544
+                }, 
+                {
+                    "y": 100, 
+                    "x": 198, 
+                    "timestamp": 13392
+                }, 
+                {
+                    "y": 79, 
+                    "x": 168, 
+                    "timestamp": 15074
+                }, 
+                {
+                    "y": 168, 
+                    "x": 141, 
+                    "timestamp": 17880
+                }, 
+                {
+                    "y": 62, 
+                    "x": 333, 
+                    "timestamp": 22702
+                }, 
+                {
+                    "y": 168, 
+                    "x": 273, 
+                    "timestamp": 24304
+                }, 
+                {
+                    "y": 145, 
+                    "x": 208, 
+                    "timestamp": 25318
+                }, 
+                {
+                    "y": 96, 
+                    "x": 226, 
+                    "timestamp": 26264
+                }, 
+                {
+                    "y": 345, 
+                    "x": 246, 
+                    "timestamp": 28394
+                }, 
+                {
+                    "y": 452, 
+                    "x": 45, 
+                    "timestamp": 30228
+                }, 
+                {
+                    "y": 176, 
+                    "x": 86, 
+                    "timestamp": 37124
+                }, 
+                {
+                    "y": 118, 
+                    "x": 60, 
+                    "timestamp": 38464
+                }
+            ]
+        ], 
+        "height": 500, 
+        "width": 500, 
+        "worker_id": "AF15RQ6TCXP0G", 
+        "annotation_type": "crosshairs", 
+        "time_when_completed": "Sat Apr 14 14:02:25 PDT 2018", 
+        "image_filename": "cy3_500pxroi.png"
+    }, 
+    {
+        "raw_data": [
+            [
+                {
+                    "y": 469, 
+                    "x": 208, 
+                    "timestamp": 3420
+                }, 
+                {
+                    "y": 346, 
+                    "x": 172, 
+                    "timestamp": 6040
+                }, 
+                {
+                    "y": 453, 
+                    "x": 47, 
+                    "timestamp": 7873
+                }, 
+                {
+                    "y": 349, 
+                    "x": 245, 
+                    "timestamp": 9604
+                }, 
+                {
+                    "y": 236, 
+                    "x": 398, 
+                    "timestamp": 14291
+                }, 
+                {
+                    "y": 270, 
+                    "x": 188, 
+                    "timestamp": 15920
+                }, 
+                {
+                    "y": 168, 
+                    "x": 142, 
+                    "timestamp": 21297
+                }, 
+                {
+                    "y": 177, 
+                    "x": 91, 
+                    "timestamp": 23006
+                }, 
+                {
+                    "y": 119, 
+                    "x": 58, 
+                    "timestamp": 24403
+                }, 
+                {
+                    "y": 104, 
+                    "x": 199, 
+                    "timestamp": 26511
+                }, 
+                {
+                    "y": 104, 
+                    "x": 302, 
+                    "timestamp": 28634
+                }, 
+                {
+                    "y": 61, 
+                    "x": 331, 
+                    "timestamp": 33038
+                }, 
+                {
+                    "y": 79, 
+                    "x": 167, 
+                    "timestamp": 35083
+                }, 
+                {
+                    "y": 97, 
+                    "x": 227, 
+                    "timestamp": 36489
+                }, 
+                {
+                    "y": 171, 
+                    "x": 271, 
+                    "timestamp": 38164
+                }, 
+                {
+                    "y": 176, 
+                    "x": 458, 
+                    "timestamp": 58311
+                }, 
+                {
+                    "y": 148, 
+                    "x": 326, 
+                    "timestamp": 60378
+                }, 
+                {
+                    "y": 264, 
+                    "x": 346, 
+                    "timestamp": 62611
+                }, 
+                {
+                    "y": 147, 
+                    "x": 210, 
+                    "timestamp": 68772
+                }
+            ]
+        ], 
+        "height": 500, 
+        "width": 500, 
+        "worker_id": "A2FZE7CARM54IG", 
+        "annotation_type": "crosshairs", 
+        "time_when_completed": "Sat Apr 14 14:17:58 PDT 2018", 
+        "image_filename": "cy3_500pxroi.png"
+    }, 
+    {
+        "raw_data": [
+            [
+                {
+                    "y": 238, 
+                    "x": 271, 
+                    "timestamp": 2719
+                }, 
+                {
+                    "y": 227, 
+                    "x": 273, 
+                    "timestamp": 7536
+                }, 
+                {
+                    "y": 226, 
+                    "x": 273, 
+                    "timestamp": 11619
+                }, 
+                {
+                    "y": 222, 
+                    "x": 278, 
+                    "timestamp": 14515
+                }, 
+                {
+                    "y": 221, 
+                    "x": 274, 
+                    "timestamp": 17349
+                }, 
+                {
+                    "y": 168, 
+                    "x": 141, 
+                    "timestamp": 21960
+                }, 
+                {
+                    "y": 109, 
+                    "x": 195, 
+                    "timestamp": 23607
+                }, 
+                {
+                    "y": 346, 
+                    "x": 172, 
+                    "timestamp": 29712
+                }, 
+                {
+                    "y": 467, 
+                    "x": 206, 
+                    "timestamp": 30972
+                }
+            ]
+        ], 
+        "height": 500, 
+        "width": 500, 
+        "worker_id": "A2KOIFCD3H52EF", 
+        "annotation_type": "crosshairs", 
+        "time_when_completed": "Sat Apr 14 14:25:14 PDT 2018", 
+        "image_filename": "cy3_500pxroi.png"
+    }, 
+    {
+        "raw_data": [
+            [
+                {
+                    "y": 469, 
+                    "x": 209, 
+                    "timestamp": 14845
+                }, 
+                {
+                    "y": 347, 
+                    "x": 174, 
+                    "timestamp": 17961
+                }, 
+                {
+                    "y": 270, 
+                    "x": 188, 
+                    "timestamp": 21489
+                }, 
+                {
+                    "y": 168, 
+                    "x": 143, 
+                    "timestamp": 25424
+                }, 
+                {
+                    "y": 105, 
+                    "x": 197, 
+                    "timestamp": 29292
+                }, 
+                {
+                    "y": 78, 
+                    "x": 166, 
+                    "timestamp": 32548
+                }, 
+                {
+                    "y": 103, 
+                    "x": 302, 
+                    "timestamp": 36188
+                }, 
+                {
+                    "y": 235, 
+                    "x": 398, 
+                    "timestamp": 40116
+                }, 
+                {
+                    "y": 61, 
+                    "x": 333, 
+                    "timestamp": 44498
+                }, 
+                {
+                    "y": 98, 
+                    "x": 228, 
+                    "timestamp": 46372
+                }, 
+                {
+                    "y": 172, 
+                    "x": 272, 
+                    "timestamp": 47904
+                }, 
+                {
+                    "y": 178, 
+                    "x": 93, 
+                    "timestamp": 49941
+                }, 
+                {
+                    "y": 348, 
+                    "x": 244, 
+                    "timestamp": 105496
+                }
+            ]
+        ], 
+        "height": 500, 
+        "width": 500, 
+        "worker_id": "A1QYD816IJIFQO", 
+        "annotation_type": "crosshairs", 
+        "time_when_completed": "Sat Apr 14 14:25:40 PDT 2018", 
+        "image_filename": "cy3_500pxroi.png"
+    }, 
+    {
+        "raw_data": [
+            [
+                {
+                    "y": 269, 
+                    "x": 188, 
+                    "timestamp": 5927
+                }, 
+                {
+                    "y": 346, 
+                    "x": 170, 
+                    "timestamp": 7169
+                }, 
+                {
+                    "y": 472, 
+                    "x": 206, 
+                    "timestamp": 8345
+                }, 
+                {
+                    "y": 237, 
+                    "x": 398, 
+                    "timestamp": 9782
+                }, 
+                {
+                    "y": 103, 
+                    "x": 196, 
+                    "timestamp": 11559
+                }, 
+                {
+                    "y": 79, 
+                    "x": 163, 
+                    "timestamp": 12264
+                }, 
+                {
+                    "y": 171, 
+                    "x": 142, 
+                    "timestamp": 13197
+                }, 
+                {
+                    "y": 96, 
+                    "x": 222, 
+                    "timestamp": 13971
+                }, 
+                {
+                    "y": 170, 
+                    "x": 265, 
+                    "timestamp": 14793
+                }, 
+                {
+                    "y": 108, 
+                    "x": 301, 
+                    "timestamp": 15599
+                }, 
+                {
+                    "y": 63, 
+                    "x": 332, 
+                    "timestamp": 16369
+                }, 
+                {
+                    "y": 120, 
+                    "x": 57, 
+                    "timestamp": 17335
+                }, 
+                {
+                    "y": 180, 
+                    "x": 92, 
+                    "timestamp": 18169
+                }, 
+                {
+                    "y": 346, 
+                    "x": 243, 
+                    "timestamp": 20217
+                }
+            ]
+        ], 
+        "height": 500, 
+        "width": 500, 
+        "worker_id": "A2CJXQA64S3XIG", 
+        "annotation_type": "crosshairs", 
+        "time_when_completed": "Sat Apr 14 14:34:36 PDT 2018", 
+        "image_filename": "cy3_500pxroi.png"
+    }, 
+    {
+        "raw_data": [
+            [
+                {
+                    "y": 471, 
+                    "x": 208, 
+                    "timestamp": 7875
+                }, 
+                {
+                    "y": 346, 
+                    "x": 171, 
+                    "timestamp": 13972
+                }, 
+                {
+                    "y": 269, 
+                    "x": 186, 
+                    "timestamp": 29403
+                }, 
+                {
+                    "y": 236, 
+                    "x": 397, 
+                    "timestamp": 31835
+                }, 
+                {
+                    "y": 168, 
+                    "x": 142, 
+                    "timestamp": 35500
+                }, 
+                {
+                    "y": 104, 
+                    "x": 198, 
+                    "timestamp": 40732
+                }, 
+                {
+                    "y": 79, 
+                    "x": 166, 
+                    "timestamp": 44620
+                }, 
+                {
+                    "y": 106, 
+                    "x": 300, 
+                    "timestamp": 47594
+                }, 
+                {
+                    "y": 62, 
+                    "x": 331, 
+                    "timestamp": 60918
+                }, 
+                {
+                    "y": 98, 
+                    "x": 225, 
+                    "timestamp": 62592
+                }, 
+                {
+                    "y": 147, 
+                    "x": 205, 
+                    "timestamp": 63932
+                }, 
+                {
+                    "y": 178, 
+                    "x": 89, 
+                    "timestamp": 65781
+                }, 
+                {
+                    "y": 70, 
+                    "x": 444, 
+                    "timestamp": 70406
+                }, 
+                {
+                    "y": 170, 
+                    "x": 271, 
+                    "timestamp": 72334
+                }, 
+                {
+                    "y": 350, 
+                    "x": 244, 
+                    "timestamp": 73942
+                }, 
+                {
+                    "y": 121, 
+                    "x": 55, 
+                    "timestamp": 77246
+                }
+            ]
+        ], 
+        "height": 500, 
+        "width": 500, 
+        "worker_id": "A2RE52F2MO7TZ6", 
+        "annotation_type": "crosshairs", 
+        "time_when_completed": "Sat Apr 14 14:37:48 PDT 2018", 
+        "image_filename": "cy3_500pxroi.png"
+    }, 
+    {
+        "raw_data": [
+            [
+                {
+                    "y": 79, 
+                    "x": 166, 
+                    "timestamp": 3698
+                }, 
+                {
+                    "y": 105, 
+                    "x": 198, 
+                    "timestamp": 5039
+                }, 
+                {
+                    "y": 168, 
+                    "x": 140, 
+                    "timestamp": 6335
+                }, 
+                {
+                    "y": 178, 
+                    "x": 90, 
+                    "timestamp": 7439
+                }, 
+                {
+                    "y": 120, 
+                    "x": 58, 
+                    "timestamp": 9869
+                }, 
+                {
+                    "y": 99, 
+                    "x": 226, 
+                    "timestamp": 11759
+                }, 
+                {
+                    "y": 104, 
+                    "x": 302, 
+                    "timestamp": 13087
+                }, 
+                {
+                    "y": 63, 
+                    "x": 330, 
+                    "timestamp": 14600
+                }, 
+                {
+                    "y": 236, 
+                    "x": 400, 
+                    "timestamp": 15712
+                }, 
+                {
+                    "y": 270, 
+                    "x": 188, 
+                    "timestamp": 18120
+                }, 
+                {
+                    "y": 345, 
+                    "x": 170, 
+                    "timestamp": 19089
+                }, 
+                {
+                    "y": 473, 
+                    "x": 207, 
+                    "timestamp": 19938
+                }
+            ]
+        ], 
+        "height": 500, 
+        "width": 500, 
+        "worker_id": "ABFE72DCG89WW", 
+        "annotation_type": "crosshairs", 
+        "time_when_completed": "Sat Apr 14 15:01:34 PDT 2018", 
+        "image_filename": "cy3_500pxroi.png"
+    }, 
+    {
+        "raw_data": [
+            [
+                {
+                    "y": 471, 
+                    "x": 206, 
+                    "timestamp": 11248
+                }, 
+                {
+                    "y": 346, 
+                    "x": 173, 
+                    "timestamp": 13648
+                }, 
+                {
+                    "y": 271, 
+                    "x": 189, 
+                    "timestamp": 15204
+                }, 
+                {
+                    "y": 169, 
+                    "x": 143, 
+                    "timestamp": 16497
+                }, 
+                {
+                    "y": 80, 
+                    "x": 164, 
+                    "timestamp": 17755
+                }, 
+                {
+                    "y": 104, 
+                    "x": 198, 
+                    "timestamp": 18847
+                }, 
+                {
+                    "y": 104, 
+                    "x": 301, 
+                    "timestamp": 19865
+                }, 
+                {
+                    "y": 64, 
+                    "x": 333, 
+                    "timestamp": 21391
+                }, 
+                {
+                    "y": 237, 
+                    "x": 400, 
+                    "timestamp": 22714
+                }, 
+                {
+                    "y": 172, 
+                    "x": 271, 
+                    "timestamp": 24208
+                }, 
+                {
+                    "y": 97, 
+                    "x": 224, 
+                    "timestamp": 25222
+                }, 
+                {
+                    "y": 179, 
+                    "x": 91, 
+                    "timestamp": 26794
+                }, 
+                {
+                    "y": 121, 
+                    "x": 59, 
+                    "timestamp": 28096
+                }
+            ]
+        ], 
+        "height": 500, 
+        "width": 500, 
+        "worker_id": "ASHOXF02ZJWXL", 
+        "annotation_type": "crosshairs", 
+        "time_when_completed": "Sat Apr 14 15:27:00 PDT 2018", 
+        "image_filename": "cy3_500pxroi.png"
+    }, 
+    {
+        "raw_data": [
+            [
+                {
+                    "y": 168, 
+                    "x": 141, 
+                    "timestamp": 36479
+                }, 
+                {
+                    "y": 270, 
+                    "x": 188, 
+                    "timestamp": 39147
+                }, 
+                {
+                    "y": 348, 
+                    "x": 173, 
+                    "timestamp": 41185
+                }, 
+                {
+                    "y": 235, 
+                    "x": 400, 
+                    "timestamp": 44718
+                }, 
+                {
+                    "y": 104, 
+                    "x": 302, 
+                    "timestamp": 47473
+                }, 
+                {
+                    "y": 79, 
+                    "x": 167, 
+                    "timestamp": 51095
+                }, 
+                {
+                    "y": 104, 
+                    "x": 198, 
+                    "timestamp": 53465
+                }, 
+                {
+                    "y": 175, 
+                    "x": 91, 
+                    "timestamp": 56373
+                }, 
+                {
+                    "y": 468, 
+                    "x": 208, 
+                    "timestamp": 58566
+                }, 
+                {
+                    "y": 62, 
+                    "x": 332, 
+                    "timestamp": 64052
+                }, 
+                {
+                    "y": 118, 
+                    "x": 58, 
+                    "timestamp": 68024
+                }, 
+                {
+                    "y": 173, 
+                    "x": 271, 
+                    "timestamp": 69316
+                }, 
+                {
+                    "y": 96, 
+                    "x": 225, 
+                    "timestamp": 71125
+                }, 
+                {
+                    "y": 352, 
+                    "x": 246, 
+                    "timestamp": 73303
+                }, 
+                {
+                    "y": 71, 
+                    "x": 447, 
+                    "timestamp": 77876
+                }
+            ]
+        ], 
+        "height": 500, 
+        "width": 500, 
+        "worker_id": "A7IXXE3TRTZ2", 
+        "annotation_type": "crosshairs", 
+        "time_when_completed": "Sat Apr 14 15:59:38 PDT 2018", 
+        "image_filename": "cy3_500pxroi.png"
+    }, 
+    {
+        "raw_data": [
+            [
+                {
+                    "y": 471, 
+                    "x": 209, 
+                    "timestamp": 3381
+                }, 
+                {
+                    "y": 346, 
+                    "x": 172, 
+                    "timestamp": 5422
+                }, 
+                {
+                    "y": 270, 
+                    "x": 187, 
+                    "timestamp": 7484
+                }, 
+                {
+                    "y": 349, 
+                    "x": 246, 
+                    "timestamp": 8838
+                }, 
+                {
+                    "y": 236, 
+                    "x": 399, 
+                    "timestamp": 10272
+                }, 
+                {
+                    "y": 104, 
+                    "x": 302, 
+                    "timestamp": 12710
+                }, 
+                {
+                    "y": 63, 
+                    "x": 329, 
+                    "timestamp": 14498
+                }, 
+                {
+                    "y": 97, 
+                    "x": 229, 
+                    "timestamp": 16132
+                }, 
+                {
+                    "y": 170, 
+                    "x": 272, 
+                    "timestamp": 17646
+                }, 
+                {
+                    "y": 105, 
+                    "x": 198, 
+                    "timestamp": 19801
+                }, 
+                {
+                    "y": 79, 
+                    "x": 167, 
+                    "timestamp": 21771
+                }, 
+                {
+                    "y": 168, 
+                    "x": 140, 
+                    "timestamp": 23423
+                }, 
+                {
+                    "y": 177, 
+                    "x": 92, 
+                    "timestamp": 25193
+                }, 
+                {
+                    "y": 118, 
+                    "x": 53, 
+                    "timestamp": 27575
+                }
+            ]
+        ], 
+        "height": 500, 
+        "width": 500, 
+        "worker_id": "A1TG7QBVHABFWY", 
+        "annotation_type": "crosshairs", 
+        "time_when_completed": "Sat Apr 14 16:09:53 PDT 2018", 
+        "image_filename": "cy3_500pxroi.png"
+    }, 
+    {
+        "raw_data": [
+            [
+                {
+                    "y": 344, 
+                    "x": 174, 
+                    "timestamp": 4451
+                }, 
+                {
+                    "y": 349, 
+                    "x": 244, 
+                    "timestamp": 5551
+                }, 
+                {
+                    "y": 269, 
+                    "x": 186, 
+                    "timestamp": 6511
+                }, 
+                {
+                    "y": 235, 
+                    "x": 400, 
+                    "timestamp": 7960
+                }, 
+                {
+                    "y": 102, 
+                    "x": 305, 
+                    "timestamp": 9097
+                }, 
+                {
+                    "y": 61, 
+                    "x": 332, 
+                    "timestamp": 10240
+                }, 
+                {
+                    "y": 172, 
+                    "x": 270, 
+                    "timestamp": 11127
+                }, 
+                {
+                    "y": 171, 
+                    "x": 140, 
+                    "timestamp": 12528
+                }, 
+                {
+                    "y": 104, 
+                    "x": 202, 
+                    "timestamp": 13400
+                }, 
+                {
+                    "y": 80, 
+                    "x": 163, 
+                    "timestamp": 14224
+                }, 
+                {
+                    "y": 174, 
+                    "x": 90, 
+                    "timestamp": 15451
+                }, 
+                {
+                    "y": 117, 
+                    "x": 55, 
+                    "timestamp": 16320
+                }, 
+                {
+                    "y": 98, 
+                    "x": 227, 
+                    "timestamp": 17385
+                }, 
+                {
+                    "y": 150, 
+                    "x": 201, 
+                    "timestamp": 18282
+                }, 
+                {
+                    "y": 227, 
+                    "x": 248, 
+                    "timestamp": 19114
+                }, 
+                {
+                    "y": 65, 
+                    "x": 442, 
+                    "timestamp": 20224
+                }, 
+                {
+                    "y": 436, 
+                    "x": 388, 
+                    "timestamp": 21738
+                }, 
+                {
+                    "y": 468, 
+                    "x": 209, 
+                    "timestamp": 24258
+                }, 
+                {
+                    "y": 451, 
+                    "x": 45, 
+                    "timestamp": 25385
+                }
+            ]
+        ], 
+        "height": 500, 
+        "width": 500, 
+        "worker_id": "A2KFULED9WP0I0", 
+        "annotation_type": "crosshairs", 
+        "time_when_completed": "Sat Apr 14 16:15:01 PDT 2018", 
+        "image_filename": "cy3_500pxroi.png"
+    }, 
+    {
+        "raw_data": [
+            [
+                {
+                    "y": 468, 
+                    "x": 208, 
+                    "timestamp": 14473
+                }, 
+                {
+                    "y": 452, 
+                    "x": 47, 
+                    "timestamp": 16516
+                }, 
+                {
+                    "y": 442, 
+                    "x": 47, 
+                    "timestamp": 17385
+                }, 
+                {
+                    "y": 344, 
+                    "x": 170, 
+                    "timestamp": 19352
+                }, 
+                {
+                    "y": 348, 
+                    "x": 246, 
+                    "timestamp": 21059
+                }, 
+                {
+                    "y": 268, 
+                    "x": 188, 
+                    "timestamp": 23488
+                }, 
+                {
+                    "y": 176, 
+                    "x": 91, 
+                    "timestamp": 30612
+                }, 
+                {
+                    "y": 167, 
+                    "x": 140, 
+                    "timestamp": 32477
+                }, 
+                {
+                    "y": 118, 
+                    "x": 57, 
+                    "timestamp": 34904
+                }, 
+                {
+                    "y": 78, 
+                    "x": 167, 
+                    "timestamp": 37378
+                }, 
+                {
+                    "y": 104, 
+                    "x": 199, 
+                    "timestamp": 39803
+                }, 
+                {
+                    "y": 143, 
+                    "x": 208, 
+                    "timestamp": 44390
+                }, 
+                {
+                    "y": 96, 
+                    "x": 227, 
+                    "timestamp": 48385
+                }, 
+                {
+                    "y": 168, 
+                    "x": 272, 
+                    "timestamp": 53147
+                }, 
+                {
+                    "y": 104, 
+                    "x": 303, 
+                    "timestamp": 56098
+                }, 
+                {
+                    "y": 63, 
+                    "x": 331, 
+                    "timestamp": 58231
+                }, 
+                {
+                    "y": 235, 
+                    "x": 399, 
+                    "timestamp": 61773
+                }, 
+                {
+                    "y": 69, 
+                    "x": 443, 
+                    "timestamp": 86889
+                }, 
+                {
+                    "y": 69, 
+                    "x": 443, 
+                    "timestamp": 87383
+                }, 
+                {
+                    "y": 436, 
+                    "x": 383, 
+                    "timestamp": 91446
+                }, 
+                {
+                    "y": 436, 
+                    "x": 383, 
+                    "timestamp": 91866
+                }
+            ]
+        ], 
+        "height": 500, 
+        "width": 500, 
+        "worker_id": "A3UDP95JGEX3H1", 
+        "annotation_type": "crosshairs", 
+        "time_when_completed": "Sat Apr 14 16:53:43 PDT 2018", 
+        "image_filename": "cy3_500pxroi.png"
+    }
+]
