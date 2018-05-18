@@ -10,6 +10,10 @@ def importAnnotations(file_path):
 
 	for turker in results:
 
+		# Skip the turker if they didn't perform any annotations
+		if not turker['raw_data']:
+			continue
+
 		# Make a data frame of the coordinates of each annotation
 		coords = pd.DataFrame(turker['raw_data'][0])
 
