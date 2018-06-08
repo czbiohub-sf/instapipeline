@@ -12,14 +12,25 @@ from sklearn.cluster import AffinityPropagation
 from sklearn import metrics
 
 from sklearn.neighbors import KDTree
+
 from QuantiusAnnotation import QuantiusAnnotation
+from BaseAnnotation import BaseAnnotation
 
 # ------- #
 
-class SpotAnnotationAnalysis(QuantiusAnnotation):
+class SpotAnnotationAnalysis():
 	""" The SpotAnnotationAnalysis class provides tools for
 	annotation analysis.
+	SpotAnnotationAnalysis takes a BaseAnnotation object in as an 
+	input and saves it as a property of the class.
 	"""
+
+	"""
+	constructor takes in a BaseAnnotation object and saves it as 
+	a property of the SpotAnnotationAnalysis class
+	"""
+	def __init__(self, ba_obj):
+		self.ba = ba_obj
 
 	# list of clustering algs handled
 	clustering_algs = ['AffinityPropagation']
@@ -42,31 +53,26 @@ class SpotAnnotationAnalysis(QuantiusAnnotation):
 	def get_clusters(self, clustering_alg, df, clustering_params):
 		if (clustering_alg not in self.clustering_algs):
 			raise ValueError('Invalid clustering algorithm name entered.')
-
 		# If AffinityPropagation is selected:
 		if (clustering_alg == 'AffinityPropagation'):
-
 			cluster_centers_list = []
 
 			if(len(clustering_params) != 1):
 				raise ValueError('Please enter a list containing the preference parameter.')
 
-			coords = self.get_coords(df)
+			coords = self.ba.get_coords(df)
 			af = AffinityPropagation(preference = clustering_params[0]).fit(coords)
 			cluster_centers_indices = af.cluster_centers_indices_
 			n_clusters_ = len(cluster_centers_indices)
 			for k in range(n_clusters_):
 				cluster_centers = coords[cluster_centers_indices[k]]	# np array
 				cluster_centers_list.append(cluster_centers)
-
 		""" Convert list of cluster centers (each of which is a 2-element, 1D np array) to a 2D np array for convenience """
 		to_return = np.empty([len(cluster_centers_list), 2], dtype = float)
 		for i in range(len(cluster_centers_list)):
 			to_return[i][0] = cluster_centers_list[i][0]
 			to_return[i][1] = cluster_centers_list[i][1]
-
 		return to_return
-		# plots average time spent per click
 
 	""" 
 	Input:
@@ -96,14 +102,14 @@ class SpotAnnotationAnalysis(QuantiusAnnotation):
 	"""
 	def calc_distances(self, df, ref_kdt, img_filename):
 
-		anno_one_crop = self.slice_by_image(df, img_filename)	# Remove data from other croppings.
-		worker_list = self.get_workers(anno_one_crop)
+		anno_one_crop = self.ba.slice_by_image(df, img_filename)	# Remove data from other croppings.
+		worker_list = self.ba.get_workers(anno_one_crop)
 
 		to_return = []
 
 		for worker in worker_list:			
-			anno = self.slice_by_worker(anno_one_crop, worker)	
-			coords = self.get_coords(anno)
+			anno = self.ba.slice_by_worker(anno_one_crop, worker)	
+			coords = self.ba.get_coords(anno)
 
 			dist, ind = ref_kdt.query(coords, k=1)
 			dist_list = dist.tolist()
@@ -129,13 +135,13 @@ class SpotAnnotationAnalysis(QuantiusAnnotation):
 	"""
 	def calc_time_per_click(self, df, img_filename):
 
-		anno_one_crop = self.slice_by_image(df, img_filename)	# Remove data from other croppings.
-		worker_list = self.get_workers(anno_one_crop)
+		anno_one_crop = self.ba.slice_by_image(df, img_filename)	# Remove data from other croppings.
+		worker_list = self.ba.get_workers(anno_one_crop)
 
 		to_return = []
 
 		for worker in worker_list:
-			timestamps = self.get_timestamps(anno_one_crop, worker)
+			timestamps = self.ba.get_timestamps(anno_one_crop, worker)
 			times_spent = [None]*len(timestamps)
 			for i in range (1,len(timestamps)):
 				times_spent[i] = timestamps[i] - timestamps[i-1]
@@ -157,17 +163,17 @@ class SpotAnnotationAnalysis(QuantiusAnnotation):
 	def plot_annotations(self, df, img_filename, worker_marker_size, cluster_marker_size, show_workers, show_clusters, clustering_alg, clustering_params):
 		# fig = plt.figure(figsize=(14,12))		# for jupyter notebook
 		fig = plt.figure(figsize = (12,7))
-		anno_one_crop = self.slice_by_image(df, img_filename)	# Remove data from other croppings.
-		worker_list = self.get_workers(anno_one_crop)
+		anno_one_crop = self.ba.slice_by_image(df, img_filename)	# Remove data from other croppings.
+		worker_list = self.ba.get_workers(anno_one_crop)
 
 		if show_workers:
 			handle_list = []
 			for worker, color in zip(worker_list, self.colors):			# For each worker, use a different color.
-			    anno = self.slice_by_worker(anno_one_crop, worker)		
-			    coords = self.get_coords(anno)
+			    anno = self.ba.slice_by_worker(anno_one_crop, worker)		
+			    coords = self.ba.get_coords(anno)
 			    x_coords = coords[:,0]
 			    y_coords = coords[:,1]
-			    y_coords_flipped = self.flip(y_coords, 300)
+			    y_coords_flipped = self.ba.flip(y_coords, 300)
 			    handle = plt.scatter(x_coords, y_coords_flipped, s = worker_marker_size, facecolors = color, alpha = 0.5, label = worker)
 			    handle_list.append(handle)
 			plt.legend(handles = handle_list, loc = 9, bbox_to_anchor = (1.2, 1.015))
@@ -178,7 +184,7 @@ class SpotAnnotationAnalysis(QuantiusAnnotation):
 			cluster_centers = self.get_clusters(clustering_alg, anno_one_crop, clustering_params) # cluster_centers is a list of np arrays
 			x_coords = cluster_centers[:,0]
 			y_coords = cluster_centers[:,1]
-			y_coords_flipped = self.flip(y_coords, 300)
+			y_coords_flipped = self.ba.flip(y_coords, 300)
 			plt.scatter(x_coords, y_coords_flipped, s = cluster_marker_size, facecolors = 'none', edgecolors = '#ffffff')
 			if not show_workers:
 				plt.title('Cluster Centroids')
@@ -202,8 +208,8 @@ class SpotAnnotationAnalysis(QuantiusAnnotation):
 	"""
 	def plot_avg_time_per_click(self, df):
 		avg_list = []
-		for worker in self.get_workers(self.df()):
-			avg_time = self.get_avg_time_per_click(df, worker)
+		for worker in self.ba.get_workers(df):
+			avg_time = self.ba.get_avg_time_per_click(df, worker)
 			avg_list.append(avg_time)
 		n_bins = 10
 		# fig = plt.figure(figsize=(14,12))		# for jupyter notebook
@@ -229,8 +235,8 @@ class SpotAnnotationAnalysis(QuantiusAnnotation):
 	"""
 	def plot_nnd_vs_time_spent(self, df, img_filename, csv_filename):
 
-		anno_one_crop = self.slice_by_image(df, img_filename)	# Remove data from other croppings.
-		worker_list = self.get_workers(anno_one_crop)
+		anno_one_crop = self.ba.slice_by_image(df, img_filename)	# Remove data from other croppings.
+		worker_list = self.ba.get_workers(anno_one_crop)
 		ref_kdt = self.csv_to_kdt(csv_filename)
 		dist_list = self.calc_distances(anno_one_crop, ref_kdt, img_filename)	# list containing one list for each worker
 		time_list = self.calc_time_per_click(anno_one_crop, img_filename)	# list containing one list for each worker
@@ -267,8 +273,8 @@ class SpotAnnotationAnalysis(QuantiusAnnotation):
 	"""
 	def plot_nnd_vs_worker_index(self, df, img_filename, csv_filename):
 
-		anno_one_crop = self.slice_by_image(df, img_filename)	# Remove data from other croppings.
-		worker_list = self.get_workers(anno_one_crop)
+		anno_one_crop = self.ba.slice_by_image(df, img_filename)	# Remove data from other croppings.
+		worker_list = self.ba.get_workers(anno_one_crop)
 		ref_kdt = self.csv_to_kdt(csv_filename)
 		dist_list = self.calc_distances(anno_one_crop, ref_kdt, img_filename)	# list containing one list for each worker
 
@@ -306,8 +312,8 @@ class SpotAnnotationAnalysis(QuantiusAnnotation):
 	"""
 	def plot_time_spent_vs_worker_index(self, df, img_filename):
 
-		anno_one_crop = self.slice_by_image(df, img_filename)	# Remove data from other croppings.
-		worker_list = self.get_workers(anno_one_crop)
+		anno_one_crop = self.ba.slice_by_image(df, img_filename)	# Remove data from other croppings.
+		worker_list = self.ba.get_workers(anno_one_crop)
 		time_list = self.calc_time_per_click(anno_one_crop, img_filename)	# list containing one list for each worker
 
 		# fig = plt.figure(figsize=(14,12))		# for jupyter notebook
@@ -347,8 +353,8 @@ class SpotAnnotationAnalysis(QuantiusAnnotation):
 	"""
 	def plot_time_spent_vs_click_index(self, df, img_filename, uid):
 
-		anno_one_crop = self.slice_by_image(df, img_filename)	# Remove data from other croppings.
-		worker_list = self.get_workers(anno_one_crop)
+		anno_one_crop = self.ba.slice_by_image(df, img_filename)	# Remove data from other croppings.
+		worker_list = self.ba.get_workers(anno_one_crop)
 
 		index = np.where(worker_list == uid)
 		i = index[0][0]		# because np.where() returns a tuple containing an array
