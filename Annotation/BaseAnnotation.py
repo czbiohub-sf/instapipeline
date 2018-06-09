@@ -75,14 +75,19 @@ class BaseAnnotation:
 			to_return[i] = height - vec[i]
 		return to_return
 
-	# input: df, worker ID
-	# output: float avg time that the worker spent per click 
+	# inputs: df, worker ID
+	# returns: float avg time that the worker spent per click 
 	def get_avg_time_per_click(self, df, uid):
-		turker_timestamps = self.get_timestamps(df, uid)
-		time_spent = max(turker_timestamps) - min(turker_timestamps)
-		num_clicks = len(turker_timestamps)
+		worker_timestamps = self.get_timestamps(df, uid)
+		time_spent = max(worker_timestamps) - min(worker_timestamps)
+		num_clicks = len(worker_timestamps)
 		return time_spent[0]/num_clicks
 
+	# inputs: df, worker ID
+	# returns: time that the worker spent 		
+	def get_total_time(self, df, uid):
+		worker_timestamps = self.get_timestamps(df, uid)
+		return max(worker_timestamps) - min(worker_timestamps)
 
 
 

@@ -216,7 +216,7 @@ class SpotAnnotationAnalysis():
 		fig = plt.figure(figsize = (12,7))
 		plt.hist(avg_list, n_bins)
 		plt.title('Average time spent per click')
-		plt.xlabel('Time [units]')
+		plt.xlabel('Time [ms]')
 		plt.ylabel('Quantity of workers')
 		plt.show()
 
@@ -254,9 +254,9 @@ class SpotAnnotationAnalysis():
 
 		plt.legend(handles = handle_list, loc = 9, bbox_to_anchor = (1.2, 1.015))
 		plt.subplots_adjust(left=0.1, right=0.75)
-		plt.title('Nearest Neighbor Distance (NND) vs. Time Spent For Each Click [units]')
-		plt.xlabel('Time Spent [units]')
-		plt.ylabel('Nearest Neighbor Distance (NND) [units]')
+		plt.title('Nearest Neighbor Distance (NND) vs. Time Spent For Each Click [ms]')
+		plt.xlabel('Time Spent [ms]')
+		plt.ylabel('Nearest Neighbor Distance (NND) [ms]')
 		plt.show()
 
 	"""
@@ -295,13 +295,13 @@ class SpotAnnotationAnalysis():
 		plt.subplots_adjust(left=0.1, right=0.8)
 		plt.title('Nearest Neighbor Distance (NND) vs. Worker Index For Each Click')
 		plt.xlabel('Worker Index')
-		plt.ylabel('Nearest Neighbor Distance (NND) [units]')
+		plt.ylabel('Nearest Neighbor Distance (NND) [ms]')
 		plt.xticks(np.arange(0, len(worker_list), step=1))
 		plt.show()
 
 	"""
 	For each annotation (each click) in a dataframe, 
-	plot time spent on click vs. worker index. 
+	plot time spent on the click vs. worker index. 
 	Each point represents one annotation (one click). 
 
 	Inputs:
@@ -312,7 +312,7 @@ class SpotAnnotationAnalysis():
 	"""
 	def plot_time_spent_vs_worker_index(self, df, img_filename):
 
-		anno_one_crop = self.ba.slice_by_image(df, img_filename)	# Remove data from other croppings.
+		anno_one_crop = self.ba.slice_by_image(df, img_filename)			# Remove data from other croppings.
 		worker_list = self.ba.get_workers(anno_one_crop)
 		time_list = self.calc_time_per_click(anno_one_crop, img_filename)	# list containing one list for each worker
 
@@ -333,11 +333,35 @@ class SpotAnnotationAnalysis():
 
 		plt.legend(handles = [handle], loc = 9, bbox_to_anchor = (1.15, 0.55))
 		plt.subplots_adjust(left=0.1, right=0.8)
-		plt.title('Time Spent [units] vs. Worker Index')
+		plt.title('Time Spent [ms] vs. Worker Index')
 		plt.xlabel('Worker Index')
-		plt.ylabel('Time Spent [units]')
+		plt.ylabel('Time Spent [ms]')
 		plt.xticks(np.arange(0, len(worker_list), step=1))
 		plt.show()
+
+	def plot_total_time_vs_worker_index(self, df, img_filename):
+
+		anno_one_crop = self.ba.slice_by_image(df, img_filename)			# Remove data from other croppings.
+		worker_list = self.ba.get_workers(anno_one_crop)
+
+		# fig = plt.figure(figsize=(14,12))		# for jupyter notebook
+		fig = plt.figure(figsize = (10,7))
+
+		handle_list = []
+		for i in range(len(worker_list)):
+			total_time = self.ba.get_total_time(anno_one_crop, worker_list[i])
+			handle = plt.bar(i, total_time[0], color = self.colors[i], label = worker_list[i])
+			handle_list.append(handle)
+
+		plt.legend(handles = handle_list, loc = 9, bbox_to_anchor = (1.15, 1.015))
+		plt.subplots_adjust(left=0.1, right=0.8)
+		plt.title('Total Time Spent [ms] vs. Worker Index')
+		plt.xlabel('Worker Index')
+		plt.ylabel('Time Spent [ms]')
+		plt.xticks(np.arange(0, len(worker_list), step=1))
+		plt.show()
+
+
 
 	"""
 	For one worker in a dataframe,
@@ -368,9 +392,9 @@ class SpotAnnotationAnalysis():
 		fig = plt.figure(figsize = (10,7))
 		handle = plt.scatter(x_coords, y_coords, s = 4, alpha = 0.5, facecolors = 'c', label = 'One click')
 		
-		plt.title('Time Spent [units] vs. Click Index for Worker ' + uid)
+		plt.title('Time Spent [ms] vs. Click Index for Worker ' + uid)
 		plt.xlabel('Click Index')
-		plt.ylabel('Time Spent [units]')
+		plt.ylabel('Time Spent [ms]')
 		plt.legend(handles = [handle], loc = 9, bbox_to_anchor = (1.15, 0.55))
 		plt.subplots_adjust(left=0.1, right=0.8)
 		plt.xticks(np.arange(0, len(worker_time_list), step=10))

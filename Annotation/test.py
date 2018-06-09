@@ -30,12 +30,13 @@ clustering_params = [-350]
 # clustering_alg = None
 # clustering_params = None
 
-sa.plot_annotations(anno_all, img_filename, worker_marker_size, cluster_marker_size, show_workers, show_clusters, clustering_alg, clustering_params)
+# sa.plot_annotations(anno_all, img_filename, worker_marker_size, cluster_marker_size, show_workers, show_clusters, clustering_alg, clustering_params)
 
-# More investigations
-sa.plot_avg_time_per_click(anno_all)
-sa.plot_nnd_vs_time_spent(anno_all, img_filename, csv_filename)
-sa.plot_nnd_vs_worker_index(anno_all, img_filename, csv_filename)
+# # More investigations
+# sa.plot_avg_time_per_click(anno_all)
+# sa.plot_nnd_vs_time_spent(anno_all, img_filename, csv_filename)
+# sa.plot_nnd_vs_worker_index(anno_all, img_filename, csv_filename)
 sa.plot_time_spent_vs_worker_index(anno_all, img_filename)
-uid = 'A1EFL6UHDB1IZM'
-sa.plot_time_spent_vs_click_index(anno_all, img_filename, uid)
+# uid = 'A1EFL6UHDB1IZM'
+# sa.plot_time_spent_vs_click_index(anno_all, img_filename, uid)
+sa.plot_total_time_vs_worker_index(anno_all, img_filename)
