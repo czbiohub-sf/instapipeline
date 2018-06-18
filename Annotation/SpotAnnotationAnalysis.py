@@ -50,29 +50,46 @@ class SpotAnnotationAnalysis():
 	# 	dataframe with annotation data (should already be cropped)
 	#	list of clustering params for clustering alg
 	# Output:
-	# 	array containing coordinates of cluster centers (column 0 is x vals, column 1 is y vals)
+	# 	dataframe with row for each cluster
+	#	[DESCRIBE!!!!!!!!!!!]
 	def get_clusters(self, clustering_alg, df, clustering_params):
 		if (clustering_alg not in self.clustering_algs):
 			raise ValueError('Invalid clustering algorithm name entered.')
 		# If AffinityPropagation is selected:
 		if (clustering_alg == 'AffinityPropagation'):
-			cluster_centers_list = []
+			cluster_centroids_list = []
 
 			if(len(clustering_params) != 1):
 				raise ValueError('Please enter a list containing the preference parameter.')
 
 			coords = self.ba.get_coords(df)
+
 			af = AffinityPropagation(preference = clustering_params[0]).fit(coords)
 			cluster_centers_indices = af.cluster_centers_indices_
+
+			labels = af.labels_
+
+			cluster_members_lists = [None]*len(cluster_centers_indices)
+			for i in range(len(cluster_members_lists)):
+				cluster_members_lists[i] = []
+
+			for j in range(len(coords)):
+				index = labels[j]
+				cluster_members_lists[index].append(coords[j])
+
 			n_clusters_ = len(cluster_centers_indices)
 			for k in range(n_clusters_):
 				cluster_centers = coords[cluster_centers_indices[k]]	# np array
-				cluster_centers_list.append(cluster_centers)
-		""" Convert list of cluster centers (each of which is a 2-element, 1D np array) to a 2D np array for convenience """
-		to_return = np.empty([len(cluster_centers_list), 2], dtype = float)
-		for i in range(len(cluster_centers_list)):
-			to_return[i][0] = cluster_centers_list[i][0]
-			to_return[i][1] = cluster_centers_list[i][1]
+				cluster_centroids_list.append(cluster_centers)
+
+		centroid_IDs = range(len(cluster_centroids_list))
+		column_names = ['centroid_x', 'centroid_y', 'members']
+		to_return = pd.DataFrame(index = centroid_IDs, columns = column_names)
+
+		for i in range(len(cluster_centroids_list)):
+			to_return['centroid_x'][i] = cluster_centroids_list[i][0]
+			to_return['centroid_y'][i] = cluster_centroids_list[i][1]
+			to_return['members'][i] = cluster_members_lists[i]
 		return to_return
 
 	# Inputs:
@@ -172,16 +189,12 @@ class SpotAnnotationAnalysis():
 		for worker in worker_list:			
 			anno = self.ba.slice_by_worker(anno_one_crop, worker)	
 			coords = self.ba.get_coords(anno)
-
 			dist, ind = ref_kdt.query(coords, k=1)
 			dist_list = dist.tolist()
 			values = []
-
 			for i in range(len(dist_list)):
 				values.append(dist_list[i][0])
-
 			to_return.append(values)
-
 		return to_return
 
 	"""
