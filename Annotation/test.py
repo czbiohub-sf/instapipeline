@@ -43,3 +43,6 @@ clustering_params = [-350]
 
 big_df = sa.anno_and_ref_to_df(clustering_alg, anno_all, clustering_params, csv_filename, img_filename)
 print(big_df)
+
+correctness = sa.get_cluster_correctness(big_df, 20)
+print(correctness)

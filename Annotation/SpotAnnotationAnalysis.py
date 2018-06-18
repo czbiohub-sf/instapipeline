@@ -116,6 +116,28 @@ class SpotAnnotationAnalysis():
 
 		return to_return
 
+	# Inputs:
+	#	df in this form: centroid_x | centroid_y | x of nearest ref | y of nearest ref | NN_dist
+	#		the index is the Centroid ID
+	#	int threshold
+	#		for each centroid, if NN_dist <= threshold, centroid is "correct"
+	# Output:
+	#	2-column array
+	#		column 0 = Centroid ID
+	#		column 1 = True if centroid is "correct", False if centroid is "incorrect"
+	def get_cluster_correctness(self, df, threshold):
+		num_centroids = df.shape[0]
+		print(num_centroids)
+		to_return = np.empty([num_centroids, 2])
+		for i in range(num_centroids):
+			to_return[i] = i
+			NN_dist = df['NN_dist'][i]
+			if (NN_dist <= threshold):
+				to_return[i][1] = True
+			else:
+				to_return[i][1] = False
+		return to_return
+
 	""" 
 	Input:
 		string name of csv file containing reference points, aka "ground truth" values
