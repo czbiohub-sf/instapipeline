@@ -36,7 +36,10 @@ clustering_params = [-350]
 # sa.plot_avg_time_per_click(anno_all)
 # sa.plot_nnd_vs_time_spent(anno_all, img_filename, csv_filename)
 # sa.plot_nnd_vs_worker_index(anno_all, img_filename, csv_filename)
-sa.plot_time_spent_vs_worker_index(anno_all, img_filename)
+# sa.plot_time_spent_vs_worker_index(anno_all, img_filename)
 # uid = 'A1EFL6UHDB1IZM'
 # sa.plot_time_spent_vs_click_index(anno_all, img_filename, uid)
-sa.plot_total_time_vs_worker_index(anno_all, img_filename)
+# sa.plot_total_time_vs_worker_index(anno_all, img_filename)
+
+big_df = sa.anno_and_ref_to_df(clustering_alg, anno_all, clustering_params, csv_filename, img_filename)
+print(big_df)

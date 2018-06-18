@@ -45,10 +45,11 @@ class SpotAnnotationAnalysis():
     '#9999FF', '#99FFCC', '#FF9999', '#E5FFFF',
     '#8A00B8', '#E5FFFF']
 
-	# inputs: 
+	# Inputs: 
 	# 	string name of clustering alg to use
-	# 	dataframe
-	# output:
+	# 	dataframe with annotation data (should already be cropped)
+	#	list of clustering params for clustering alg
+	# Output:
 	# 	array containing coordinates of cluster centers (column 0 is x vals, column 1 is y vals)
 	def get_clusters(self, clustering_alg, df, clustering_params):
 		if (clustering_alg not in self.clustering_algs):
@@ -74,6 +75,47 @@ class SpotAnnotationAnalysis():
 			to_return[i][1] = cluster_centers_list[i][1]
 		return to_return
 
+	# Inputs:
+	#	string name of clustering alg to use
+	#	list of clustering params for clustering alg
+	#	dataframe with annotation data (should already be cropped)
+	# 	csv_filename (contains reference data)
+	#	img_filename (the cropping)
+	# Output:
+	#	this dataframe: centroid_x | centroid_y | x of nearest ref | y of nearest ref | NN_dist
+	#		* (the index is the Cluster ID)
+	#		centroid_x = x coord of cluster centroid
+	#		centroid_y = y coord of cluster centroid
+	#		NN_x = x coord of nearest neighbor reference
+	#		NN_y = y coord of nearest neighbor reference
+	#		NN_dist = distance from centroid to nearest neighbor reference
+	def anno_and_ref_to_df(self, clustering_alg, df, clustering_params, csv_filename, img_filename):
+
+		anno_one_crop = self.ba.slice_by_image(df, img_filename)	# Remove data from other croppings.
+		centroid_coords = self.get_clusters(clustering_alg, anno_one_crop, clustering_params)
+		ref_kdt = self.csv_to_kdt(csv_filename)
+		ref_array = np.asarray(ref_kdt.data)
+
+		centroid_IDs = range(len(centroid_coords))
+		column_names = ['centroid_x', 'centroid_y', 'NN_x', 'NN_y', 'NN_dist']
+		to_return = pd.DataFrame(index = centroid_IDs, columns = column_names)
+
+		for i in centroid_IDs:
+
+			to_return['centroid_x'][i] = centroid_coords[i][0]
+			to_return['centroid_y'][i] = centroid_coords[i][1]
+
+			coords = centroid_coords[i].reshape(1,-1)
+			dist, ind = ref_kdt.query(coords, k=1)
+			index = ind[0][0]
+			nearest_neighbor = ref_array[index]
+
+			to_return['NN_x'][i] = nearest_neighbor[0]
+			to_return['NN_y'][i] = nearest_neighbor[1]
+			to_return['NN_dist'][i] = dist[0][0]		
+
+		return to_return
+
 	""" 
 	Input:
 		string name of csv file containing reference points, aka "ground truth" values
@@ -84,9 +126,7 @@ class SpotAnnotationAnalysis():
 
 		ref_anno = pd.read_csv(csv_filename)
 		ref_points = ref_anno.loc[:, ['row', 'col']].as_matrix() - 1
-
 		ref_kdt = KDTree(ref_points, leaf_size=2, metric='euclidean')	# kdt is a kd tree with all the reference points
-
 		return ref_kdt
 
 	""" 
@@ -360,8 +400,6 @@ class SpotAnnotationAnalysis():
 		plt.ylabel('Time Spent [ms]')
 		plt.xticks(np.arange(0, len(worker_list), step=1))
 		plt.show()
-
-
 
 	"""
 	For one worker in a dataframe,
