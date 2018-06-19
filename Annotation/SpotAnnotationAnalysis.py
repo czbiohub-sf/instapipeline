@@ -241,34 +241,57 @@ class SpotAnnotationAnalysis():
 	# 	bool whether to plot cluster centroids
 	# 	string name of clustering algorithm
 	# 	list of clustering parameters
-	def plot_annotations(self, df, img_filename, worker_marker_size, cluster_marker_size, show_workers, show_clusters, clustering_alg, clustering_params):
+	def plot_annotations(self, df, img_filename, csv_filename, worker_marker_size, cluster_marker_size, show_workers, show_clusters, show_correctness_workers, show_correctness_clusters, correctness_threshold, clustering_alg, clustering_params):
 		# fig = plt.figure(figsize=(14,12))		# for jupyter notebook
 		fig = plt.figure(figsize = (12,7))
 		anno_one_crop = self.ba.slice_by_image(df, img_filename)	# Remove data from other croppings.
 		worker_list = self.ba.get_workers(anno_one_crop)
 
 		if show_workers:
-			handle_list = []
-			for worker, color in zip(worker_list, self.colors):			# For each worker, use a different color.
-			    anno = self.ba.slice_by_worker(anno_one_crop, worker)		
-			    coords = self.ba.get_coords(anno)
-			    x_coords = coords[:,0]
-			    y_coords = coords[:,1]
-			    y_coords_flipped = self.ba.flip(y_coords, 300)
-			    handle = plt.scatter(x_coords, y_coords_flipped, s = worker_marker_size, facecolors = color, alpha = 0.5, label = worker)
-			    handle_list.append(handle)
-			plt.legend(handles = handle_list, loc = 9, bbox_to_anchor = (1.2, 1.015))
+
+			if show_correctness_workers:
+				clusters = self.anno_and_ref_to_df(clustering_alg, df, clustering_params, csv_filename, img_filename)
+				cluster_correctness = self.get_cluster_correctness(clusters, correctness_threshold)
+				member_lists = clusters['members'].values
+
+				for i in range(len(member_lists)):		# for every cluster
+					members = member_lists[i]				# get the list of annotations in that cluster
+					if (cluster_correctness[i][1]):
+						color = 'g'								
+					else:								
+						color = 'm'
+					for member in members:					# for each annotation in that cluster
+						plt.scatter([member[0]], [member[1]], s = worker_marker_size, facecolors = color, alpha = 0.5)
+
+				# members[0][0][0] # int x_coord of first member of first centroid
+
+			else:
+				handle_list = []
+				for worker, color in zip(worker_list, self.colors):			# For each worker, use a different color.
+				    anno = self.ba.slice_by_worker(anno_one_crop, worker)		
+				    coords = self.ba.get_coords(anno)
+				    x_coords = coords[:,0]
+				    y_coords = coords[:,1]
+				    y_coords_flipped = self.ba.flip(y_coords, 300)
+				    handle = plt.scatter(x_coords, y_coords_flipped, s = worker_marker_size, facecolors = color, alpha = 0.5, label = worker)
+				    handle_list.append(handle)
+				plt.legend(handles = handle_list, loc = 9, bbox_to_anchor = (1.2, 1.015))
+
 			if not show_clusters:
 				plt.title('Worker Annotations')
 
-		if show_clusters:
-			clusters = self.get_clusters(clustering_alg, anno_one_crop, clustering_params) # clusters is a df
-			x_coords = clusters['centroid_x'].values
-			y_coords = clusters['centroid_y'].values
-			y_coords_flipped = self.ba.flip(y_coords, 300)
-			plt.scatter(x_coords, y_coords_flipped, s = cluster_marker_size, facecolors = 'none', edgecolors = '#ffffff')
-			if not show_workers:
-				plt.title('Cluster Centroids')
+		# if show_clusters:
+
+		# 	if show_correctness_clusters:
+		# 		# TO DO
+
+		# 	clusters = self.get_clusters(clustering_alg, anno_one_crop, clustering_params)
+		# 	x_coords = clusters['centroid_x'].values
+		# 	y_coords = clusters['centroid_y'].values
+		# 	y_coords_flipped = self.ba.flip(y_coords, 300)
+		# 	plt.scatter(x_coords, y_coords_flipped, s = cluster_marker_size, facecolors = 'none', edgecolors = '#ffffff')
+		# 	if not show_workers:
+		# 		plt.title('Cluster Centroids')
 
 		if show_workers and show_clusters:
 			plt.title('Worker Annotations and Cluster Centroids')
