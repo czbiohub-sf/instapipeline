@@ -103,7 +103,7 @@ class SpotAnnotationAnalysis():
 	# 	csv_filename (contains reference data)
 	#	img_filename (the cropping)
 	# Output:
-	#	this dataframe: centroid_x | centroid_y | x of nearest ref | y of nearest ref | NN_dist
+	#	this dataframe: centroid_x | centroid_y | x of nearest ref | y of nearest ref | NN_dist | members
 	#		* (the index is the Cluster ID)
 	#		centroid_x = x coord of cluster centroid
 	#		centroid_y = y coord of cluster centroid
@@ -127,7 +127,6 @@ class SpotAnnotationAnalysis():
 			to_return['centroid_y'][i] = centroid_coords['centroid_y'][i]
 
 			coords = [[to_return['centroid_x'][i], to_return['centroid_y'][i]]]
-			print(coords)
 
 			dist, ind = ref_kdt.query(coords, k=1)
 			index = ind[0][0]
@@ -140,17 +139,8 @@ class SpotAnnotationAnalysis():
 
 		return to_return
 
-	def test(self, df):
-		print(df)
-		vals = df.values
-		for i in range(6):
-			vals = np.delete(vals, 3, 1)
-		vals = np.delete(vals, 0, 1)
-		print(vals)
-		print(type(vals))
-
 	# Inputs:
-	#	df in this form: centroid_x | centroid_y | x of nearest ref | y of nearest ref | NN_dist
+	#	df in this form: centroid_x | centroid_y | x of nearest ref | y of nearest ref | NN_dist | members
 	#		the index is the Centroid ID
 	#	int threshold
 	#		for each centroid, if NN_dist <= threshold, centroid is "correct"
@@ -160,7 +150,6 @@ class SpotAnnotationAnalysis():
 	#		column 1 = True if centroid is "correct", False if centroid is "incorrect"
 	def get_cluster_correctness(self, df, threshold):
 		num_centroids = df.shape[0]
-		print(num_centroids)
 		to_return = np.empty([num_centroids, 2])
 		for i in range(num_centroids):
 			to_return[i] = i
