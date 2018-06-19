@@ -16,7 +16,7 @@ ba = QuantiusAnnotation(json_filename)	# Load data into an annotation object
 sa = SpotAnnotationAnalysis(ba)			# Annotation object is saved as a property of a SpotAnnotationAnalysis object
 anno_all = ba.df()						# Get the dataframe from the annotation object
 
-# Plot to get an overview of annotations 
+# --- Plot to get an overview of annotations ---
 
 # Uncomment this...
 show_workers = True
@@ -30,9 +30,10 @@ clustering_params = [-350]
 # clustering_alg = None
 # clustering_params = None
 
-# sa.plot_annotations(anno_all, img_filename, worker_marker_size, cluster_marker_size, show_workers, show_clusters, clustering_alg, clustering_params)
+sa.plot_annotations(anno_all, img_filename, worker_marker_size, cluster_marker_size, show_workers, show_clusters, clustering_alg, clustering_params)
 
-# # More investigations
+
+# # --- More investigations ---
 # sa.plot_avg_time_per_click(anno_all)
 # sa.plot_nnd_vs_time_spent(anno_all, img_filename, csv_filename)
 # sa.plot_nnd_vs_worker_index(anno_all, img_filename, csv_filename)
@@ -43,11 +44,12 @@ clustering_params = [-350]
 
 
 
-big_df = sa.anno_and_ref_to_df(clustering_alg, anno_all, clustering_params, csv_filename, img_filename)
+# big_df = sa.anno_and_ref_to_df(clustering_alg, anno_all, clustering_params, csv_filename, img_filename)
 
-correctness = sa.get_cluster_correctness(big_df, 20)
-#print(correctness)
+# correctness = sa.get_cluster_correctness(big_df, 20)
+# print(correctness)
 
+# sa.test(anno_all)
 
 # cluster_df = sa.get_clusters(clustering_alg, anno_all, clustering_params) 
 

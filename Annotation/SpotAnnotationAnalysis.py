@@ -110,21 +110,22 @@ class SpotAnnotationAnalysis():
 	#		NN_x = x coord of nearest neighbor reference
 	#		NN_y = y coord of nearest neighbor reference
 	#		NN_dist = distance from centroid to nearest neighbor reference
+	#		members = list of coordinates of annotations belonging to cluster
 	def anno_and_ref_to_df(self, clustering_alg, df, clustering_params, csv_filename, img_filename):
 
 		anno_one_crop = self.ba.slice_by_image(df, img_filename)	# Remove data from other croppings.
-		centroid_coords = self.get_clusters(clustering_alg, anno_one_crop, clustering_params)
+		clusters = self.get_clusters(clustering_alg, anno_one_crop, clustering_params)
 		ref_kdt = self.csv_to_kdt(csv_filename)
 		ref_array = np.asarray(ref_kdt.data)
 
-		centroid_IDs = range(centroid_coords.shape[0])
+		centroid_IDs = range(clusters.shape[0])
 		column_names = ['centroid_x', 'centroid_y', 'NN_x', 'NN_y', 'NN_dist', 'members']
 		to_return = pd.DataFrame(index = centroid_IDs, columns = column_names)
 
 		for i in centroid_IDs:
 
-			to_return['centroid_x'][i] = centroid_coords['centroid_x'][i]
-			to_return['centroid_y'][i] = centroid_coords['centroid_y'][i]
+			to_return['centroid_x'][i] = clusters['centroid_x'][i]
+			to_return['centroid_y'][i] = clusters['centroid_y'][i]
 
 			coords = [[to_return['centroid_x'][i], to_return['centroid_y'][i]]]
 
@@ -135,7 +136,7 @@ class SpotAnnotationAnalysis():
 			to_return['NN_x'][i] = nearest_neighbor[0]
 			to_return['NN_y'][i] = nearest_neighbor[1]
 			to_return['NN_dist'][i] = dist[0][0]
-			to_return['members'][i] = centroid_coords['members'][i]		
+			to_return['members'][i] = clusters['members'][i]		
 
 		return to_return
 
@@ -261,9 +262,9 @@ class SpotAnnotationAnalysis():
 				plt.title('Worker Annotations')
 
 		if show_clusters:
-			cluster_centers = self.get_clusters(clustering_alg, anno_one_crop, clustering_params) # cluster_centers is a list of np arrays
-			x_coords = cluster_centers[:,0]
-			y_coords = cluster_centers[:,1]
+			clusters = self.get_clusters(clustering_alg, anno_one_crop, clustering_params) # clusters is a df
+			x_coords = clusters['centroid_x'].values
+			y_coords = clusters['centroid_y'].values
 			y_coords_flipped = self.ba.flip(y_coords, 300)
 			plt.scatter(x_coords, y_coords_flipped, s = cluster_marker_size, facecolors = 'none', edgecolors = '#ffffff')
 			if not show_workers:
@@ -276,6 +277,18 @@ class SpotAnnotationAnalysis():
 		plt.imshow(img, cmap = 'gray')
 
 		plt.show()
+
+	# def test(self, df):
+	# 	series = df['x']
+	# 	vals = series.values
+	# 	print(vals)
+
+		# vals = df.values
+		# for i in range(6):
+		# 	vals = np.delete(vals, 3, 1)
+		# vals = np.delete(vals, 0, 1)
+		# print(vals)
+		# print(type(vals))
 
 	"""
 	Plots the average time spent per click for all workers 
