@@ -23,7 +23,7 @@ show_workers = True
 show_clusters = False
 clustering_alg = 'AffinityPropagation'
 clustering_params = [-350]
-show_correctness_workers = False
+show_correctness_workers = True
 show_correctness_clusters = False
 correctness_threshold = 20
 

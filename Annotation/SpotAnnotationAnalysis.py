@@ -261,9 +261,7 @@ class SpotAnnotationAnalysis():
 					else:								
 						color = 'm'
 					for member in members:					# for each annotation in that cluster
-						plt.scatter([member[0]], [member[1]], s = worker_marker_size, facecolors = color, alpha = 0.5)
-
-				# members[0][0][0] # int x_coord of first member of first centroid
+						plt.scatter([member[0]], self.ba.flip([member[1]], 300), s = worker_marker_size, facecolors = color, alpha = 0.5)
 
 			else:
 				handle_list = []
