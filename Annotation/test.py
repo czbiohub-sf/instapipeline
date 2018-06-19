@@ -41,18 +41,21 @@ clustering_params = [-350]
 # sa.plot_time_spent_vs_click_index(anno_all, img_filename, uid)
 # sa.plot_total_time_vs_worker_index(anno_all, img_filename)
 
-# big_df = sa.anno_and_ref_to_df(clustering_alg, anno_all, clustering_params, csv_filename, img_filename)
-# print(big_df)
+
+
+big_df = sa.anno_and_ref_to_df(clustering_alg, anno_all, clustering_params, csv_filename, img_filename)
+print(big_df)
 
 # correctness = sa.get_cluster_correctness(big_df, 20)
 # print(correctness)
 
 
-cluster_df = sa.get_clusters(clustering_alg, anno_all, clustering_params) 
+# cluster_df = sa.get_clusters(clustering_alg, anno_all, clustering_params) 
 
+# print(cluster_df)
 
-print(cluster_df['members'][0])
-print(len(cluster_df['members'][0]))
+# print(cluster_df['members'][0])
+# print(len(cluster_df['members'][0]))
 
 
 

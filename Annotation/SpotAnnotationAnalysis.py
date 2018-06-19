@@ -50,8 +50,11 @@ class SpotAnnotationAnalysis():
 	# 	dataframe with annotation data (should already be cropped)
 	#	list of clustering params for clustering alg
 	# Output:
-	# 	dataframe with row for each cluster
-	#	[DESCRIBE!!!!!!!!!!!]
+	#	this dataframe: centroid_x | centroid_y | members
+	#		* (the index is the Cluster ID)
+	#		centroid_x = x coord of cluster centroid
+	#		centroid_y = y coord of cluster centroid
+	#		members = list of annotations belonging to the cluster
 	def get_clusters(self, clustering_alg, df, clustering_params):
 		if (clustering_alg not in self.clustering_algs):
 			raise ValueError('Invalid clustering algorithm name entered.')
@@ -90,6 +93,7 @@ class SpotAnnotationAnalysis():
 			to_return['centroid_x'][i] = cluster_centroids_list[i][0]
 			to_return['centroid_y'][i] = cluster_centroids_list[i][1]
 			to_return['members'][i] = cluster_members_lists[i]
+
 		return to_return
 
 	# Inputs:
@@ -113,25 +117,37 @@ class SpotAnnotationAnalysis():
 		ref_kdt = self.csv_to_kdt(csv_filename)
 		ref_array = np.asarray(ref_kdt.data)
 
-		centroid_IDs = range(len(centroid_coords))
-		column_names = ['centroid_x', 'centroid_y', 'NN_x', 'NN_y', 'NN_dist']
+		centroid_IDs = range(centroid_coords.shape[0])
+		column_names = ['centroid_x', 'centroid_y', 'NN_x', 'NN_y', 'NN_dist', 'members']
 		to_return = pd.DataFrame(index = centroid_IDs, columns = column_names)
 
 		for i in centroid_IDs:
 
-			to_return['centroid_x'][i] = centroid_coords[i][0]
-			to_return['centroid_y'][i] = centroid_coords[i][1]
+			to_return['centroid_x'][i] = centroid_coords['centroid_x'][i]
+			to_return['centroid_y'][i] = centroid_coords['centroid_y'][i]
 
-			coords = centroid_coords[i].reshape(1,-1)
+			coords = [[to_return['centroid_x'][i], to_return['centroid_y'][i]]]
+			print(coords)
+
 			dist, ind = ref_kdt.query(coords, k=1)
 			index = ind[0][0]
 			nearest_neighbor = ref_array[index]
 
 			to_return['NN_x'][i] = nearest_neighbor[0]
 			to_return['NN_y'][i] = nearest_neighbor[1]
-			to_return['NN_dist'][i] = dist[0][0]		
+			to_return['NN_dist'][i] = dist[0][0]
+			to_return['members'][i] = centroid_coords['members'][i]		
 
 		return to_return
+
+	def test(self, df):
+		print(df)
+		vals = df.values
+		for i in range(6):
+			vals = np.delete(vals, 3, 1)
+		vals = np.delete(vals, 0, 1)
+		print(vals)
+		print(type(vals))
 
 	# Inputs:
 	#	df in this form: centroid_x | centroid_y | x of nearest ref | y of nearest ref | NN_dist
