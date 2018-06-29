@@ -49,7 +49,7 @@ class SpotAnnotationAnalysis():
 	# 	string name of clustering alg to use
 	# 	dataframe with annotation data (should already be cropped)
 	#	list of clustering params for clustering alg
-	# Output:
+	# Returns:
 	#	this dataframe: centroid_x | centroid_y | members
 	#		* (the index is the Cluster ID)
 	#		centroid_x = x coord of cluster centroid
@@ -102,7 +102,7 @@ class SpotAnnotationAnalysis():
 	#	dataframe with annotation data (should already be cropped)
 	# 	csv_filename (contains reference data)
 	#	img_filename (the cropping)
-	# Output:
+	# Returns:
 	#	this dataframe: centroid_x | centroid_y | x of nearest ref | y of nearest ref | NN_dist | members
 	#		* (the index is the Cluster ID)
 	#		centroid_x = x coord of cluster centroid
@@ -145,7 +145,7 @@ class SpotAnnotationAnalysis():
 	#		the index is the Centroid ID
 	#	int threshold
 	#		for each centroid, if NN_dist <= threshold, centroid is "correct"
-	# Output:
+	# Returns:
 	#	2-column array
 	#		column 0 = Centroid ID
 	#		column 1 = True if centroid is "correct", False if centroid is "incorrect"
@@ -164,7 +164,7 @@ class SpotAnnotationAnalysis():
 	""" 
 	Input:
 		string name of csv file containing reference points, aka "ground truth" values
-	Output:
+	Returns:
 		k-d tree containing the same reference points
 	"""
 	def csv_to_kdt(self, csv_filename):
@@ -179,7 +179,7 @@ class SpotAnnotationAnalysis():
 		dataframe
 		k-d tree with reference points, aka "ground truth" values
 		img_filename to crop to
-	Output:
+	Returns:
 		List containing one list for each worker.
 			Each list is comprised of, for each of the worker's
 			points, the distance to the nearest neighbor (found in
@@ -207,7 +207,7 @@ class SpotAnnotationAnalysis():
 	Inputs:
 		dataframe
 		img_filename
-	Output:
+	Returns:
 		list containing one list for each worker with time spent on each click
 	Notes:
 		Time spent on click_k = timestamp_k - timestamp_(k-1)
@@ -231,7 +231,7 @@ class SpotAnnotationAnalysis():
 		return to_return
 
 	# Plots all coordinates for all workers for one cropping. 
-	# Inputs: 
+	# Returns: 
 	# 	pandas df (can contain many different croppings)
 	# 		(I am thinking taking in a df gives more versatility than taking in a QuantiusAnnotation object.)
 	# 	string img_filename (the only cropping to include)
@@ -246,22 +246,22 @@ class SpotAnnotationAnalysis():
 		fig = plt.figure(figsize = (12,7))
 		anno_one_crop = self.ba.slice_by_image(df, img_filename)	# Remove data from other croppings.
 		worker_list = self.ba.get_workers(anno_one_crop)
+		clusters = self.anno_and_ref_to_df(clustering_alg, df, clustering_params, csv_filename, img_filename)
+		cluster_correctness = self.get_cluster_correctness(clusters, correctness_threshold)
+		member_lists = clusters['members'].values	# list of lists
+		img_height = anno_one_crop['height'].values[0]
 
 		if show_workers:
 
 			if show_correctness_workers:
-				clusters = self.anno_and_ref_to_df(clustering_alg, df, clustering_params, csv_filename, img_filename)
-				cluster_correctness = self.get_cluster_correctness(clusters, correctness_threshold)
-				member_lists = clusters['members'].values
-
-				for i in range(len(member_lists)):		# for every cluster
-					members = member_lists[i]				# get the list of annotations in that cluster
+				for i in range(len(member_lists)):			# for every cluster
+					members = member_lists[i]					# get the list of annotations in that cluster
 					if (cluster_correctness[i][1]):
 						color = 'g'								
 					else:								
 						color = 'm'
-					for member in members:					# for each annotation in that cluster
-						plt.scatter([member[0]], self.ba.flip([member[1]], 300), s = worker_marker_size, facecolors = color, alpha = 0.5)
+					for member in members:						# plot each annotation in that cluster
+						plt.scatter([member[0]], self.ba.flip([member[1]], img_height), s = worker_marker_size, facecolors = color, alpha = 0.5)
 
 			else:
 				handle_list = []
@@ -270,7 +270,7 @@ class SpotAnnotationAnalysis():
 				    coords = self.ba.get_coords(anno)
 				    x_coords = coords[:,0]
 				    y_coords = coords[:,1]
-				    y_coords_flipped = self.ba.flip(y_coords, 300)
+				    y_coords_flipped = self.ba.flip(y_coords, img_height)
 				    handle = plt.scatter(x_coords, y_coords_flipped, s = worker_marker_size, facecolors = color, alpha = 0.5, label = worker)
 				    handle_list.append(handle)
 				plt.legend(handles = handle_list, loc = 9, bbox_to_anchor = (1.2, 1.015))
@@ -278,25 +278,31 @@ class SpotAnnotationAnalysis():
 			if not show_clusters:
 				plt.title('Worker Annotations')
 
-		# if show_clusters:
+		if show_clusters:
 
-		# 	if show_correctness_clusters:
-		# 		# TO DO
+			x_coords = clusters['centroid_x'].values
+			y_coords = clusters['centroid_y'].values
+			y_coords_flipped = self.ba.flip(y_coords, img_height)
 
-		# 	clusters = self.get_clusters(clustering_alg, anno_one_crop, clustering_params)
-		# 	x_coords = clusters['centroid_x'].values
-		# 	y_coords = clusters['centroid_y'].values
-		# 	y_coords_flipped = self.ba.flip(y_coords, 300)
-		# 	plt.scatter(x_coords, y_coords_flipped, s = cluster_marker_size, facecolors = 'none', edgecolors = '#ffffff')
-		# 	if not show_workers:
-		# 		plt.title('Cluster Centroids')
+			if show_correctness_clusters:
+				for i in range(len(member_lists)):			# for every cluster
+					if (cluster_correctness[i][1]):
+						color = 'g'								
+					else:								
+						color = 'm'
+					plt.scatter(x_coords[i], y_coords_flipped[i], s = cluster_marker_size, facecolors = 'none', edgecolors = color)					
+
+			else:
+				plt.scatter(x_coords, y_coords_flipped, s = cluster_marker_size, facecolors = 'none', edgecolors = '#ffffff')
+
+			if not show_workers:
+				plt.title('Cluster Centroids')
 
 		if show_workers and show_clusters:
 			plt.title('Worker Annotations and Cluster Centroids')
 
 		img = mpimg.imread(img_filename)
 		plt.imshow(img, cmap = 'gray')
-
 		plt.show()
 
 	# def test(self, df):
@@ -317,7 +323,7 @@ class SpotAnnotationAnalysis():
 
 	Input:
 		dataframe
-	Output:
+	Returns:
 		none
 	"""
 	def plot_avg_time_per_click(self, df):
@@ -344,7 +350,7 @@ class SpotAnnotationAnalysis():
 		dataframe
 		img_filename (the cropping)
 		csv_filename (contains reference data)
-	Output:
+	Returns:
 		none
 	"""
 	def plot_nnd_vs_time_spent(self, df, img_filename, csv_filename):
@@ -382,7 +388,7 @@ class SpotAnnotationAnalysis():
 		dataframe
 		img_filename (the cropping)
 		csv_filename (contains reference data)
-	Output:
+	Returns:
 		none
 	"""
 	def plot_nnd_vs_worker_index(self, df, img_filename, csv_filename):
@@ -421,7 +427,7 @@ class SpotAnnotationAnalysis():
 	Inputs:
 		dataframe
 		img_filename (the cropping)
-	Output:
+	Returns:
 		none
 	"""
 	def plot_time_spent_vs_worker_index(self, df, img_filename):
@@ -484,7 +490,7 @@ class SpotAnnotationAnalysis():
 		dataframe
 		img_filename (the cropping)
 		uid (worker ID)
-	Output:
+	Returns:
 		none
 	"""
 	def plot_time_spent_vs_click_index(self, df, img_filename, uid):
