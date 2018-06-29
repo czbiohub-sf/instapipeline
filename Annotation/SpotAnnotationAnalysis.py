@@ -21,12 +21,12 @@ from BaseAnnotation import BaseAnnotation
 class SpotAnnotationAnalysis():
 	""" The SpotAnnotationAnalysis class provides tools for
 	annotation analysis.
-	SpotAnnotationAnalysis takes a BaseAnnotation object in as an 
+	SpotAnnotationAnalysis takes in a BaseAnnotation object as an 
 	input and saves it as a property of the class.
 	"""
 
 	"""
-	constructor takes in a BaseAnnotation object and saves it as 
+	Constructor takes in a BaseAnnotation object and saves it as 
 	a property of the SpotAnnotationAnalysis class
 	"""
 	def __init__(self, ba_obj):
@@ -45,16 +45,18 @@ class SpotAnnotationAnalysis():
     '#9999FF', '#99FFCC', '#FF9999', '#E5FFFF',
     '#8A00B8', '#E5FFFF']
 
-	# Inputs: 
-	# 	string name of clustering alg to use
-	# 	dataframe with annotation data (should already be cropped)
-	#	list of clustering params for clustering alg
-	# Returns:
-	#	this dataframe: centroid_x | centroid_y | members
-	#		* (the index is the Cluster ID)
-	#		centroid_x = x coord of cluster centroid
-	#		centroid_y = y coord of cluster centroid
-	#		members = list of annotations belonging to the cluster
+    """
+	Inputs: 
+		string name of clustering alg to use
+		dataframe with annotation data (should already be cropped)
+		list of clustering params for clustering alg
+	Returns:
+		this dataframe: centroid_x | centroid_y | members
+			* (the index is the Cluster ID)
+			centroid_x = x coord of cluster centroid
+			centroid_y = y coord of cluster centroid
+			members = list of annotations belonging to the cluster
+	"""
 	def get_clusters(self, clustering_alg, df, clustering_params):
 		if (clustering_alg not in self.clustering_algs):
 			raise ValueError('Invalid clustering algorithm name entered.')
@@ -96,28 +98,29 @@ class SpotAnnotationAnalysis():
 
 		return to_return
 
-	# Inputs:
-	#	string name of clustering alg to use
-	#	list of clustering params for clustering alg
-	#	dataframe with annotation data (should already be cropped)
-	# 	csv_filename (contains reference data)
-	#	img_filename (the cropping)
-	# Returns:
-	#	this dataframe: centroid_x | centroid_y | x of nearest ref | y of nearest ref | NN_dist | members
-	#		* (the index is the Cluster ID)
-	#		centroid_x = x coord of cluster centroid
-	#		centroid_y = y coord of cluster centroid
-	#		NN_x = x coord of nearest neighbor reference
-	#		NN_y = y coord of nearest neighbor reference
-	#		NN_dist = distance from centroid to nearest neighbor reference
-	#		members = list of coordinates of annotations belonging to cluster
+	"""
+	Inputs:
+		string name of clustering alg to use
+		df with annotation data (should already be cropped)
+		list of clustering params for clustering alg
+		csv_filename (contains reference data)
+		img_filename (the cropping)
+	Returns:
+		this dataframe: centroid_x | centroid_y | x of nearest ref | y of nearest ref | NN_dist | members
+			* (the index is the Cluster ID)
+			centroid_x = x coord of cluster centroid
+			centroid_y = y coord of cluster centroid
+			NN_x = x coord of nearest neighbor reference
+			NN_y = y coord of nearest neighbor reference
+			NN_dist = distance from centroid to nearest neighbor reference
+			members = list of coordinates of annotations belonging to cluster
+	"""
 	def anno_and_ref_to_df(self, clustering_alg, df, clustering_params, csv_filename, img_filename):
 
 		anno_one_crop = self.ba.slice_by_image(df, img_filename)	# Remove data from other croppings.
 		clusters = self.get_clusters(clustering_alg, anno_one_crop, clustering_params)
 		ref_kdt = self.csv_to_kdt(csv_filename)
 		ref_array = np.asarray(ref_kdt.data)
-
 		centroid_IDs = range(clusters.shape[0])
 		column_names = ['centroid_x', 'centroid_y', 'NN_x', 'NN_y', 'NN_dist', 'members']
 		to_return = pd.DataFrame(index = centroid_IDs, columns = column_names)
@@ -140,15 +143,17 @@ class SpotAnnotationAnalysis():
 
 		return to_return
 
-	# Inputs:
-	#	df in this form: centroid_x | centroid_y | x of nearest ref | y of nearest ref | NN_dist | members
-	#		the index is the Centroid ID
-	#	int threshold
-	#		for each centroid, if NN_dist <= threshold, centroid is "correct"
-	# Returns:
-	#	2-column array
-	#		column 0 = Centroid ID
-	#		column 1 = True if centroid is "correct", False if centroid is "incorrect"
+	"""
+	Inputs:
+		df in this form: centroid_x | centroid_y | x of nearest ref | y of nearest ref | NN_dist | members
+			* the index is the Centroid ID
+		int threshold
+			for each centroid, if NN_dist <= threshold, centroid is "correct"
+	Returns:
+		2-column array with a row for each centroid
+			column 0 = Centroid ID
+			column 1 = True if centroid is "correct", False if centroid is "incorrect"
+	"""
 	def get_cluster_correctness(self, df, threshold):
 		num_centroids = df.shape[0]
 		to_return = np.empty([num_centroids, 2])
@@ -176,7 +181,7 @@ class SpotAnnotationAnalysis():
 
 	""" 
 	Inputs:
-		dataframe
+		df with annotation data
 		k-d tree with reference points, aka "ground truth" values
 		img_filename to crop to
 	Returns:
@@ -205,8 +210,8 @@ class SpotAnnotationAnalysis():
 
 	"""
 	Inputs:
-		dataframe
-		img_filename
+		df with annotation data
+		img_filename to crop to
 	Returns:
 		list containing one list for each worker with time spent on each click
 	Notes:
@@ -230,17 +235,25 @@ class SpotAnnotationAnalysis():
 
 		return to_return
 
-	# Plots all coordinates for all workers for one cropping. 
-	# Returns: 
-	# 	pandas df (can contain many different croppings)
-	# 		(I am thinking taking in a df gives more versatility than taking in a QuantiusAnnotation object.)
-	# 	string img_filename (the only cropping to include)
-	# 	int size of worker marker
-	# 	int size of cluster centroid marker
-	# 	bool whether to plot workers
-	# 	bool whether to plot cluster centroids
-	# 	string name of clustering algorithm
-	# 	list of clustering parameters
+	"""
+	Plots all coordinates for all workers for one cropping. 
+
+	Inputs:
+		pandas df with annotation data
+		string img_filename to crop to
+		string csv_filename with reference data
+		int size of worker marker
+		int size of cluster centroid marker
+		bool whether to plot workers
+		bool whether to plot cluster centroids
+		bool whether to color worker markers green/magenta to indicate "correctness"
+		bool whether to color centroid markers green/magenta to indicate "correctness"
+		int threshold distance from centroid to the nearest reference annotation beyond which the entire cluster is "incorrect"
+		string name of clustering algorithm
+		list of clustering parameters
+	Returns:
+		none
+	"""
 	def plot_annotations(self, df, img_filename, csv_filename, worker_marker_size, cluster_marker_size, show_workers, show_clusters, show_correctness_workers, show_correctness_clusters, correctness_threshold, clustering_alg, clustering_params):
 		# fig = plt.figure(figsize=(14,12))		# for jupyter notebook
 		fig = plt.figure(figsize = (12,7))
@@ -322,7 +335,7 @@ class SpotAnnotationAnalysis():
 	in the dataframe.
 
 	Input:
-		dataframe
+		dataframe with annotation data
 	Returns:
 		none
 	"""
