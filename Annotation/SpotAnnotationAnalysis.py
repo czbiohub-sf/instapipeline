@@ -45,7 +45,7 @@ class SpotAnnotationAnalysis():
 	def __init__(self, ba_obj):
 		self.ba = ba_obj
 
-    """
+	"""
 	Inputs: 
 		string name of clustering alg to use
 		pandas dataframe with annotation data (should already be cropped)
@@ -132,13 +132,19 @@ class SpotAnnotationAnalysis():
 
 			coords = [[to_return['centroid_x'][i], to_return['centroid_y'][i]]]
 
-			dist, ind = ref_kdt.query(coords, k=1)
-			index = ind[0][0]
+			dist, ind = ref_kdt.query(coords, k=10)
+			print(coords)
+			min_dist = min(dist[0])
+			if (min_dist > 37):
+				print(dist)
+				print(ind)
+			selection_index = np.where(dist[0] == min_dist)
+			index = ind[0][selection_index]
 			nearest_neighbor = ref_array[index]
 
-			to_return['NN_x'][i] = nearest_neighbor[0]
-			to_return['NN_y'][i] = nearest_neighbor[1]
-			to_return['NN_dist'][i] = dist[0][0]
+			to_return['NN_x'][i] = nearest_neighbor[0][0]
+			to_return['NN_y'][i] = nearest_neighbor[0][1]
+			to_return['NN_dist'][i] = min_dist
 			to_return['members'][i] = clusters['members'][i]		
 
 		return to_return
@@ -175,7 +181,15 @@ class SpotAnnotationAnalysis():
 	def csv_to_kdt(self, csv_filename):
 
 		ref_anno = pd.read_csv(csv_filename)
-		ref_points = ref_anno.loc[:, ['row', 'col']].as_matrix() - 1
+		ref_points = ref_anno.loc[:, ['row', 'col']].as_matrix()
+		print('hello')
+		print(ref_points)
+		fig = plt.figure(figsize = (12,7))
+		for point in ref_points:
+			plt.scatter([point[1]], [point[0]])
+		img = mpimg.imread('beads_300pxroi.png')
+		plt.imshow(img, cmap = 'gray')
+		plt.show()
 		ref_kdt = KDTree(ref_points, leaf_size=2, metric='euclidean')	# kdt is a kd tree with all the reference points
 		return ref_kdt
 
@@ -260,6 +274,7 @@ class SpotAnnotationAnalysis():
 		anno_one_crop = self.ba.slice_by_image(df, img_filename)	# Remove data from other croppings.
 		worker_list = self.ba.get_workers(anno_one_crop)
 		clusters = self.anno_and_ref_to_df(clustering_alg, df, clustering_params, csv_filename, img_filename)
+#		print(clusters[clusters.centroid_x > 265])
 		cluster_correctness = self.get_cluster_correctness(clusters, correctness_threshold)
 		member_lists = clusters['members'].values	# list of lists
 		img_height = anno_one_crop['height'].values[0]

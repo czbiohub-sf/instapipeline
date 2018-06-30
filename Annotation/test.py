@@ -1,10 +1,9 @@
-""" Demonstrating several features of the QuantiusAnnotation class.
+""" Demonstrating several features of the annotation analysis pipeline.
 """
 
 from SpotAnnotationAnalysis import SpotAnnotationAnalysis
 from BaseAnnotation import BaseAnnotation
 from QuantiusAnnotation import QuantiusAnnotation
-
 
 img_filename = 'beads_300pxroi.png'
 json_filename = 'BeadAnnotation_20180413.json'
@@ -18,20 +17,13 @@ anno_all = ba.df()						# Get the dataframe from the annotation object
 
 # --- Plot to get an overview of annotations ---
 
-# Uncomment this...
-show_workers = True
+show_workers = False
 show_clusters = True
 clustering_alg = 'AffinityPropagation'
 clustering_params = [-350]
-show_correctness_workers = True
-show_correctness_clusters = False
-correctness_threshold = 20
-
-# ...or uncomment this:
-# show_workers = True
-# show_clusters = False
-# clustering_alg = None
-# clustering_params = None
+show_correctness_workers = False
+show_correctness_clusters = True
+correctness_threshold = 37
 
 sa.plot_annotations(anno_all, img_filename, csv_filename, worker_marker_size, cluster_marker_size, show_workers, show_clusters, show_correctness_workers, show_correctness_clusters, correctness_threshold, clustering_alg, clustering_params)
 
