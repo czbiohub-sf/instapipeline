@@ -25,13 +25,6 @@ class SpotAnnotationAnalysis():
 	input and saves it as a property of the class.
 	"""
 
-	"""
-	Constructor takes in a BaseAnnotation object and saves it as 
-	a property of the SpotAnnotationAnalysis class
-	"""
-	def __init__(self, ba_obj):
-		self.ba = ba_obj
-
 	# list of clustering algs handled
 	clustering_algs = ['AffinityPropagation']
 
@@ -45,10 +38,17 @@ class SpotAnnotationAnalysis():
     '#9999FF', '#99FFCC', '#FF9999', '#E5FFFF',
     '#8A00B8', '#E5FFFF']
 
+	"""
+	Constructor takes in a BaseAnnotation object and saves it as 
+	a property of the SpotAnnotationAnalysis class
+	"""
+	def __init__(self, ba_obj):
+		self.ba = ba_obj
+
     """
 	Inputs: 
 		string name of clustering alg to use
-		dataframe with annotation data (should already be cropped)
+		pandas dataframe with annotation data (should already be cropped)
 		list of clustering params for clustering alg
 	Returns:
 		this dataframe: centroid_x | centroid_y | members
@@ -236,7 +236,7 @@ class SpotAnnotationAnalysis():
 		return to_return
 
 	"""
-	Plots all coordinates for all workers for one cropping. 
+	Quick visualization of worker annotations, clusters, and/or annotation and cluster "correctness." 
 
 	Inputs:
 		pandas df with annotation data
@@ -317,18 +317,6 @@ class SpotAnnotationAnalysis():
 		img = mpimg.imread(img_filename)
 		plt.imshow(img, cmap = 'gray')
 		plt.show()
-
-	# def test(self, df):
-	# 	series = df['x']
-	# 	vals = series.values
-	# 	print(vals)
-
-		# vals = df.values
-		# for i in range(6):
-		# 	vals = np.delete(vals, 3, 1)
-		# vals = np.delete(vals, 0, 1)
-		# print(vals)
-		# print(type(vals))
 
 	"""
 	Plots the average time spent per click for all workers 
@@ -472,6 +460,16 @@ class SpotAnnotationAnalysis():
 		plt.xticks(np.arange(0, len(worker_list), step=1))
 		plt.show()
 
+	"""
+	For each worker, plot total time spent vs. worker index. 
+	Each bar represents one worker. 
+
+	Inputs:
+		dataframe
+		img_filename (the cropping)
+	Returns:
+		none
+	"""
 	def plot_total_time_vs_worker_index(self, df, img_filename):
 
 		anno_one_crop = self.ba.slice_by_image(df, img_filename)			# Remove data from other croppings.
