@@ -132,7 +132,7 @@ class SpotAnnotationAnalysis():
 
 			coords = [[to_return['centroid_x'][i], to_return['centroid_y'][i]]]
 
-			dist, ind = ref_kdt.query(coords, k=10)				# Debugging evidence: query() is not consistently returning the actual nearest neighbor. The NN is not even in the group of "10 nearest neigbors."
+			dist, ind = ref_kdt.query(coords, k=10)		# Debugging evidence: query() is not consistently returning the actual nearest neighbor. The NN is not even in the group of "10 nearest neigbors."
 			min_dist = min(dist[0])
 			""" uncomment this to demonstrate debugging evidence """
 			# if (min_dist > 36):			
