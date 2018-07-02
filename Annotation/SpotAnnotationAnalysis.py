@@ -58,8 +58,10 @@ class SpotAnnotationAnalysis():
 			members = list of annotations belonging to the cluster
 	"""
 	def get_clusters(self, clustering_alg, df, clustering_params):
+		
 		if (clustering_alg not in self.clustering_algs):
 			raise ValueError('Invalid clustering algorithm name entered.')
+
 		# If AffinityPropagation is selected:
 		if (clustering_alg == 'AffinityPropagation'):
 			cluster_centroids_list = []
@@ -132,30 +134,14 @@ class SpotAnnotationAnalysis():
 			to_return['centroid_y'][i] = clusters['centroid_y'][i]
 
 			coords = [[to_return['centroid_x'][i], to_return['centroid_y'][i]]]
-			# here!!!
 
-			dist, ind = ref_kdt.query(coords, k=10)		# Debugging evidence: query() is not consistently returning the actual nearest neighbor. The NN is not even in the group of "10 nearest neigbors."
-			min_dist = min(dist[0])
-			""" uncomment this to demonstrate debugging evidence """
-
-			selection_index = np.where(dist[0] == min_dist)
-			index = ind[0][selection_index]
+			dist, ind = ref_kdt.query(coords, k=1)
+			index = ind[0][0]
 			nearest_neighbor = ref_array[index]
 
-			# if (min_dist > 36):			
-			# 	print('distances to nearest neighbors:')
-			# 	print(dist)
-			# 	print('indices of nearest neighbors:')
-			# 	print(ind)
-			# 	print('ref_array')
-			# 	print(len('ref_array'))
-			# 	print(ref_array)
-			# 	print('nearest_neighbor')
-			# 	print(nearest_neighbor)
-
-			to_return['NN_x'][i] = nearest_neighbor[0][0]
-			to_return['NN_y'][i] = nearest_neighbor[0][1]
-			to_return['NN_dist'][i] = min_dist
+			to_return['NN_x'][i] = nearest_neighbor[0]
+			to_return['NN_y'][i] = nearest_neighbor[1]
+			to_return['NN_dist'][i] = dist[0][0]
 			to_return['members'][i] = clusters['members'][i]		
 
 		return to_return
@@ -194,31 +180,13 @@ class SpotAnnotationAnalysis():
 		ref_df = pd.read_csv(csv_filename)
 		ref_points = ref_df.loc[:, ['col', 'row']].as_matrix()
 
-		print(ref_points)
 		for i in range(len(ref_points)):
 			point = ref_points[i]
-			first_elem = 300 - point[1]
-			second_elem = 300 - point[0]
+			first_elem = point[0]
+			second_elem = 300 - point[1]
 			point = np.array([first_elem, second_elem])
 			ref_points[i] = point
 
-		for i in range(len(ref_points)):
-			point = ref_points[i]
-			first_elem = 300 - point[1]
-			second_elem = point[0]
-			point = np.array([first_elem, second_elem])
-			ref_points[i] = point
-
-		print('inv!')
-		print(ref_points)
-
-#		print(ref_points)							# for debugging
-		# fig = plt.figure(figsize = (12,7))		
-		# for point in ref_points:
-		# 	plt.scatter([point[1]], [point[0]])
-		# img = mpimg.imread('beads_300pxroi.png')
-		# plt.imshow(img, cmap = 'gray')
-		# plt.show()								# for debugging
 		ref_kdt = KDTree(ref_points, leaf_size=2, metric='euclidean')	# kdt is a kd tree with all the reference points
 		return ref_kdt
 
@@ -302,28 +270,21 @@ class SpotAnnotationAnalysis():
 		fig = plt.figure(figsize = (12,7))
 		anno_one_crop = self.ba.slice_by_image(df, img_filename)	# Remove data from other croppings.
 		worker_list = self.ba.get_workers(anno_one_crop)
+
 		if show_clusters or show_correctness_workers:
 			clusters = self.anno_and_ref_to_df(clustering_alg, df, clustering_params, csv_filename, img_filename)
-	#		print(clusters)
-	#		print(clusters[clusters.NN_dist > correctness_threshold])					# for debugging
 			member_lists = clusters['members'].values	# list of lists
 			if correctness_threshold is not None:
 				cluster_correctness = self.get_cluster_correctness(clusters, correctness_threshold)
-		#		print(cluster_correctness)
 
 		img_height = anno_one_crop['height'].values[0]
 
 		""" uncomment this to demonstrate debugging evidence """
 		ref_anno = pd.read_csv(csv_filename)										# Debugging evidence.
 		ref_points = ref_anno.loc[:, ['col', 'row']].as_matrix()
-		print("yellow points")		
-		print(len(ref_points))									
+								
 		for point in ref_points:
-			color = 'y'
-			if((point[0] < 70) and (point[1] > 150)):
-				print(point)
-				color = 'b'
-			plt.scatter([point[0]], [point[1]], s = 8, facecolors = color)
+			plt.scatter([point[0]], [point[1]], s = 8, facecolors = 'y')
 
 		if show_workers:
 
@@ -365,15 +326,9 @@ class SpotAnnotationAnalysis():
 						color = 'g'								
 					else:
 						color = 'm'								
-						# Debugging evidence: showing that the NN found by the query() in line 135 does not consistently return the actual NN
-						""" uncomment this to demonstrate debugging evidence """
 						color = colors2.pop()
 						plt.scatter([clusters['NN_x'].values[i]], [300-clusters['NN_y'].values[i]], facecolors = color, edgecolors = color)
-					plt.scatter(x_coords[i], y_coords_flipped[i], s = cluster_marker_size, facecolors = 'none', edgecolors = color)	
-
-					# x_vals = [clusters['NN_x'].values[i], x_coords[i]]
-					# y_vals = [clusters['NN_y'].values[i], y_coords[i]]
-					# plt.plot(x_vals, y_vals)					
+					plt.scatter(x_coords[i], y_coords_flipped[i], s = cluster_marker_size, facecolors = 'none', edgecolors = color)					
 
 			else:
 				plt.scatter(x_coords, y_coords_flipped, s = cluster_marker_size, facecolors = 'none', edgecolors = '#ffffff')

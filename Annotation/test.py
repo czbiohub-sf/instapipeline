@@ -23,7 +23,7 @@ clustering_alg = 'AffinityPropagation'
 clustering_params = [-350]
 show_correctness_workers = False
 show_correctness_clusters = True
-correctness_threshold = 30
+correctness_threshold = 10
 
 sa.plot_annotations(anno_all, img_filename, csv_filename, worker_marker_size, cluster_marker_size, show_workers, show_clusters, show_correctness_workers, show_correctness_clusters, correctness_threshold, clustering_alg, clustering_params)
 
