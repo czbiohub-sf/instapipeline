@@ -121,7 +121,8 @@ class SpotAnnotationAnalysis():
 
 		anno_one_crop = self.ba.slice_by_image(df, img_filename)	# Remove data from other croppings.
 		clusters = self.get_clusters(clustering_alg, anno_one_crop, clustering_params)
-		ref_kdt = self.csv_to_kdt(csv_filename)
+		img_height = anno_one_crop['height'].values[0]
+		ref_kdt = self.csv_to_kdt(csv_filename, img_height)
 		ref_array = np.asarray(ref_kdt.data)
 
 		centroid_IDs = range(clusters.shape[0])
@@ -175,7 +176,7 @@ class SpotAnnotationAnalysis():
 	Returns:
 		k-d tree containing the same reference points flipped vertically
 	"""
-	def csv_to_kdt(self, csv_filename):
+	def csv_to_kdt(self, csv_filename, img_height):
 
 		ref_df = pd.read_csv(csv_filename)
 		ref_points = ref_df.loc[:, ['col', 'row']].as_matrix()
@@ -183,7 +184,7 @@ class SpotAnnotationAnalysis():
 		for i in range(len(ref_points)):
 			point = ref_points[i]
 			first_elem = point[0]
-			second_elem = 300 - point[1]
+			second_elem = img_height - point[1]
 			point = np.array([first_elem, second_elem])
 			ref_points[i] = point
 
@@ -383,7 +384,8 @@ class SpotAnnotationAnalysis():
 
 		anno_one_crop = self.ba.slice_by_image(df, img_filename)	# Remove data from other croppings.
 		worker_list = self.ba.get_workers(anno_one_crop)
-		ref_kdt = self.csv_to_kdt(csv_filename)
+		img_height = anno_one_crop['height'].values[0]
+		ref_kdt = self.csv_to_kdt(csv_filename, img_height)
 		dist_list = self.calc_distances(anno_one_crop, ref_kdt, img_filename)	# list containing one list for each worker
 		time_list = self.calc_time_per_click(anno_one_crop, img_filename)	# list containing one list for each worker
 
@@ -421,7 +423,8 @@ class SpotAnnotationAnalysis():
 
 		anno_one_crop = self.ba.slice_by_image(df, img_filename)	# Remove data from other croppings.
 		worker_list = self.ba.get_workers(anno_one_crop)
-		ref_kdt = self.csv_to_kdt(csv_filename)
+		img_height = anno_one_crop['height'].values[0]
+		ref_kdt = self.csv_to_kdt(csv_filename, img_height)
 		dist_list = self.calc_distances(anno_one_crop, ref_kdt, img_filename)	# list containing one list for each worker
 
 		# fig = plt.figure(figsize=(14,12))		# for jupyter notebook
