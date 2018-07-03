@@ -29,11 +29,11 @@ class SpotAnnotationAnalysis():
 	clustering_algs = ['AffinityPropagation']
 
 	# list of colors used for plotting different turkers
-	colors = ['#14FF14', '#00994D', '#CC33FF', '#FF33CC', 
-    '#33CCFF', '#009999', '#FF3399', '#FF3366', 
-    '#33FFCC', '#B88A00', '#F5B800', '#FF6633',
-    '#33FF66', '#66FF33', '#CCFF33', '#FFCC33',
-    '#EB4E00', '#FF667F', '#FF66CC', '#9966FF', 
+	colors = ['#3399FF', '#CC33FF', '#FFFF00', '#FF33CC', 
+    '#9966FF', '#009999', '#FF3399', '#B88A00', 
+    '#33FFCC', '#FF3366', '#F5B800', '#FF6633',
+    '#FF9966', '#FF3399', '#CCFF33', '#FF667F',
+    '#EB4E00', '#FFCC33', '#FF66CC', '#33CCFF', 
     '#CCFF66', '#667FFF', '#FF99FF', '#FF1F8F',
     '#9999FF', '#99FFCC', '#FF9999', '#E5FFFF',
     '#8A00B8', '#E5FFFF']

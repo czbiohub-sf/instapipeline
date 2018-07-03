@@ -17,29 +17,31 @@ anno_all = ba.df()						# Get the dataframe from the annotation object
 
 # --- Plot to get an overview of annotations ---
 
-show_ref_points = True
-show_workers = False
-show_clusters = True
-clustering_alg = 'AffinityPropagation'
-clustering_params = [-350]
-show_correctness_workers = False
-show_correctness_clusters = True
-show_NN_inc = True
-correctness_threshold = 3
+# show_ref_points = False
+# show_workers = True
+# show_clusters = True
+# clustering_alg = 'AffinityPropagation'
+# clustering_params = [-350]
+# show_correctness_workers = False
+# show_correctness_clusters = False
+# show_NN_inc = False
+# correctness_threshold = None
 
-sa.plot_annotations(anno_all, img_filename, csv_filename, worker_marker_size, cluster_marker_size, show_ref_points, show_workers, show_clusters, show_correctness_workers, show_correctness_clusters, show_NN_inc, correctness_threshold, clustering_alg, clustering_params)
+# sa.plot_annotations(anno_all, img_filename, csv_filename, worker_marker_size, cluster_marker_size, show_ref_points, show_workers, show_clusters, show_correctness_workers, show_correctness_clusters, show_NN_inc, correctness_threshold, clustering_alg, clustering_params)
 
-show_ref_points = True
-show_workers = False
-show_clusters = True
-clustering_alg = 'AffinityPropagation'
-clustering_params = [-350]
-show_correctness_workers = False
-show_correctness_clusters = True
-show_NN_inc = False
-correctness_threshold = 3
+sa.plot_total_time_vs_worker_index(anno_all, img_filename)
 
-sa.plot_annotations(anno_all, img_filename, csv_filename, worker_marker_size, cluster_marker_size, show_ref_points, show_workers, show_clusters, show_correctness_workers, show_correctness_clusters, show_NN_inc, correctness_threshold, clustering_alg, clustering_params)
+# show_ref_points = True
+# show_workers = False
+# show_clusters = True
+# clustering_alg = 'AffinityPropagation'
+# clustering_params = [-350]
+# show_correctness_workers = False
+# show_correctness_clusters = True
+# show_NN_inc = False
+# correctness_threshold = 3
+
+# sa.plot_annotations(anno_all, img_filename, csv_filename, worker_marker_size, cluster_marker_size, show_ref_points, show_workers, show_clusters, show_correctness_workers, show_correctness_clusters, show_NN_inc, correctness_threshold, clustering_alg, clustering_params)
 
 
 
