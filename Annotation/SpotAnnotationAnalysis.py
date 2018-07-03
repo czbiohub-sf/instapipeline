@@ -280,11 +280,9 @@ class SpotAnnotationAnalysis():
 
 		img_height = anno_one_crop['height'].values[0]
 
-		""" uncomment this to demonstrate debugging evidence """
-		ref_anno = pd.read_csv(csv_filename)										# Debugging evidence.
+		ref_anno = pd.read_csv(csv_filename)							# plot reference points			
 		ref_points = ref_anno.loc[:, ['col', 'row']].as_matrix()
-								
-		for point in ref_points:
+		for point in ref_points:													
 			plt.scatter([point[0]], [point[1]], s = 8, facecolors = 'y')
 
 		if show_workers:
@@ -328,7 +326,7 @@ class SpotAnnotationAnalysis():
 					else:
 						color = 'm'								
 						color = colors2.pop()
-						plt.scatter([clusters['NN_x'].values[i]], [300-clusters['NN_y'].values[i]], facecolors = color, edgecolors = color)
+						plt.scatter([clusters['NN_x'].values[i]], [img_height-clusters['NN_y'].values[i]], facecolors = color, edgecolors = color)
 					plt.scatter(x_coords[i], y_coords_flipped[i], s = cluster_marker_size, facecolors = 'none', edgecolors = color)					
 
 			else:

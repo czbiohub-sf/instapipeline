@@ -7,7 +7,7 @@ from QuantiusAnnotation import QuantiusAnnotation
 
 img_filename = 'beads_300pxroi.png'
 json_filename = 'BeadAnnotation_20180413.json'
-csv_filename = 'bead_annotations_20180517.csv'
+csv_filename = 'bead_annotations_20180517_shifted.csv'
 worker_marker_size = 8
 cluster_marker_size = 40
 
