@@ -58,7 +58,7 @@ class SpotAnnotationAnalysis():
 			members = list of annotations belonging to the cluster
 	"""
 	def get_clusters(self, clustering_alg, df, clustering_params):
-		
+
 		if (clustering_alg not in self.clustering_algs):
 			raise ValueError('Invalid clustering algorithm name entered.')
 
@@ -173,7 +173,7 @@ class SpotAnnotationAnalysis():
 	Input:
 		string name of csv file containing reference points, aka "ground truth" values
 	Returns:
-		k-d tree containing the same reference points
+		k-d tree containing the same reference points flipped vertically
 	"""
 	def csv_to_kdt(self, csv_filename):
 
