@@ -256,17 +256,19 @@ class SpotAnnotationAnalysis():
 		string csv_filename with reference data
 		int size of worker marker
 		int size of cluster centroid marker
+		bool whether to plot reference annotations
 		bool whether to plot workers
 		bool whether to plot cluster centroids
 		bool whether to color worker markers green/magenta to indicate "correctness"
 		bool whether to color centroid markers green/magenta to indicate "correctness"
+		bool whether to color an incorrect cluster's nearest neighbor the same color as the incorrect cluster
 		int threshold distance from centroid to the nearest reference annotation beyond which the entire cluster is "incorrect"
 		string name of clustering algorithm
 		list of clustering parameters
 	Returns:
 		none
 	"""
-	def plot_annotations(self, df, img_filename, csv_filename, worker_marker_size, cluster_marker_size, show_workers, show_clusters, show_correctness_workers, show_correctness_clusters, correctness_threshold, clustering_alg, clustering_params):
+	def plot_annotations(self, df, img_filename, csv_filename, worker_marker_size, cluster_marker_size, show_ref_points, show_workers, show_clusters, show_correctness_workers, show_correctness_clusters, show_NN_inc, correctness_threshold, clustering_alg, clustering_params):
 		# fig = plt.figure(figsize=(14,12))		# for jupyter notebook
 		fig = plt.figure(figsize = (12,7))
 		anno_one_crop = self.ba.slice_by_image(df, img_filename)	# Remove data from other croppings.
@@ -280,10 +282,11 @@ class SpotAnnotationAnalysis():
 
 		img_height = anno_one_crop['height'].values[0]
 
-		ref_anno = pd.read_csv(csv_filename)							# plot reference points			
-		ref_points = ref_anno.loc[:, ['col', 'row']].as_matrix()
-		for point in ref_points:													
-			plt.scatter([point[0]], [point[1]], s = 8, facecolors = 'y')
+		if show_ref_points:
+			ref_df = pd.read_csv(csv_filename)							# plot reference points			
+			ref_points = ref_df.loc[:, ['col', 'row']].as_matrix()
+			for point in ref_points:													
+				plt.scatter([point[0]], [point[1]], s = 8, facecolors = 'y')
 
 		if show_workers:
 
@@ -318,15 +321,19 @@ class SpotAnnotationAnalysis():
 			y_coords = clusters['centroid_y'].values
 			y_coords_flipped = self.ba.flip(y_coords, img_height)
 
+			color_index = 0		
+
 			if show_correctness_clusters:
-				colors2 = ['c','m','b','r','c','m','b','r','c','m','b','r','c']
 				for i in range(len(member_lists)):			# for every cluster
 					if (cluster_correctness[i][1]):
 						color = 'g'								
 					else:
-						color = 'm'								
-						color = colors2.pop()
-						plt.scatter([clusters['NN_x'].values[i]], [img_height-clusters['NN_y'].values[i]], facecolors = color, edgecolors = color)
+						if show_NN_inc:
+							color = self.colors[color_index]							
+							color_index = (color_index+1)%len(self.colors)
+							plt.scatter([clusters['NN_x'].values[i]], [img_height-clusters['NN_y'].values[i]], s = worker_marker_size*2, facecolors = color, edgecolors = color)
+						else:
+							color = 'm'
 					plt.scatter(x_coords[i], y_coords_flipped[i], s = cluster_marker_size, facecolors = 'none', edgecolors = color)					
 
 			else:
