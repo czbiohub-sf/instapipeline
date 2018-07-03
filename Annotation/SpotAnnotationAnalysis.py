@@ -265,12 +265,16 @@ class SpotAnnotationAnalysis():
 		int threshold distance from centroid to the nearest reference annotation beyond which the entire cluster is "incorrect"
 		string name of clustering algorithm
 		list of clustering parameters
+		bool whether to use bigger window size (for jupyter notebook)
 	Returns:
 		none
 	"""
-	def plot_annotations(self, df, img_filename, csv_filename, worker_marker_size, cluster_marker_size, show_ref_points, show_workers, show_clusters, show_correctness_workers, show_correctness_clusters, show_NN_inc, correctness_threshold, clustering_alg, clustering_params):
-		# fig = plt.figure(figsize=(14,12))		# for jupyter notebook
-		fig = plt.figure(figsize = (12,7))
+	def plot_annotations(self, df, img_filename, csv_filename, worker_marker_size, cluster_marker_size, show_ref_points, show_workers, show_clusters, show_correctness_workers, show_correctness_clusters, show_NN_inc, correctness_threshold, clustering_alg, clustering_params, bigger_window_size):
+		if bigger_window_size:
+			fig = plt.figure(figsize=(14,12))
+		else:
+			fig = plt.figure(figsize = (12,7))
+
 		anno_one_crop = self.ba.slice_by_image(df, img_filename)	# Remove data from other croppings.
 		worker_list = self.ba.get_workers(anno_one_crop)
 
@@ -355,17 +359,20 @@ class SpotAnnotationAnalysis():
 
 	Input:
 		dataframe with annotation data
+		bool whether to use a bigger window size (for jupyter notebook)
 	Returns:
 		none
 	"""
-	def plot_avg_time_per_click(self, df):
+	def plot_avg_time_per_click(self, df, bigger_window_size):
 		avg_list = []
 		for worker in self.ba.get_workers(df):
 			avg_time = self.ba.get_avg_time_per_click(df, worker)
 			avg_list.append(avg_time)
 		n_bins = 10
-		# fig = plt.figure(figsize=(14,12))		# for jupyter notebook
-		fig = plt.figure(figsize = (12,7))
+		if bigger_window_size:
+			fig = plt.figure(figsize=(14,12))
+		else:
+			fig = plt.figure(figsize = (12,7))
 		plt.hist(avg_list, n_bins)
 		plt.title('Average time spent per click')
 		plt.xlabel('Time [ms]')
@@ -382,10 +389,11 @@ class SpotAnnotationAnalysis():
 		dataframe
 		img_filename (the cropping)
 		csv_filename (contains reference data)
+		bool whether to color each point by correctness
 	Returns:
 		none
 	"""
-	def plot_nnd_vs_time_spent(self, df, img_filename, csv_filename):
+	def plot_nnd_vs_time_spent(self, df, img_filename, csv_filename, show_correctness, correctness_threshold, clustering_alg, clustering_params):
 
 		anno_one_crop = self.ba.slice_by_image(df, img_filename)	# Remove data from other croppings.
 		worker_list = self.ba.get_workers(anno_one_crop)
@@ -394,8 +402,36 @@ class SpotAnnotationAnalysis():
 		dist_list = self.calc_distances(anno_one_crop, ref_kdt, img_filename)	# list containing one list for each worker
 		time_list = self.calc_time_per_click(anno_one_crop, img_filename)	# list containing one list for each worker
 
-		# fig = plt.figure(figsize=(14,12))		# for jupyter notebook
 		fig = plt.figure(figsize = (10,7))
+
+		# if show_correctness:
+		# 	clusters = self.anno_and_ref_to_df(clustering_alg, df, clustering_params, csv_filename, img_filename)
+		# 	member_lists = clusters['members'].values	# list of lists
+		# 	cluster_correctness = self.get_cluster_correctness(clusters, correctness_threshold)
+		# 	for i in range(len(member_lists)):			# for every cluster
+		# 		if (cluster_correctness[i][1]):
+		# 			color = 'g'						
+		# 		else:								
+		# 			color = 'm'
+
+		# 		members = member_lists[i]					# get the list of annotations in that cluster
+		# 			for j in range(len(members))
+
+		# 		# x_coords = time_list[i]
+		# 		# y_coords = dist_list[i]
+		# 		# # [start here!]
+		# 		plt.scatter([time_spent], [NND], s = 8, facecolors = color, alpha = 0.5)
+		# else:
+		# 	handle_list = []
+		# 	for i in range(len(worker_list)):			# for each worker
+		# 		color = self.colors[i]
+		# 		x_coords = time_list[i]
+		# 		y_coords = dist_list[i]
+		# 		handle = plt.scatter(x_coords, y_coords, s = 8, facecolors = color, alpha = 0.5, label = worker_list[i])
+		# 		handle_list.append(handle)
+		# 	plt.legend(handles = handle_list, loc = 9, bbox_to_anchor = (1.2, 1.015))
+		# 	plt.subplots_adjust(left=0.1, right=0.75)
+
 
 		handle_list = []
 		for i in range(len(worker_list)):			# for each worker
@@ -404,9 +440,9 @@ class SpotAnnotationAnalysis():
 			y_coords = dist_list[i]
 			handle = plt.scatter(x_coords, y_coords, s = 8, facecolors = color, alpha = 0.5, label = worker_list[i])
 			handle_list.append(handle)
-
 		plt.legend(handles = handle_list, loc = 9, bbox_to_anchor = (1.2, 1.015))
 		plt.subplots_adjust(left=0.1, right=0.75)
+
 		plt.title('Nearest Neighbor Distance (NND) vs. Time Spent For Each Click [ms]')
 		plt.xlabel('Time Spent [ms]')
 		plt.ylabel('Nearest Neighbor Distance (NND) [ms]')
@@ -432,7 +468,6 @@ class SpotAnnotationAnalysis():
 		ref_kdt = self.csv_to_kdt(csv_filename, img_height)
 		dist_list = self.calc_distances(anno_one_crop, ref_kdt, img_filename)	# list containing one list for each worker
 
-		# fig = plt.figure(figsize=(14,12))		# for jupyter notebook
 		fig = plt.figure(figsize = (10,7))
 
 		averages = []
@@ -470,7 +505,6 @@ class SpotAnnotationAnalysis():
 		worker_list = self.ba.get_workers(anno_one_crop)
 		time_list = self.calc_time_per_click(anno_one_crop, img_filename)	# list containing one list for each worker
 
-		# fig = plt.figure(figsize=(14,12))		# for jupyter notebook
 		fig = plt.figure(figsize = (10,7))
 
 		averages = []
@@ -508,7 +542,6 @@ class SpotAnnotationAnalysis():
 		anno_one_crop = self.ba.slice_by_image(df, img_filename)			# Remove data from other croppings.
 		worker_list = self.ba.get_workers(anno_one_crop)
 
-		# fig = plt.figure(figsize=(14,12))		# for jupyter notebook
 		fig = plt.figure(figsize = (10,7))
 
 		handle_list = []
@@ -550,7 +583,6 @@ class SpotAnnotationAnalysis():
 		x_coords = range(len(worker_time_list))
 		y_coords = worker_time_list
 
-		# fig = plt.figure(figsize=(14,12))		# for jupyter notebook
 		fig = plt.figure(figsize = (10,7))
 		handle = plt.scatter(x_coords, y_coords, s = 4, alpha = 0.5, facecolors = 'c', label = 'One click')
 		
