@@ -20,18 +20,24 @@ anno_all = ba.df()						# Get the dataframe from the annotation object
 # show_ref_points = False
 # show_workers = True
 # show_clusters = True
-clustering_alg = 'AffinityPropagation'
+# clustering_alg = 'AffinityPropagation'
 clustering_params = [-350]
 # show_correctness_workers = False
 # show_correctness_clusters = False
 # show_NN_inc = False
 # correctness_threshold = None
+# bigger_window_size = False
 
-# sa.plot_annotations(anno_all, img_filename, csv_filename, worker_marker_size, cluster_marker_size, show_ref_points, show_workers, show_clusters, show_correctness_workers, show_correctness_clusters, show_NN_inc, correctness_threshold, clustering_alg, clustering_params)
+# sa.plot_annotations(anno_all, img_filename, csv_filename, worker_marker_size, cluster_marker_size, show_ref_points, show_workers, show_clusters, show_correctness_workers, show_correctness_clusters, show_NN_inc, correctness_threshold, clustering_alg, clustering_params, bigger_window_size)
+
+
+# print(ba.slice_by_worker(anno_all, 'A2FZE7CARM54IG'))
 
 show_correctness = True
 correctness_threshold = 5
-sa.plot_nnd_vs_time_spent(anno_all, img_filename, csv_filename, show_correctness, correctness_threshold, clustering_alg, clustering_params)
+
+
+sa.plot_nnd_vs_time_spent(anno_all, img_filename, csv_filename, show_correctness, correctness_threshold, clustering_params)
 
 
 

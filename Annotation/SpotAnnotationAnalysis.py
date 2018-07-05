@@ -62,38 +62,36 @@ class SpotAnnotationAnalysis():
 		if (clustering_alg not in self.clustering_algs):
 			raise ValueError('Invalid clustering algorithm name entered.')
 
-		# If AffinityPropagation is selected:
-		if (clustering_alg == 'AffinityPropagation'):
-			cluster_centroids_list = []
+		if (clustering_alg == 'AffinityPropagation'):											# If AffinityPropagation is selected:
+			cluster_centroids_list = []																# Initialize a list of cluster centroids
 
-			if(len(clustering_params) != 1):
+			if(len(clustering_params) != 1):														# Check that there's only one clustering parameter
 				raise ValueError('Please enter a list containing the preference parameter.')
 
-			coords = self.ba.get_coords(df)
+			coords = self.ba.get_coords(df)															# Get all the coordinates from the annotation dataframe (dissociated from timestamps)
 
-			af = AffinityPropagation(preference = clustering_params[0]).fit(coords)
-			cluster_centers_indices = af.cluster_centers_indices_
+			af = AffinityPropagation(preference = clustering_params[0]).fit(coords)					# Run AffinityPropagation on those coordinates
+			cluster_centers_indices = af.cluster_centers_indices_									# Get the indices of the cluster centers (list)
+			num_clusters = len(cluster_centers_indices)
 
-			labels = af.labels_
+			labels = af.labels_																		# Each point that was in coords now has a label saying which cluster it belongs to.
 
-			cluster_members_lists = [None]*len(cluster_centers_indices)
-			for i in range(len(cluster_members_lists)):
-				cluster_members_lists[i] = []
+			cluster_members_lists = [[]]*num_clusters												# Initialize a list with one list for each cluster.
 
-			for j in range(len(coords)):
-				index = labels[j]
-				cluster_members_lists[index].append(coords[j])
+			for i in range(len(coords)):
+				index = labels[i]
+				cluster_members_lists[index].append(coords[i])
 
-			n_clusters_ = len(cluster_centers_indices)
-			for k in range(n_clusters_):
-				cluster_centers = coords[cluster_centers_indices[k]]	# np array
+			n_clusters_ = num_clusters
+			for i in range(n_clusters_):
+				cluster_centers = coords[cluster_centers_indices[i]]	# np array
 				cluster_centroids_list.append(cluster_centers)
 
-		centroid_IDs = range(len(cluster_centroids_list))
+		centroid_IDs = range(num_clusters)
 		column_names = ['centroid_x', 'centroid_y', 'members']
 		to_return = pd.DataFrame(index = centroid_IDs, columns = column_names)
 
-		for i in range(len(cluster_centroids_list)):
+		for i in range(num_clusters):
 			to_return['centroid_x'][i] = cluster_centroids_list[i][0]
 			to_return['centroid_y'][i] = cluster_centroids_list[i][1]
 			to_return['members'][i] = cluster_members_lists[i]
@@ -383,7 +381,16 @@ class SpotAnnotationAnalysis():
 	For each annotation (each click) in a dataframe, 
 	plot nearest neighbor distance (nnd) vs. time spent. 
 	Each point represents one annotation (one click). 
-	All workers on one plot, colored by worker ID. 
+	All workers on one plot, colored by worker ID.
+	Can color each point by correctness. 
+
+	Implementation notes:
+		if show_correctness
+			can't use calc_time_per_click and calc_distances, because need
+			to look at coordinates one by one and get time_spent on coordinate, 
+			NND of associated centroid, and correctness of associated centroid.
+		if not show_correctness, it's better to use calc_time_per_click and 
+			calc_distances, which do not require clustering.
 
 	Inputs:
 		dataframe
@@ -393,55 +400,57 @@ class SpotAnnotationAnalysis():
 	Returns:
 		none
 	"""
-	def plot_nnd_vs_time_spent(self, df, img_filename, csv_filename, show_correctness, correctness_threshold, clustering_alg, clustering_params):
+	def plot_nnd_vs_time_spent(self, df, img_filename, csv_filename, show_correctness, correctness_threshold, clustering_params):
 
 		anno_one_crop = self.ba.slice_by_image(df, img_filename)	# Remove data from other croppings.
-		worker_list = self.ba.get_workers(anno_one_crop)
+		fig = plt.figure(figsize = (10,7))
 		img_height = anno_one_crop['height'].values[0]
 		ref_kdt = self.csv_to_kdt(csv_filename, img_height)
-		dist_list = self.calc_distances(anno_one_crop, ref_kdt, img_filename)	# list containing one list for each worker
-		time_list = self.calc_time_per_click(anno_one_crop, img_filename)	# list containing one list for each worker
 
-		fig = plt.figure(figsize = (10,7))
+		if show_correctness:
 
-		# if show_correctness:
-		# 	clusters = self.anno_and_ref_to_df(clustering_alg, df, clustering_params, csv_filename, img_filename)
-		# 	member_lists = clusters['members'].values	# list of lists
-		# 	cluster_correctness = self.get_cluster_correctness(clusters, correctness_threshold)
-		# 	for i in range(len(member_lists)):			# for every cluster
-		# 		if (cluster_correctness[i][1]):
-		# 			color = 'g'						
-		# 		else:								
-		# 			color = 'm'
+			# Goal: for each coordinate in coords, plot NND vs. time_spent and color with correctness
+			# Run Af on all annotation coords (just once) and get labels (a list with a label for each annotation coordinate).
+			# For each coordinate in coords:
+			#		time_spent: pull from coords_with_times
+			#		NND: query using a kdtree.
+			#		correctness: index of coordinate is i=index of label. label[i] is index of correctness. correctness[index] is the appropriate correctness.
+			#		aaaaand... plot NND vs. time_spent and color with correctness!
 
-		# 		members = member_lists[i]					# get the list of annotations in that cluster
-		# 			for j in range(len(members))
+			coords = self.ba.get_coords(anno_one_crop)
+			coords_with_times = self.ba.get_coords_and_time_spent(anno_one_crop)		# coordinates <-> time_spent
+			clusters = self.anno_and_ref_to_df('AffinityPropagation', df, clustering_params, csv_filename, img_filename)	# clusters -> NND, coordinates
+			cluster_correctness = self.get_cluster_correctness(clusters, correctness_threshold)		# clusters <-> correctness
+			af = AffinityPropagation(preference = clustering_params[0]).fit(coords)
+			labels = af.labels_	
 
-		# 		# x_coords = time_list[i]
-		# 		# y_coords = dist_list[i]
-		# 		# # [start here!]
-		# 		plt.scatter([time_spent], [NND], s = 8, facecolors = color, alpha = 0.5)
-		# else:
-		# 	handle_list = []
-		# 	for i in range(len(worker_list)):			# for each worker
-		# 		color = self.colors[i]
-		# 		x_coords = time_list[i]
-		# 		y_coords = dist_list[i]
-		# 		handle = plt.scatter(x_coords, y_coords, s = 8, facecolors = color, alpha = 0.5, label = worker_list[i])
-		# 		handle_list.append(handle)
-		# 	plt.legend(handles = handle_list, loc = 9, bbox_to_anchor = (1.2, 1.015))
-		# 	plt.subplots_adjust(left=0.1, right=0.75)
+			for i in range(len(coords)):
+				time_spent = coords_with_times[i][2]
+				if(time_spent==0):
+					continue
+				coordinate = coords[i]		# a single coordinate
+				dist, ind = ref_kdt.query([coordinate], k=1)
+				NND = dist[0][0]
+				index = labels[i]			# label[i] is the index of the cluster affiliated with this coordinate
+				if(cluster_correctness[index][1]):
+					color = 'g'
+				else:
+					color = 'm'
+				plt.scatter([time_spent], [NND], s = 4, facecolors = color, edgecolors = None, alpha = 0.25)
 
-
-		handle_list = []
-		for i in range(len(worker_list)):			# for each worker
-			color = self.colors[i]
-			x_coords = time_list[i]
-			y_coords = dist_list[i]
-			handle = plt.scatter(x_coords, y_coords, s = 8, facecolors = color, alpha = 0.5, label = worker_list[i])
-			handle_list.append(handle)
-		plt.legend(handles = handle_list, loc = 9, bbox_to_anchor = (1.2, 1.015))
-		plt.subplots_adjust(left=0.1, right=0.75)
+		else:
+			worker_list = self.ba.get_workers(anno_one_crop)
+			time_list = self.calc_time_per_click(anno_one_crop, img_filename)		# list containing one list for each worker
+			dist_list = self.calc_distances(anno_one_crop, ref_kdt, img_filename)	# list containing one list for each worker
+			handle_list = []
+			for i in range(len(worker_list)):			# for each worker
+				color = self.colors[i]
+				x_coords = time_list[i]
+				y_coords = dist_list[i]
+				handle = plt.scatter(x_coords, y_coords, s = 8, facecolors = color, alpha = 0.5, label = worker_list[i])
+				handle_list.append(handle)
+			plt.legend(handles = handle_list, loc = 9, bbox_to_anchor = (1.2, 1.015))
+			plt.subplots_adjust(left=0.1, right=0.75)
 
 		plt.title('Nearest Neighbor Distance (NND) vs. Time Spent For Each Click [ms]')
 		plt.xlabel('Time Spent [ms]')
