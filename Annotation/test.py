@@ -42,8 +42,11 @@ correctness_threshold = 5
 clustering_params = [-350]
 show_avgs = False
 
-sa.plot_time_spent_vs_worker_index(anno_all, img_filename, csv_filename, show_correctness, correctness_threshold, clustering_params, show_avgs)
+# sa.plot_time_spent_vs_worker_index(anno_all, img_filename, csv_filename, show_correctness, correctness_threshold, clustering_params, show_avgs)
 
+uid = 'A2FZE7CARM54IG'
+
+sa.plot_time_spent_vs_click_index(anno_all, img_filename, csv_filename, uid, show_correctness, correctness_threshold, clustering_params)
 #print(ba.get_coords_time_spent_worker_id(anno_all))
 
 

@@ -579,6 +579,7 @@ class SpotAnnotationAnalysis():
 			plt.legend(handles = [handle], loc = 9, bbox_to_anchor = (1.15, 0.55))
 			plt.subplots_adjust(left=0.1, right=0.8)
 
+
 		# plot all clicks
 		if show_correctness:
 			coords = self.ba.get_coords(anno_one_crop)
@@ -666,28 +667,59 @@ class SpotAnnotationAnalysis():
 	Returns:
 		none
 	"""
-	def plot_time_spent_vs_click_index(self, df, img_filename, uid):
+	def plot_time_spent_vs_click_index(self, df, img_filename, csv_filename, uid, show_correctness, correctness_threshold, clustering_params):
 
 		anno_one_crop = self.ba.slice_by_image(df, img_filename)	# Remove data from other croppings.
 		worker_list = self.ba.get_workers(anno_one_crop)
-
-		index = np.where(worker_list == uid)
-		i = index[0][0]		# because np.where() returns a tuple containing an array
-		time_list = self.calc_time_per_click(anno_one_crop, img_filename)	# list containing one list for each worker
-		worker_time_list = time_list[i]
-
-		x_coords = range(len(worker_time_list))
-		y_coords = worker_time_list
-
 		fig = plt.figure(figsize = (10,7))
-		handle = plt.scatter(x_coords, y_coords, s = 4, facecolors = 'c', label = 'One click')
+		anno_one_worker = self.ba.slice_by_worker(anno_one_crop, uid)
+
+		if show_correctness:
+			coords = self.ba.get_coords(anno_one_worker)
+			coords_with_time_and_worker_id = self.ba.get_coords_time_spent_worker_id(anno_one_worker)		# coordinates <-> time_spent
+			clusters = self.anno_and_ref_to_df('AffinityPropagation', df, clustering_params, csv_filename, img_filename)	# clusters -> NND, coordinates
+			cluster_correctness = self.get_cluster_correctness(clusters, correctness_threshold)		# clusters <-> correctness
+			af = AffinityPropagation(preference = clustering_params[0]).fit(coords)
+			labels = af.labels_
+			img_height = anno_one_worker['height'].values[0]
+			ref_kdt = self.csv_to_kdt(csv_filename, img_height)
+			num_clicks = len(coords)
+
+			for i in range(num_clicks):
+				time_spent = coords_with_time_and_worker_id[i][2]
+				click_index = i
+
+				coordinate = coords[i]
+				dist, ind = ref_kdt.query([coordinate], k=1)
+				index = labels[i]
+				if(cluster_correctness[index][1]):
+					color = 'g'
+					marker_selection = '.'
+					marker_size = 4
+					alpha_selection = 1
+				else:
+					color = 'm'
+					marker_selection = '.'
+					marker_size = 40
+					alpha_selection = 1
+				plt.scatter([click_index], [time_spent], s = marker_size, facecolors = color, edgecolors = None, marker = marker_selection, alpha = alpha_selection)
+
+		else:
+			index = np.where(worker_list == uid)
+			i = index[0][0]		# because np.where() returns a tuple containing an array
+			time_list = self.calc_time_per_click(anno_one_crop, img_filename)	# list containing one list for each worker
+			worker_time_list = time_list[i]
+			num_clicks = len(worker_time_list)
+			x_coords = range(num_clicks)
+			y_coords = worker_time_list
+			handle = plt.scatter(x_coords, y_coords, s = 4, facecolors = 'c', label = 'One click')
+			plt.legend(handles = [handle], loc = 9, bbox_to_anchor = (1.15, 0.55))
+			plt.subplots_adjust(left=0.1, right=0.8)
 		
 		plt.title('Time Spent [ms] vs. Click Index for Worker ' + uid)
 		plt.xlabel('Click Index')
 		plt.ylabel('Time Spent [ms]')
-		plt.legend(handles = [handle], loc = 9, bbox_to_anchor = (1.15, 0.55))
-		plt.subplots_adjust(left=0.1, right=0.8)
-		plt.xticks(np.arange(0, len(worker_time_list), step=10))
+		plt.xticks(np.arange(0, num_clicks, step=10))
 		plt.show()
 
 
