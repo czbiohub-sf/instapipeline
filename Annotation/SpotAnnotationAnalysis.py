@@ -436,9 +436,13 @@ class SpotAnnotationAnalysis():
 				index = labels[i]			# label[i] is the index of the cluster affiliated with this coordinate
 				if(cluster_correctness[index][1]):
 					color = 'g'
+					marker_size = 4
+					alpha_selection = 0.25
 				else:
 					color = 'm'
-				plt.scatter([time_spent], [NND], s = 4, facecolors = color, edgecolors = None, alpha = 0.25)
+					marker_size = 20
+					alpha_selection = 1
+				plt.scatter([time_spent], [NND], s = marker_size, facecolors = color, edgecolors = None, alpha = alpha_selection)
 
 		else:
 			worker_list = self.ba.get_workers(anno_one_crop)
@@ -475,7 +479,7 @@ class SpotAnnotationAnalysis():
 	Returns:
 		none
 	"""
-	def plot_nnd_vs_worker_index(self, df, img_filename, csv_filename, show_correctness, correctness_threshold, clustering_params):
+	def plot_nnd_vs_worker_index(self, df, img_filename, csv_filename, show_correctness, correctness_threshold, clustering_params, show_avgs):
 
 		anno_one_crop = self.ba.slice_by_image(df, img_filename)	# Remove data from other croppings.
 		worker_list = self.ba.get_workers(anno_one_crop)
@@ -486,14 +490,15 @@ class SpotAnnotationAnalysis():
 		fig = plt.figure(figsize = (10,7))
 
 		# plot worker average distances
-		avg_distances = []
-		for i in range(len(worker_list)):
-			worker_distances = dist_list[i]
-			worker_avg_dist = np.average(worker_distances)
-			avg_distances.append(worker_avg_dist) 
-		handle = plt.scatter(range(len(worker_list)), avg_distances, s = 40, facecolors = 'b', marker = '_', label = 'Average NND')
-		plt.legend(handles = [handle], loc = 9, bbox_to_anchor = (1.15, 0.55))
-		plt.subplots_adjust(left=0.1, right=0.8)
+		if show_avgs:
+			avg_distances = []
+			for i in range(len(worker_list)):
+				worker_distances = dist_list[i]
+				worker_avg_dist = np.average(worker_distances)
+				avg_distances.append(worker_avg_dist) 
+			handle = plt.scatter(range(len(worker_list)), avg_distances, s = 60, facecolors = 'b', marker = '_', label = 'Average NND')
+			plt.legend(handles = [handle], loc = 9, bbox_to_anchor = (1.15, 0.55))
+			plt.subplots_adjust(left=0.1, right=0.8)
 
 		# plot all clicks
 		if show_correctness:
@@ -516,9 +521,15 @@ class SpotAnnotationAnalysis():
 				index = labels[i]
 				if(cluster_correctness[index][1]):
 					color = 'g'
+					marker_selection = '.'
+					marker_size = 4
+					alpha_selection = 1
 				else:
 					color = 'm'
-				plt.scatter([worker_index], [NND], s = 4, facecolors = color, edgecolors = None, alpha = 0.5)
+					marker_selection = '_'
+					marker_size = 40
+					alpha_selection = 1
+				plt.scatter([worker_index], [NND], s = marker_size, facecolors = color, edgecolors = None, marker = marker_selection, alpha = alpha_selection)
 
 		else:
 			for i in range(len(worker_list)):			# for each worker
@@ -564,7 +575,7 @@ class SpotAnnotationAnalysis():
 				worker_times.pop(0)
 				worker_avg_time = np.average(worker_times)
 				avg_times.append(worker_avg_time) 
-			handle = plt.scatter(range(len(worker_list)), avg_times, s = 40, facecolors = 'b', marker = '.', label = 'Average time spent')
+			handle = plt.scatter(range(len(worker_list)), avg_times, s = 60, facecolors = 'b', marker = '_', label = 'Average time spent')
 			plt.legend(handles = [handle], loc = 9, bbox_to_anchor = (1.15, 0.55))
 			plt.subplots_adjust(left=0.1, right=0.8)
 
@@ -591,7 +602,7 @@ class SpotAnnotationAnalysis():
 					color = 'g'
 					marker_selection = '.'
 					marker_size = 4
-					alpha_selection = 0.25
+					alpha_selection = 1
 				else:
 					color = 'm'
 					marker_selection = '_'
@@ -669,7 +680,7 @@ class SpotAnnotationAnalysis():
 		y_coords = worker_time_list
 
 		fig = plt.figure(figsize = (10,7))
-		handle = plt.scatter(x_coords, y_coords, s = 4, alpha = 0.5, facecolors = 'c', label = 'One click')
+		handle = plt.scatter(x_coords, y_coords, s = 4, facecolors = 'c', label = 'One click')
 		
 		plt.title('Time Spent [ms] vs. Click Index for Worker ' + uid)
 		plt.xlabel('Click Index')
