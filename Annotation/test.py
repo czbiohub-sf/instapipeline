@@ -21,7 +21,7 @@ anno_all = ba.df()						# Get the dataframe from the annotation object
 # show_workers = True
 # show_clusters = True
 # clustering_alg = 'AffinityPropagation'
-clustering_params = [-350]
+
 # show_correctness_workers = False
 # show_correctness_clusters = False
 # show_NN_inc = False
@@ -35,10 +35,12 @@ clustering_params = [-350]
 
 show_correctness = True
 correctness_threshold = 5
+clustering_params = [-350]
 
 
-sa.plot_nnd_vs_time_spent(anno_all, img_filename, csv_filename, show_correctness, correctness_threshold, clustering_params)
+sa.plot_nnd_vs_worker_index(anno_all, img_filename, csv_filename, show_correctness, correctness_threshold, clustering_params)
 
+#print(ba.get_coords_time_spent_worker_id(anno_all))
 
 
 

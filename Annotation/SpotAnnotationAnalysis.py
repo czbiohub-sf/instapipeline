@@ -396,7 +396,9 @@ class SpotAnnotationAnalysis():
 		dataframe
 		img_filename (the cropping)
 		csv_filename (contains reference data)
-		bool whether to color each point by correctness
+		bool whether to color each point by correctness of cluster
+		correctness_threshold
+		clustering_params
 	Returns:
 		none
 	"""
@@ -466,10 +468,13 @@ class SpotAnnotationAnalysis():
 		dataframe
 		img_filename (the cropping)
 		csv_filename (contains reference data)
+		bool whether to color each point by correctness of cluster
+		correctness_threshold
+		clustering_params
 	Returns:
 		none
 	"""
-	def plot_nnd_vs_worker_index(self, df, img_filename, csv_filename):
+	def plot_nnd_vs_worker_index(self, df, img_filename, csv_filename, show_correctness, correctness_threshold, clustering_params):
 
 		anno_one_crop = self.ba.slice_by_image(df, img_filename)	# Remove data from other croppings.
 		worker_list = self.ba.get_workers(anno_one_crop)
@@ -479,18 +484,46 @@ class SpotAnnotationAnalysis():
 
 		fig = plt.figure(figsize = (10,7))
 
-		averages = []
-		for i in range(len(worker_list)):			# for each worker
-			x_coords = [i]*len(dist_list[i])
-			y_coords = dist_list[i]
-			plt.scatter(x_coords, y_coords, s = 4, alpha = 0.5, facecolors = 'c')
-			average_dist = np.average(y_coords)
-			averages.append(average_dist)
-		
-		handle = plt.scatter(range(len(worker_list)), averages, s = 20, facecolors = 'b', marker = '_', label = 'Average NND')
-
+		# plot worker average distances
+		avg_distances = []
+		for i in range(len(worker_list)):
+			worker_distances = dist_list[i]
+			worker_avg_dist = np.average(worker_distances)
+			avg_distances.append(worker_avg_dist) 
+		handle = plt.scatter(range(len(worker_list)), avg_distances, s = 20, facecolors = 'b', marker = '_', label = 'Average NND')
 		plt.legend(handles = [handle], loc = 9, bbox_to_anchor = (1.15, 0.55))
 		plt.subplots_adjust(left=0.1, right=0.8)
+
+		if show_correctness:
+			coords = self.ba.get_coords(anno_one_crop)
+			coords_with_time_and_worker_id = self.ba.get_coords_time_spent_worker_id(anno_one_crop)		# coordinates <-> time_spent
+			clusters = self.anno_and_ref_to_df('AffinityPropagation', df, clustering_params, csv_filename, img_filename)	# clusters -> NND, coordinates
+			cluster_correctness = self.get_cluster_correctness(clusters, correctness_threshold)		# clusters <-> correctness
+			af = AffinityPropagation(preference = clustering_params[0]).fit(coords)
+			labels = af.labels_	
+			img_height = anno_one_crop['height'].values[0]
+			ref_kdt = self.csv_to_kdt(csv_filename, img_height)
+
+			for i in range(len(coords)):
+				worker_id = coords_with_time_and_worker_id[i][3]
+				worker_index = np.where(worker_list == worker_id)
+
+				coordinate = coords[i]
+				dist, ind = ref_kdt.query([coordinate], k=1)
+				NND = dist[0][0]
+				index = labels[i]
+				if(cluster_correctness[index][1]):
+					color = 'g'
+				else:
+					color = 'm'
+				plt.scatter([worker_index], [NND], s = 4, facecolors = color, edgecolors = None, alpha = 0.5)
+
+		else:
+			for i in range(len(worker_list)):			# for each worker
+				x_coords = [i]*len(dist_list[i])
+				y_coords = dist_list[i]
+				plt.scatter(x_coords, y_coords, s = 4, alpha = 0.5, facecolors = 'c')
+
 		plt.title('Nearest Neighbor Distance (NND) vs. Worker Index For Each Click')
 		plt.xlabel('Worker Index')
 		plt.ylabel('Nearest Neighbor Distance (NND) [ms]')
