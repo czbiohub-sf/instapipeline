@@ -33,12 +33,16 @@ anno_all = ba.df()						# Get the dataframe from the annotation object
 
 # print(ba.slice_by_worker(anno_all, 'A2FZE7CARM54IG'))
 
+# show_correctness = False
+# correctness_threshold = None
+# clustering_params = None
+
 show_correctness = True
 correctness_threshold = 5
 clustering_params = [-350]
+show_avgs = False
 
-
-sa.plot_nnd_vs_worker_index(anno_all, img_filename, csv_filename, show_correctness, correctness_threshold, clustering_params)
+sa.plot_time_spent_vs_worker_index(anno_all, img_filename, csv_filename, show_correctness, correctness_threshold, clustering_params, show_avgs)
 
 #print(ba.get_coords_time_spent_worker_id(anno_all))
 

@@ -463,6 +463,7 @@ class SpotAnnotationAnalysis():
 	For each annotation (each click) in a dataframe, 
 	plot nearest neighbor distance (nnd) vs. worker index. 
 	Each point represents one annotation (one click). 
+	Can color each point by correctness. 
 
 	Inputs:
 		dataframe
@@ -490,10 +491,11 @@ class SpotAnnotationAnalysis():
 			worker_distances = dist_list[i]
 			worker_avg_dist = np.average(worker_distances)
 			avg_distances.append(worker_avg_dist) 
-		handle = plt.scatter(range(len(worker_list)), avg_distances, s = 20, facecolors = 'b', marker = '_', label = 'Average NND')
+		handle = plt.scatter(range(len(worker_list)), avg_distances, s = 40, facecolors = 'b', marker = '_', label = 'Average NND')
 		plt.legend(handles = [handle], loc = 9, bbox_to_anchor = (1.15, 0.55))
 		plt.subplots_adjust(left=0.1, right=0.8)
 
+		# plot all clicks
 		if show_correctness:
 			coords = self.ba.get_coords(anno_one_crop)
 			coords_with_time_and_worker_id = self.ba.get_coords_time_spent_worker_id(anno_one_crop)		# coordinates <-> time_spent
@@ -534,14 +536,19 @@ class SpotAnnotationAnalysis():
 	For each annotation (each click) in a dataframe, 
 	plot time spent on the click vs. worker index. 
 	Each point represents one annotation (one click). 
+	Can color each point by correctness. 
 
 	Inputs:
 		dataframe
 		img_filename (the cropping)
+		csv_filename
+		bool whether to color each point by correctness of cluster
+		correctness_threshold
+		clustering_params
 	Returns:
 		none
 	"""
-	def plot_time_spent_vs_worker_index(self, df, img_filename):
+	def plot_time_spent_vs_worker_index(self, df, img_filename, csv_filename, show_correctness, correctness_threshold, clustering_params, show_avgs):
 
 		anno_one_crop = self.ba.slice_by_image(df, img_filename)			# Remove data from other croppings.
 		worker_list = self.ba.get_workers(anno_one_crop)
@@ -549,20 +556,56 @@ class SpotAnnotationAnalysis():
 
 		fig = plt.figure(figsize = (10,7))
 
-		averages = []
-		for i in range(len(worker_list)):		# for each worker
-			x_coords = [i]*len(time_list[i])
-			y_coords = time_list[i]
-			y_coords.pop(0)						# discard initial fencepost in time_list
-			x_coords.pop(0)						# discard corresponding initial entry
-			plt.scatter(x_coords, y_coords, s = 4, alpha = 0.5, facecolors = 'c')
-			average_time = np.average(time_list[i])
-			averages.append(average_time)
+		# plot worker average times
+		if show_avgs:
+			avg_times = []
+			for i in range(len(worker_list)):
+				worker_times = time_list[i]
+				worker_times.pop(0)
+				worker_avg_time = np.average(worker_times)
+				avg_times.append(worker_avg_time) 
+			handle = plt.scatter(range(len(worker_list)), avg_times, s = 40, facecolors = 'b', marker = '.', label = 'Average time spent')
+			plt.legend(handles = [handle], loc = 9, bbox_to_anchor = (1.15, 0.55))
+			plt.subplots_adjust(left=0.1, right=0.8)
 
-		handle = plt.scatter(range(len(worker_list)), averages, s = 20, facecolors = 'b', marker = '_', label = 'Average time spent')
+		# plot all clicks
+		if show_correctness:
+			coords = self.ba.get_coords(anno_one_crop)
+			coords_with_time_and_worker_id = self.ba.get_coords_time_spent_worker_id(anno_one_crop)		# coordinates <-> time_spent
+			clusters = self.anno_and_ref_to_df('AffinityPropagation', df, clustering_params, csv_filename, img_filename)	# clusters -> NND, coordinates
+			cluster_correctness = self.get_cluster_correctness(clusters, correctness_threshold)		# clusters <-> correctness
+			af = AffinityPropagation(preference = clustering_params[0]).fit(coords)
+			labels = af.labels_	
+			img_height = anno_one_crop['height'].values[0]
+			ref_kdt = self.csv_to_kdt(csv_filename, img_height)
 
-		plt.legend(handles = [handle], loc = 9, bbox_to_anchor = (1.15, 0.55))
-		plt.subplots_adjust(left=0.1, right=0.8)
+			for i in range(len(coords)):
+				time_spent = coords_with_time_and_worker_id[i][2]
+				worker_id = coords_with_time_and_worker_id[i][3]
+				worker_index = np.where(worker_list == worker_id)
+
+				coordinate = coords[i]
+				dist, ind = ref_kdt.query([coordinate], k=1)
+				index = labels[i]
+				if(cluster_correctness[index][1]):
+					color = 'g'
+					marker_selection = '.'
+					marker_size = 4
+					alpha_selection = 0.25
+				else:
+					color = 'm'
+					marker_selection = '_'
+					marker_size = 40
+					alpha_selection = 1
+				plt.scatter([worker_index], [time_spent], s = marker_size, facecolors = color, edgecolors = None, marker = marker_selection, alpha = alpha_selection)
+		else:	
+			for i in range(len(worker_list)):		# for each worker
+				x_coords = [i]*len(time_list[i])
+				y_coords = time_list[i]
+				y_coords.pop(0)						# discard initial fencepost in time_list
+				x_coords.pop(0)						# discard corresponding initial entry
+				plt.scatter(x_coords, y_coords, s = 4, alpha = 0.5, facecolors = 'c')
+
 		plt.title('Time Spent [ms] vs. Worker Index')
 		plt.xlabel('Worker Index')
 		plt.ylabel('Time Spent [ms]')
