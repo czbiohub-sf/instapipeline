@@ -76,15 +76,16 @@ class SpotAnnotationAnalysis():
 
 			labels = af.labels_																		# Each point that was in coords now has a label saying which cluster it belongs to.
 
-			cluster_members_lists = [[]]*num_clusters												# Initialize a list with one list for each cluster.
+			cluster_members_lists = [None]*num_clusters
+			for i in range(len(cluster_members_lists)):
+				cluster_members_lists[i] = []
 
-			for i in range(len(coords)):
-				index = labels[i]
-				cluster_members_lists[index].append(coords[i])
+			for j in range(len(coords)):
+				index = labels[j]
+				cluster_members_lists[index].append(coords[j])
 
-			n_clusters_ = num_clusters
-			for i in range(n_clusters_):
-				cluster_centers = coords[cluster_centers_indices[i]]	# np array
+			for k in range(num_clusters):
+				cluster_centers = coords[cluster_centers_indices[k]]	# np array
 				cluster_centroids_list.append(cluster_centers)
 
 		centroid_IDs = range(num_clusters)
@@ -279,16 +280,11 @@ class SpotAnnotationAnalysis():
 		if show_clusters or show_correctness_workers:
 			clusters = self.anno_and_ref_to_df(clustering_alg, df, clustering_params, csv_filename, img_filename)
 			member_lists = clusters['members'].values	# list of lists
+
 			if correctness_threshold is not None:
 				cluster_correctness = self.get_cluster_correctness(clusters, correctness_threshold)
 
 		img_height = anno_one_crop['height'].values[0]
-
-		if show_ref_points:
-			ref_df = pd.read_csv(csv_filename)							# plot reference points			
-			ref_points = ref_df.loc[:, ['col', 'row']].as_matrix()
-			for point in ref_points:													
-				plt.scatter([point[0]], [point[1]], s = 8, facecolors = 'y')
 
 		if show_workers:
 
@@ -347,9 +343,15 @@ class SpotAnnotationAnalysis():
 		if show_workers and show_clusters:
 			plt.title('Worker Annotations and Cluster Centroids')
 
+		if show_ref_points:
+			ref_df = pd.read_csv(csv_filename)							# plot reference points			
+			ref_points = ref_df.loc[:, ['col', 'row']].as_matrix()
+			for point in ref_points:													
+				plt.scatter([point[0]], [point[1]], s = 20, facecolors = 'y')
 		img = mpimg.imread(img_filename)
 		plt.imshow(img, cmap = 'gray')
 		plt.show()
+
 
 	"""
 	Plots the average time spent per click for all workers 
@@ -489,17 +491,6 @@ class SpotAnnotationAnalysis():
 
 		fig = plt.figure(figsize = (10,7))
 
-		# plot worker average distances
-		if show_avgs:
-			avg_distances = []
-			for i in range(len(worker_list)):
-				worker_distances = dist_list[i]
-				worker_avg_dist = np.average(worker_distances)
-				avg_distances.append(worker_avg_dist) 
-			handle = plt.scatter(range(len(worker_list)), avg_distances, s = 60, facecolors = 'b', marker = '_', label = 'Average NND')
-			plt.legend(handles = [handle], loc = 9, bbox_to_anchor = (1.15, 0.55))
-			plt.subplots_adjust(left=0.1, right=0.8)
-
 		# plot all clicks
 		if show_correctness:
 			coords = self.ba.get_coords(anno_one_crop)
@@ -521,7 +512,7 @@ class SpotAnnotationAnalysis():
 				index = labels[i]
 				if(cluster_correctness[index][1]):
 					color = 'g'
-					marker_selection = '.'
+					marker_selection = 'o'
 					marker_size = 4
 					alpha_selection = 1
 				else:
@@ -536,6 +527,17 @@ class SpotAnnotationAnalysis():
 				x_coords = [i]*len(dist_list[i])
 				y_coords = dist_list[i]
 				plt.scatter(x_coords, y_coords, s = 4, alpha = 0.5, facecolors = 'c')
+
+		# plot worker average distances
+		if show_avgs:
+			avg_distances = []
+			for i in range(len(worker_list)):
+				worker_distances = dist_list[i]
+				worker_avg_dist = np.average(worker_distances)
+				avg_distances.append(worker_avg_dist) 
+			handle = plt.scatter(range(len(worker_list)), avg_distances, s = 60, facecolors = 'b', marker = '_', label = 'Average NND')
+			plt.legend(handles = [handle], loc = 9, bbox_to_anchor = (1.15, 0.55))
+			plt.subplots_adjust(left=0.1, right=0.8)
 
 		plt.title('Nearest Neighbor Distance (NND) vs. Worker Index For Each Click')
 		plt.xlabel('Worker Index')
@@ -567,19 +569,6 @@ class SpotAnnotationAnalysis():
 
 		fig = plt.figure(figsize = (10,7))
 
-		# plot worker average times
-		if show_avgs:
-			avg_times = []
-			for i in range(len(worker_list)):
-				worker_times = time_list[i]
-				worker_times.pop(0)
-				worker_avg_time = np.average(worker_times)
-				avg_times.append(worker_avg_time) 
-			handle = plt.scatter(range(len(worker_list)), avg_times, s = 60, facecolors = 'b', marker = '_', label = 'Average time spent')
-			plt.legend(handles = [handle], loc = 9, bbox_to_anchor = (1.15, 0.55))
-			plt.subplots_adjust(left=0.1, right=0.8)
-
-
 		# plot all clicks
 		if show_correctness:
 			coords = self.ba.get_coords(anno_one_crop)
@@ -601,8 +590,8 @@ class SpotAnnotationAnalysis():
 				index = labels[i]
 				if(cluster_correctness[index][1]):
 					color = 'g'
-					marker_selection = '.'
-					marker_size = 4
+					marker_selection = 'o'
+					marker_size = 10
 					alpha_selection = 1
 				else:
 					color = 'm'
@@ -617,6 +606,18 @@ class SpotAnnotationAnalysis():
 				y_coords.pop(0)						# discard initial fencepost in time_list
 				x_coords.pop(0)						# discard corresponding initial entry
 				plt.scatter(x_coords, y_coords, s = 4, alpha = 0.5, facecolors = 'c')
+
+		# plot worker average times
+		if show_avgs:
+			avg_times = []
+			for i in range(len(worker_list)):
+				worker_times = time_list[i]
+				worker_times.pop(0)
+				worker_avg_time = np.average(worker_times)
+				avg_times.append(worker_avg_time) 
+			handle = plt.scatter(range(len(worker_list)), avg_times, s = 60, facecolors = 'b', marker = '_', label = 'Average time spent')
+			plt.legend(handles = [handle], loc = 9, bbox_to_anchor = (1.15, 0.55))
+			plt.subplots_adjust(left=0.1, right=0.8)
 
 		plt.title('Time Spent [ms] vs. Worker Index')
 		plt.xlabel('Worker Index')
@@ -694,12 +695,12 @@ class SpotAnnotationAnalysis():
 				index = labels[i]
 				if(cluster_correctness[index][1]):
 					color = 'g'
-					marker_selection = '.'
-					marker_size = 4
+					marker_selection = 'o'
+					marker_size = 10
 					alpha_selection = 1
 				else:
 					color = 'm'
-					marker_selection = '.'
+					marker_selection = 'o'
 					marker_size = 40
 					alpha_selection = 1
 				plt.scatter([click_index], [time_spent], s = marker_size, facecolors = color, edgecolors = None, marker = marker_selection, alpha = alpha_selection)

@@ -37,19 +37,39 @@ anno_all = ba.df()						# Get the dataframe from the annotation object
 # correctness_threshold = None
 # clustering_params = None
 
-show_correctness = True
-correctness_threshold = 5
+# show_correctness = False
+# correctness_threshold = 5
+# clustering_params = [-350]
+# sa.plot_nnd_vs_time_spent(anno_all, img_filename, csv_filename, show_correctness, correctness_threshold, clustering_params)
+
+
+# uid = 'A2FZE7CARM54IG'
+# show_correctness = False
+# correctness_threshold = None
+# clustering_params = None
+
+# sa.plot_time_spent_vs_click_index(anno_all, img_filename, csv_filename, uid, show_correctness, correctness_threshold, clustering_params)
+
+
+# uid = 'A2FZE7CARM54IG'
+
+
+# sa.plot_time_spent_vs_click_index(anno_all, img_filename, csv_filename, uid, show_correctness, correctness_threshold, clustering_params)
+# #print(ba.get_coords_time_spent_worker_id(anno_all))
+
+bigger_window_size = False
+
+show_ref_points = False
+show_workers = True
+show_clusters = True
+clustering_alg = 'AffinityPropagation'
 clustering_params = [-350]
-show_avgs = False
+show_correctness_workers = True
+show_correctness_clusters = False
+show_NN_inc = False
+correctness_threshold = 10
 
-# sa.plot_time_spent_vs_worker_index(anno_all, img_filename, csv_filename, show_correctness, correctness_threshold, clustering_params, show_avgs)
+#print(sa.get_clusters(clustering_alg, anno_all, clustering_params))
 
-uid = 'A2FZE7CARM54IG'
-
-sa.plot_time_spent_vs_click_index(anno_all, img_filename, csv_filename, uid, show_correctness, correctness_threshold, clustering_params)
-#print(ba.get_coords_time_spent_worker_id(anno_all))
-
-
-
-
+sa.plot_annotations(anno_all, img_filename, csv_filename, worker_marker_size, cluster_marker_size, show_ref_points, show_workers, show_clusters, show_correctness_workers, show_correctness_clusters, show_NN_inc, correctness_threshold, clustering_alg, clustering_params, bigger_window_size)
 
