@@ -4,6 +4,8 @@
 import numpy as np
 import math
 import cv2
+from skimage.restoration import estimate_sigma
+
 # ------- #
 
 class SpotImage():
@@ -76,7 +78,7 @@ class SpotImage():
 			each spot has a random location and a patch of intensities
 	"""
 	def get_spot_list(self):
-		spot_list = [[self.get_spot_x(), self.get_spot_y(), self.get_patch()] for i in range(self.num_spots)]
+		spot_list = [[x=self.get_spot_x(), y=self.get_spot_y(), self.get_patch(x,y)] for i in range(self.num_spots)]
 		return spot_list
 
 	"""
@@ -84,8 +86,9 @@ class SpotImage():
 		Spot obeys spot_shape_params
 		Spot has SNR sampled from SNR distr
 	"""
-	def get_patch(self):
+	def get_patch(self, x, y):
 		patch = np.zeros([self.patch_sz, self.patch_sz])
+		sigma = self.get_sigma(x,y)			
 		
 		for row in patch:
 			for i in range(self.patch_sz):
@@ -98,6 +101,19 @@ class SpotImage():
 				# 	sigma = self.spot_shape_params[2]
 
 		return patch
+
+	"""
+	Gets sigma from background patch centered on (x,y) 
+	"""
+	def get_sigma(self, x, y):
+		origin_x = x - self.margin
+		origin_y = y - self.margin
+		patch = np.zeros([self.patch_sz, self.patch_sz])
+		for row in range(self.patch_sz):
+			for col in range(self.patch_sz):
+				patch[row][col] = self.img_to_array()[origin_y + row][origin_x + col]
+		sigma = estimate_sigma(patch, multichannel=True, average_sigmas=True)			# get noise from equiv. patch on background
+		return sigma
 
 	"""
 	Returns image as a grayscale array, squished down to img_sz x img_sz.

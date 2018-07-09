@@ -14,7 +14,7 @@ snr_sigma = 1
 snr_distr_params = ['Gaussian', snr_mu, snr_sigma]
 
 si = SpotImage(bg_img, color_map, img_sz, patch_sz, num_spots, spot_shape_params, snr_distr_params) # Load data into a SpotImage object
-si.generate_spot_image()
+#si.generate_spot_image()
 
 # Testing adding patches to matrix
 # patch_sz = 3
@@ -28,12 +28,6 @@ si.generate_spot_image()
 # print(spot_array)
 
 
+print(si.get_sigma(294,294))
 
 
-
-# si.img_to_array()
-
-
-
-
-# array = si.get_spot_image_array()
