@@ -72,13 +72,24 @@ class SpotImage():
 	def get_spot_y(self):
 		return np.random.random_integers(self.margin, self.img_sz - self.margin - 1)
 
+	# """
+	# Returns:
+	# 	list of spots
+	# 		each spot has a random location and a patch of intensities
+	# """
+	# def get_spot_list(self):
+	# 	spot_list = [[x=self.get_spot_x(), y=self.get_spot_y(), self.get_patch(x,y)] for i in range(self.num_spots)]
+	# 	return spot_list
+
 	"""
 	Returns:
 		list of spots
 			each spot has a random location and a patch of intensities
 	"""
 	def get_spot_list(self):
-		spot_list = [[x=self.get_spot_x(), y=self.get_spot_y(), self.get_patch(x,y)] for i in range(self.num_spots)]
+		x_list = [self.get_spot_x() for i in range(self.num_spots)]
+		y_list = [self.get_spot_y() for i in range(self.num_spots)]
+		spot_list = [[x_list[i], y_list[i], self.get_patch(x_list[i], y_list[i])] for i in range(self.num_spots)]
 		return spot_list
 
 	"""
@@ -88,18 +99,26 @@ class SpotImage():
 	"""
 	def get_patch(self, x, y):
 		patch = np.zeros([self.patch_sz, self.patch_sz])
-		sigma = self.get_sigma(x,y)			
-		
-		for row in patch:
-			for i in range(self.patch_sz):
-				# Temporarily populate patch with rand ints just
-				# to get the logic of the rest of this class.
-				row[i] = np.random.random_integers(0,400)
+		snr = self.get_snr()					# get snr from snr distribution
+		sigma = self.get_sigma(x,y)				# get sigma corresp. to noise at equiv. patch on background
+		max_intensity = snr*sigma
+		x_0 = y_0 = math.floor(self.patch_sz/2)
 
-				# if (self.spot_shape_params[0] == '2D_Gaussian'):
-				# 	mu = self.spot_shape_params[1]
-				# 	sigma = self.spot_shape_params[2]
+		if (self.spot_shape_params[0] == '2D_Gaussian'):
+			spot_sigma = self.spot_shape_params[1]
+			for j in range(self.patch_sz):
+				for i in range(self.patch_sz):
+					x_dist = i - x_0
+					y_dist = j - y_0
+					exp_num = x_dist**2 + y_dist**2
+					exp_den = 2*(spot_sigma**2)
+					exp_quantity = exp_num/exp_den
+					patch[i][j] = max_intensity*np.exp(-exp_quantity)
 
+					# Temporarily populate patch with rand ints just
+					# to get the logic of the rest of this class.
+					# row[i] = np.random.random_integers(0,400)
+		cv2.imwrite("patch.png", patch)
 		return patch
 
 	"""
@@ -122,15 +141,11 @@ class SpotImage():
 		img = cv2.imread(self.bg_img)					# img is a numpy 2D array
 		img = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
 		resized_img = cv2.resize(img, (self.img_sz, self.img_sz))
-		return resized_img
+		return resized_img	
 
-	def generate_spot_image(self):
-		bg_array = self.img_to_array()
-		spot_list = self.get_spot_list()
-		spot_array = self.spot_list_to_spot_array(spot_list)
-		spot_img = np.add(bg_array, spot_array)	
-		cv2.imwrite("spot_img.png", spot_img)		
-
+	"""
+	Returns spot_array generated from spot_list.
+	"""
 	def spot_list_to_spot_array(self, spot_list):
 		spot_array = np.zeros([self.img_sz, self.img_sz])
 		for spot in spot_list:
@@ -155,6 +170,14 @@ class SpotImage():
 			for col_ind in range(self.patch_sz):
 				spot_array[array_origin_y + row_ind][array_origin_x + col_ind] = patch[row_ind][col_ind]
 		return spot_array
+
+	def generate_spot_image(self):
+		bg_array = self.img_to_array()
+		spot_list = self.get_spot_list()
+		spot_array = self.spot_list_to_spot_array(spot_list)
+		cv2.imwrite("spot_array.png", spot_array)				# for debugging
+		spot_img = np.add(bg_array, spot_array)	
+		cv2.imwrite("spot_img.png", spot_img)	
 
 
 

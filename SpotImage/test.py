@@ -5,16 +5,15 @@ bg_img = 'bg.jpg'
 color_map = 'greyscale'
 img_sz = 300
 patch_sz = 11		# typical patch size from beads_300pxroi.png; using odd number so that center point exists
-num_spots = 4
-spot_mu = 5
+num_spots = 30
 spot_sigma = 1
-spot_shape_params = ['2D_Gaussian', spot_mu, spot_sigma]
-snr_mu = 10			
+spot_shape_params = ['2D_Gaussian', spot_sigma]
+snr_mu = 30			
 snr_sigma = 1
 snr_distr_params = ['Gaussian', snr_mu, snr_sigma]
 
 si = SpotImage(bg_img, color_map, img_sz, patch_sz, num_spots, spot_shape_params, snr_distr_params) # Load data into a SpotImage object
-#si.generate_spot_image()
+si.generate_spot_image()
 
 # Testing adding patches to matrix
 # patch_sz = 3
@@ -28,6 +27,6 @@ si = SpotImage(bg_img, color_map, img_sz, patch_sz, num_spots, spot_shape_params
 # print(spot_array)
 
 
-print(si.get_sigma(294,294))
+
 
 
