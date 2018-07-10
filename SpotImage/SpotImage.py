@@ -54,20 +54,20 @@ class SpotImage():
 		self.spot_shape_params = spot_shape_params
 		self.snr_distr_params = snr_distr_params
 		self.margin = math.floor(self.patch_sz/2)		# setting margin such that no patches hang off the edges
+		self.bg_array = self.bg_img_to_array()
 
 	"""
 	Generate a spot image.
 	"""
 	def generate_spot_image(self, plot_spots, plot_img, save_spots, spots_filename, save_img, spot_img_filename, show_progress):
 		print("Generating...")
-		bg_array = self.img_to_array()
 		if show_progress:
 			self.show_progress = True
 		else:
 			self.show_progress = False
 		spot_list = self.get_spot_list()
 		spot_array = self.spot_list_to_spot_array(spot_list)
-		spot_img = np.add(bg_array, spot_array)	
+		spot_img = np.add(self.bg_array, spot_array)	
 		if plot_spots:	
 			plt.imshow(spot_array, cmap = self.cmap)
 			plt.show()
@@ -82,10 +82,12 @@ class SpotImage():
 	"""
 	Returns an image as a grayscale array, squished down to img_sz x img_sz.
 	"""
-	def img_to_array(self):
+	def bg_img_to_array(self):
 		img = cv2.imread(self.bg_img)					# img is a numpy 2D array
 		img = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
 		resized_img = cv2.resize(img, (self.img_sz, self.img_sz))
+		print(np.average(img))
+		print(np.amax(img))
 		return resized_img	
 
 	"""
@@ -155,7 +157,7 @@ class SpotImage():
 		patch = np.zeros([self.patch_sz, self.patch_sz])
 		for row in range(self.patch_sz):
 			for col in range(self.patch_sz):
-				patch[row][col] = self.img_to_array()[origin_y + row][origin_x + col]
+				patch[row][col] = self.bg_array[origin_y + row][origin_x + col]
 		sigma = estimate_sigma(patch, multichannel=True, average_sigmas=True)			# get noise from equiv. patch on background
 		return sigma
 

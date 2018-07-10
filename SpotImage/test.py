@@ -29,6 +29,4 @@ save_img = True
 spot_img_filename = "spot_img.png"
 show_progress = True
 
-print("hello")
-
 si.generate_spot_image(plot_spots, plot_img, save_spots, spots_filename, save_img, spot_img_filename, show_progress)
