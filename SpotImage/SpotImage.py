@@ -33,7 +33,8 @@ class SpotImage():
 
 	# list of SNR distributions handled
 	spot_shapes = ['2D_Gaussian']
-	snr_distrs = ['Gaussian']						
+	snr_distrs = ['Gaussian']		
+	spot_index = 1				
 
 	"""
 	Constructor
@@ -72,15 +73,6 @@ class SpotImage():
 	def get_spot_y(self):
 		return np.random.random_integers(self.margin, self.img_sz - self.margin - 1)
 
-	# """
-	# Returns:
-	# 	list of spots
-	# 		each spot has a random location and a patch of intensities
-	# """
-	# def get_spot_list(self):
-	# 	spot_list = [[x=self.get_spot_x(), y=self.get_spot_y(), self.get_patch(x,y)] for i in range(self.num_spots)]
-	# 	return spot_list
-
 	"""
 	Returns:
 		list of spots
@@ -115,10 +107,11 @@ class SpotImage():
 					exp_quantity = exp_num/exp_den
 					patch[i][j] = max_intensity*np.exp(-exp_quantity)
 
-					# Temporarily populate patch with rand ints just
-					# to get the logic of the rest of this class.
-					# row[i] = np.random.random_integers(0,400)
 		cv2.imwrite("patch.png", patch)
+
+		print("spot", self.spot_index, "/", self.num_spots)
+		self.spot_index = self.spot_index + 1
+
 		return patch
 
 	"""
@@ -172,6 +165,7 @@ class SpotImage():
 		return spot_array
 
 	def generate_spot_image(self):
+		print("Generating...")
 		bg_array = self.img_to_array()
 		spot_list = self.get_spot_list()
 		spot_array = self.spot_list_to_spot_array(spot_list)
