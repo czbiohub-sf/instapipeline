@@ -80,16 +80,23 @@ class SpotImage():
 			cv2.imwrite(spot_img_filename, spot_img)	
 
 	"""
-	Sample an SNR from the specified distribution.
+	Returns an image as a grayscale array, squished down to img_sz x img_sz.
 	"""
-	def get_snr(self):
-		if (self.snr_distr_params[0] == 'Gaussian'):
-			if (len(self.snr_distr_params) < 3):
-				raise ValueError('Mu and sigma required for Gaussian SNR distribution.')
-			mu = self.snr_distr_params[1]
-			sigma = self.snr_distr_params[2]
-			snr = np.random.normal(mu, sigma)
-		return snr
+	def img_to_array(self):
+		img = cv2.imread(self.bg_img)					# img is a numpy 2D array
+		img = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
+		resized_img = cv2.resize(img, (self.img_sz, self.img_sz))
+		return resized_img	
+
+	"""
+	Generate a list of random spots. 
+	Each spot has a random location and a patch of intensity values.
+	"""
+	def get_spot_list(self):
+		x_list = [self.get_spot_x() for i in range(self.num_spots)]
+		y_list = [self.get_spot_y() for i in range(self.num_spots)]
+		spot_list = [[x_list[i], y_list[i], self.get_patch(x_list[i], y_list[i])] for i in range(self.num_spots)]
+		return spot_list
 
 	"""
 	Get a random x coordinate for the spot from a discrete uniform distribution.
@@ -104,16 +111,6 @@ class SpotImage():
 	"""
 	def get_spot_y(self):
 		return np.random.random_integers(self.margin, self.img_sz - self.margin - 1)
-
-	"""
-	Generate a list of random spots. 
-	Each spot has a random location and a patch of intensity values.
-	"""
-	def get_spot_list(self):
-		x_list = [self.get_spot_x() for i in range(self.num_spots)]
-		y_list = [self.get_spot_y() for i in range(self.num_spots)]
-		spot_list = [[x_list[i], y_list[i], self.get_patch(x_list[i], y_list[i])] for i in range(self.num_spots)]
-		return spot_list
 
 	"""
 	Generate one 2D square array with one spot.
@@ -144,6 +141,18 @@ class SpotImage():
 		return patch
 
 	"""
+	Sample an SNR from the specified distribution.
+	"""
+	def get_snr(self):
+		if (self.snr_distr_params[0] == 'Gaussian'):
+			if (len(self.snr_distr_params) < 3):
+				raise ValueError('Mu and sigma required for Gaussian SNR distribution.')
+			mu = self.snr_distr_params[1]
+			sigma = self.snr_distr_params[2]
+			snr = np.random.normal(mu, sigma)
+		return snr
+
+	"""
 	Get a noise (sigma) value from a square patch on the background 
 	of size patch_sz and centered on (x,y).
 	"""
@@ -156,15 +165,6 @@ class SpotImage():
 				patch[row][col] = self.img_to_array()[origin_y + row][origin_x + col]
 		sigma = estimate_sigma(patch, multichannel=True, average_sigmas=True)			# get noise from equiv. patch on background
 		return sigma
-
-	"""
-	Returns an image as a grayscale array, squished down to img_sz x img_sz.
-	"""
-	def img_to_array(self):
-		img = cv2.imread(self.bg_img)					# img is a numpy 2D array
-		img = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
-		resized_img = cv2.resize(img, (self.img_sz, self.img_sz))
-		return resized_img	
 
 	"""
 	Returns spot_array generated from spot_list.
@@ -194,3 +194,5 @@ class SpotImage():
 				spot_array_val = spot_array[array_origin_y + row_ind][array_origin_x + col_ind]		# the pre-existing value at that location in spot_array
 				spot_array[array_origin_y + row_ind][array_origin_x + col_ind] = spot_array_val + patch[row_ind][col_ind]
 		return spot_array
+
+		
