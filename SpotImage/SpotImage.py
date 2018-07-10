@@ -93,24 +93,17 @@ class SpotImage():
 	Each spot has a random location and a patch of intensity values.
 	"""
 	def get_spot_list(self):
-		x_list = [self.get_spot_x() for i in range(self.num_spots)]
-		y_list = [self.get_spot_y() for i in range(self.num_spots)]
-		spot_list = [[x_list[i], y_list[i], self.get_patch(x_list[i], y_list[i])] for i in range(self.num_spots)]
+
+		# Generate a random list of num_spots coordinates
+		coord_list = [self.get_spot_coord() for i in range(self.num_spots)]
+
+		spot_list = [[coord_list[i], self.get_patch(coord_list[i][0], coord_list[i][1])] for i in range(self.num_spots)]
 		return spot_list
 
-	"""
-	Get a random x coordinate for the spot from a discrete uniform distribution.
-		Leaving get_spot_x() and get_spot_y() as separate functions for now
-		in case we want to sample them from independent distributions later.
-	"""
-	def get_spot_x(self):
-		return np.random.random_integers(self.margin, self.img_sz - self.margin - 1)
-
-	"""
-	Get a random y coordinate for the spot from a discrete uniform distribution.
-	"""
-	def get_spot_y(self):
-		return np.random.random_integers(self.margin, self.img_sz - self.margin - 1)
+	def get_spot_coord(self):
+		rand_x = np.random.random_integers(self.margin, self.img_sz - self.margin - 1)
+		rand_y = np.random.random_integers(self.margin, self.img_sz - self.margin - 1)
+		return [rand_x, rand_y]
 
 	"""
 	Generate one 2D square array with one spot.
@@ -184,9 +177,9 @@ class SpotImage():
 		spot_array with patch added with center at spot_x, spot_y
 	"""
 	def add_spot(self, spot, spot_array):
-		spot_x = spot[0]
-		spot_y = spot[1]
-		patch = spot[2]
+		spot_x = spot[0][0]
+		spot_y = spot[0][1]
+		patch = spot[1]
 		array_origin_x = spot_x - math.floor(self.patch_sz/2)
 		array_origin_y = spot_y - math.floor(self.patch_sz/2)
 		for row_ind in range(self.patch_sz):
@@ -195,4 +188,3 @@ class SpotImage():
 				spot_array[array_origin_y + row_ind][array_origin_x + col_ind] = spot_array_val + patch[row_ind][col_ind]
 		return spot_array
 
-		
