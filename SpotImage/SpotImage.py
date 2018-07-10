@@ -31,10 +31,9 @@ class SpotImage():
 
 	"""
 
-	# list of SNR distributions handled
-	spot_shapes = ['2D_Gaussian']
-	snr_distrs = ['Gaussian']		
-	spot_index = 1				
+	spot_shapes = ['2D_Gaussian']	# list of spot shapes handled
+	snr_distrs = ['Gaussian']		# list of SNR distributions handled
+	spot_index = 1					# initialize the counter for the console output progress readout
 
 	"""
 	Constructor
@@ -44,6 +43,8 @@ class SpotImage():
 			raise ValueError('Invalid spot shape name entered.')
 		if (snr_distr_params[0] not in self.snr_distrs):
 			raise ValueError('Invalid SNR distribution name entered.')
+		if (patch_sz > img_sz):
+			raise ValueError('Patch size is greater than image size.')
 		self.bg_img = bg_img
 		self.color_map = color_map
 		self.img_sz = img_sz
@@ -54,7 +55,19 @@ class SpotImage():
 		self.margin = math.floor(self.patch_sz/2)		# setting margin such that no patches hang off the edges
 
 	"""
-	Samples SNR from the specified distribution.
+	Generate a spot image.
+	"""
+	def generate_spot_image(self):
+		print("Generating...")
+		bg_array = self.img_to_array()
+		spot_list = self.get_spot_list()
+		spot_array = self.spot_list_to_spot_array(spot_list)
+		cv2.imwrite("spot_array.png", spot_array)				# for debugging
+		spot_img = np.add(bg_array, spot_array)	
+		cv2.imwrite("spot_img.png", spot_img)	
+
+	"""
+	Sample an SNR from the specified distribution.
 	"""
 	def get_snr(self):
 		if (self.snr_distr_params[0] == 'Gaussian'):
@@ -106,8 +119,6 @@ class SpotImage():
 					exp_den = 2*(spot_sigma**2)
 					exp_quantity = exp_num/exp_den
 					patch[i][j] = max_intensity*np.exp(-exp_quantity)
-
-		cv2.imwrite("patch.png", patch)
 
 		print("spot", self.spot_index, "/", self.num_spots)
 		self.spot_index = self.spot_index + 1
@@ -161,17 +172,9 @@ class SpotImage():
 		array_origin_y = spot_y - math.floor(self.patch_sz/2)
 		for row_ind in range(self.patch_sz):
 			for col_ind in range(self.patch_sz):
-				spot_array[array_origin_y + row_ind][array_origin_x + col_ind] = patch[row_ind][col_ind]
+				spot_array_val = spot_array[array_origin_y + row_ind][array_origin_x + col_ind]		# the pre-existing value at that location in spot_array
+				spot_array[array_origin_y + row_ind][array_origin_x + col_ind] = spot_array_val + patch[row_ind][col_ind]
 		return spot_array
-
-	def generate_spot_image(self):
-		print("Generating...")
-		bg_array = self.img_to_array()
-		spot_list = self.get_spot_list()
-		spot_array = self.spot_list_to_spot_array(spot_list)
-		cv2.imwrite("spot_array.png", spot_array)				# for debugging
-		spot_img = np.add(bg_array, spot_array)	
-		cv2.imwrite("spot_img.png", spot_img)	
 
 
 
