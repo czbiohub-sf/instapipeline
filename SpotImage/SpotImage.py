@@ -4,6 +4,7 @@
 import numpy as np
 import math
 import cv2
+import random
 import matplotlib.pyplot as plt
 from skimage.restoration import estimate_sigma
 
@@ -53,21 +54,42 @@ class SpotImage():
 		self.num_spots = num_spots
 		self.spot_shape_params = spot_shape_params
 		self.snr_distr_params = snr_distr_params
+
 		self.margin = math.floor(self.patch_sz/2)		# setting margin such that no patches hang off the edges
 		self.bg_array = self.bg_img_to_array()
+		self.valid_coords = self.get_valid_coords()			# set of coordinates where beads may be placed
+
+	"""
+	Returns an image as an array of gray values, squished down to img_sz x img_sz.
+	"""
+	def bg_img_to_array(self):
+		img = cv2.imread(self.bg_img)					# img is a numpy 2D array
+		# img = cv2.cvtColor(img, cv2.IMREAD_GRAYSCALE)	
+		img = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)		
+		resized_img = cv2.resize(img, (self.img_sz, self.img_sz))
+		cv2.imwrite('bg.png',resized_img)
+		return resized_img	
+
+	def get_valid_coords(self):
+		threshold = 13
+		valid_coords = []
+		# valid_array = np.zeros([self.img_sz, self.img_sz])		# for visualizing the valid coordinates
+		for row_ind in range(self.img_sz):
+			for col_ind in range(self.img_sz):
+				if (self.bg_array[row_ind][col_ind] > threshold):
+					valid_coords.append([col_ind,row_ind])
+		# 			valid_array[row_ind][col_ind] = 1				
+		# plt.imshow(valid_array, cmap = self.cmap)
+		# plt.show()
+		return(valid_coords)
 
 	"""
 	Generate a spot image.
 	"""
-	def generate_spot_image(self, plot_spots, plot_img, save_spots, spots_filename, save_img, spot_img_filename, show_progress):
-		print("Generating...")
-		if show_progress:
-			self.show_progress = True
-		else:
-			self.show_progress = False
-		spot_list = self.get_spot_list()
-		spot_array = self.spot_list_to_spot_array(spot_list)
-		spot_img = np.add(self.bg_array, spot_array)	
+	def generate_spot_image(self, plot_spots, plot_img, save_spots, spots_filename, save_img, spot_img_filename):
+		spot_array = self.spot_list_to_spot_array()
+		spot_img = np.add(self.bg_array, spot_array)
+
 		if plot_spots:	
 			plt.imshow(spot_array, cmap = self.cmap)
 			plt.show()
@@ -80,32 +102,17 @@ class SpotImage():
 			cv2.imwrite(spot_img_filename, spot_img)	
 
 	"""
-	Returns an image as a grayscale array, squished down to img_sz x img_sz.
-	"""
-	def bg_img_to_array(self):
-		img = cv2.imread(self.bg_img)					# img is a numpy 2D array
-		img = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
-		resized_img = cv2.resize(img, (self.img_sz, self.img_sz))
-		print(np.average(img))
-		print(np.amax(img))
-		return resized_img	
-
-	"""
 	Generate a list of random spots. 
 	Each spot has a random location and a patch of intensity values.
 	"""
 	def get_spot_list(self):
-
 		# Generate a random list of num_spots coordinates
 		coord_list = [self.get_spot_coord() for i in range(self.num_spots)]
-
 		spot_list = [[coord_list[i], self.get_patch(coord_list[i][0], coord_list[i][1])] for i in range(self.num_spots)]
 		return spot_list
 
 	def get_spot_coord(self):
-		rand_x = np.random.random_integers(self.margin, self.img_sz - self.margin - 1)
-		rand_y = np.random.random_integers(self.margin, self.img_sz - self.margin - 1)
-		return [rand_x, rand_y]
+		return random.choice(self.valid_coords)
 
 	"""
 	Generate one 2D square array with one spot.
@@ -130,8 +137,6 @@ class SpotImage():
 					exp_den = 2*(spot_sigma**2)
 					exp_quantity = exp_num/exp_den
 					patch[i][j] = max_intensity*np.exp(-exp_quantity)
-		if self.show_progress:
-			print("spot", self.spot_index, "/", self.num_spots)
 		self.spot_index = self.spot_index + 1
 		return patch
 
@@ -162,10 +167,11 @@ class SpotImage():
 		return sigma
 
 	"""
-	Returns spot_array generated from spot_list.
+	Returns spot_array generated.
 	"""
-	def spot_list_to_spot_array(self, spot_list):
+	def spot_list_to_spot_array(self):
 		spot_array = np.zeros([self.img_sz, self.img_sz])
+		spot_list = self.get_spot_list()
 		for spot in spot_list:
 			self.add_spot(spot, spot_array)
 		return spot_array
