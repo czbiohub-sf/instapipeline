@@ -6,6 +6,7 @@ import math
 import cv2
 import random
 import matplotlib.pyplot as plt
+from skimage import filters
 from skimage.restoration import estimate_sigma
 
 # ------- #
@@ -40,14 +41,13 @@ class SpotImage():
 	"""
 	Constructor
 	"""
-	def __init__(self, bg_img, cmap, img_sz, patch_sz, num_spots, spot_shape_params, snr_distr_params):
+	def __init__(self, bg_img_filename, cmap, img_sz, patch_sz, num_spots, spot_shape_params, snr_distr_params):
 		if (spot_shape_params[0] not in self.spot_shapes):
 			raise ValueError('Invalid spot shape name entered.')
 		if (snr_distr_params[0] not in self.snr_distrs):
 			raise ValueError('Invalid SNR distribution name entered.')
 		if (patch_sz > img_sz):
 			raise ValueError('Patch size is greater than image size.')
-		self.bg_img = bg_img
 		self.cmap = cmap
 		self.img_sz = img_sz
 		self.patch_sz = patch_sz
@@ -55,28 +55,28 @@ class SpotImage():
 		self.spot_shape_params = spot_shape_params
 		self.snr_distr_params = snr_distr_params
 
-		self.margin = math.floor(self.patch_sz/2)		# setting margin such that no patches hang off the edges
-		self.bg_array = self.bg_img_to_array()
+		self.margin = math.floor(self.patch_sz/2)			# setting margin such that no patches hang off the edges
+		self.bg_array = self.img_to_array(bg_img_filename)
+		self.threshold = filters.threshold_otsu(self.bg_array)
 		self.valid_coords = self.get_valid_coords()			# set of coordinates where beads may be placed
 
 	"""
 	Returns an image as an array of gray values, squished down to img_sz x img_sz.
 	"""
-	def bg_img_to_array(self):
-		img = cv2.imread(self.bg_img)					# img is a numpy 2D array
-		# img = cv2.cvtColor(img, cv2.IMREAD_GRAYSCALE)	
+	def img_to_array(self, img_filename):
+		img = cv2.imread(img_filename)					# img is a numpy 2D array
 		img = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)		
 		resized_img = cv2.resize(img, (self.img_sz, self.img_sz))
 		cv2.imwrite('bg.png',resized_img)
 		return resized_img	
 
 	def get_valid_coords(self):
-		threshold = 13
 		valid_coords = []
+		print(self.threshold)
 		# valid_array = np.zeros([self.img_sz, self.img_sz])		# for visualizing the valid coordinates
 		for row_ind in range(self.img_sz):
 			for col_ind in range(self.img_sz):
-				if (self.bg_array[row_ind][col_ind] > threshold):
+				if (self.bg_array[row_ind][col_ind] > self.threshold):
 					valid_coords.append([col_ind,row_ind])
 		# 			valid_array[row_ind][col_ind] = 1				
 		# plt.imshow(valid_array, cmap = self.cmap)
