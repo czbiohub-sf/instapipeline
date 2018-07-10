@@ -1,9 +1,10 @@
-""" This module contains SpotImage class.
+""" This module contains the SpotImage class.
 """
 
 import numpy as np
 import math
 import cv2
+import matplotlib.pyplot as plt
 from skimage.restoration import estimate_sigma
 
 # ------- #
@@ -12,7 +13,7 @@ class SpotImage():
 
 	"""
 	The SpotImage tool generates synthetic images for workers to annotate. 
-	The user can specify the following features of the image:
+	The user can parameterize the following features of the image:
 
 	-	background image
 	-	color mapping
@@ -38,7 +39,7 @@ class SpotImage():
 	"""
 	Constructor
 	"""
-	def __init__(self, bg_img, color_map, img_sz, patch_sz, num_spots, spot_shape_params, snr_distr_params):
+	def __init__(self, bg_img, cmap, img_sz, patch_sz, num_spots, spot_shape_params, snr_distr_params):
 		if (spot_shape_params[0] not in self.spot_shapes):
 			raise ValueError('Invalid spot shape name entered.')
 		if (snr_distr_params[0] not in self.snr_distrs):
@@ -46,7 +47,7 @@ class SpotImage():
 		if (patch_sz > img_sz):
 			raise ValueError('Patch size is greater than image size.')
 		self.bg_img = bg_img
-		self.color_map = color_map
+		self.cmap = cmap
 		self.img_sz = img_sz
 		self.patch_sz = patch_sz
 		self.num_spots = num_spots
@@ -57,39 +58,56 @@ class SpotImage():
 	"""
 	Generate a spot image.
 	"""
-	def generate_spot_image(self):
+	def generate_spot_image(self, plot_spots, plot_img, save_spots, spots_filename, save_img, spot_img_filename, show_progress):
 		print("Generating...")
 		bg_array = self.img_to_array()
+		if show_progress:
+			self.show_progress = True
+		else:
+			self.show_progress = False
 		spot_list = self.get_spot_list()
 		spot_array = self.spot_list_to_spot_array(spot_list)
-		cv2.imwrite("spot_array.png", spot_array)				# for debugging
 		spot_img = np.add(bg_array, spot_array)	
-		cv2.imwrite("spot_img.png", spot_img)	
+		if plot_spots:	
+			plt.imshow(spot_array, cmap = self.cmap)
+			plt.show()
+		if plot_img:
+			plt.imshow(spot_img, cmap = self.cmap)
+			plt.show()
+		if save_spots:
+			cv2.imwrite(spots_filename, spot_array)
+		if save_img:
+			cv2.imwrite(spot_img_filename, spot_img)	
 
 	"""
 	Sample an SNR from the specified distribution.
 	"""
 	def get_snr(self):
 		if (self.snr_distr_params[0] == 'Gaussian'):
+			if (len(self.snr_distr_params) < 3):
+				raise ValueError('Mu and sigma required for Gaussian SNR distribution.')
 			mu = self.snr_distr_params[1]
 			sigma = self.snr_distr_params[2]
 			snr = np.random.normal(mu, sigma)
 		return snr
 
 	"""
-	Leaving get_spot_x() and get_spot_y() as separate functions for now
-	in case we want to sample them from independent distributions later.
+	Get a random x coordinate for the spot from a discrete uniform distribution.
+		Leaving get_spot_x() and get_spot_y() as separate functions for now
+		in case we want to sample them from independent distributions later.
 	"""
 	def get_spot_x(self):
-		return np.random.random_integers(self.margin, self.img_sz - self.margin - 1)		# discrete uniform distribution
+		return np.random.random_integers(self.margin, self.img_sz - self.margin - 1)
 
+	"""
+	Get a random y coordinate for the spot from a discrete uniform distribution.
+	"""
 	def get_spot_y(self):
 		return np.random.random_integers(self.margin, self.img_sz - self.margin - 1)
 
 	"""
-	Returns:
-		list of spots
-			each spot has a random location and a patch of intensities
+	Generate a list of random spots. 
+	Each spot has a random location and a patch of intensity values.
 	"""
 	def get_spot_list(self):
 		x_list = [self.get_spot_x() for i in range(self.num_spots)]
@@ -98,18 +116,19 @@ class SpotImage():
 		return spot_list
 
 	"""
-	Returns one 2D square array with a spot
-		Spot obeys spot_shape_params
-		Spot has SNR sampled from SNR distr
+	Generate one 2D square array with one spot.
+		The spot obeys spot_shape_params.
+		The spot has an SNR sampled from the SNR distribution.
 	"""
 	def get_patch(self, x, y):
 		patch = np.zeros([self.patch_sz, self.patch_sz])
 		snr = self.get_snr()					# get snr from snr distribution
-		sigma = self.get_sigma(x,y)				# get sigma corresp. to noise at equiv. patch on background
+		sigma = self.get_noise(x,y)				# get sigma corresp. to noise at equiv. patch on background
 		max_intensity = snr*sigma
 		x_0 = y_0 = math.floor(self.patch_sz/2)
-
 		if (self.spot_shape_params[0] == '2D_Gaussian'):
+			if (len(self.spot_shape_params) < 2):
+				raise ValueError('Spot sigma required for 2D Gaussian spot shape.')
 			spot_sigma = self.spot_shape_params[1]
 			for j in range(self.patch_sz):
 				for i in range(self.patch_sz):
@@ -119,16 +138,16 @@ class SpotImage():
 					exp_den = 2*(spot_sigma**2)
 					exp_quantity = exp_num/exp_den
 					patch[i][j] = max_intensity*np.exp(-exp_quantity)
-
-		print("spot", self.spot_index, "/", self.num_spots)
+		if self.show_progress:
+			print("spot", self.spot_index, "/", self.num_spots)
 		self.spot_index = self.spot_index + 1
-
 		return patch
 
 	"""
-	Gets sigma from background patch centered on (x,y) 
+	Get a noise (sigma) value from a square patch on the background 
+	of size patch_sz and centered on (x,y).
 	"""
-	def get_sigma(self, x, y):
+	def get_noise(self, x, y):
 		origin_x = x - self.margin
 		origin_y = y - self.margin
 		patch = np.zeros([self.patch_sz, self.patch_sz])
@@ -139,7 +158,7 @@ class SpotImage():
 		return sigma
 
 	"""
-	Returns image as a grayscale array, squished down to img_sz x img_sz.
+	Returns an image as a grayscale array, squished down to img_sz x img_sz.
 	"""
 	def img_to_array(self):
 		img = cv2.imread(self.bg_img)					# img is a numpy 2D array
@@ -175,10 +194,3 @@ class SpotImage():
 				spot_array_val = spot_array[array_origin_y + row_ind][array_origin_x + col_ind]		# the pre-existing value at that location in spot_array
 				spot_array[array_origin_y + row_ind][array_origin_x + col_ind] = spot_array_val + patch[row_ind][col_ind]
 		return spot_array
-
-
-
-
-
-
-
