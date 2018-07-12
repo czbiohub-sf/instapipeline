@@ -14,34 +14,37 @@ from skimage.restoration import estimate_sigma
 class SpotImage():
 
 	"""
-	The SpotImage tool generates synthetic images for workers to annotate. 
+	The SpotImage tool generates synthetic spot images. 
 	The user can parameterize the following features of the image:
 
-	-	background image
-	-	color mapping
-	-	image size
-	-	number of spots
-	-	spot shape
-	-	SNR distribution (from which to sample SNR of each spot)
+	-	background image (bg_img_filename)
+	-	color mapping (cmap)
+	-	image size (img_sz)
+	-	number of spots (num_spots)
+	-	spot size and shape (patch_sz, spot_shape_params)
+	-	SNR distribution from which to sample SNR of each spot (snr_distr_params)
+	-	how much to constrain spots to brighter areas (intensity_threshold)
 
 	Implementation:
+	->	The background image is scaled and color-mapped in a 2D pixel array.
 	->	The tool generates a list of spots. 
-			Each spot has a random location and a patch.
+			Each spot has a random location.
 			Each spot has an SNR (sampled from the SNR distribution) 
-	->	The list of spots is converted to a 2D pixel array.
-	->	The background image is scaled and color-mapped.
-	->	The 2D pixel array is added to the background image to produce the final image.
+	->	The list of spots is converted to a 2D pixel array of spots.
+			Each spot is represented as a patch: a 2D pixel array with one spot.
+			The patches consolidated into one 2D pixel array of spots
+	->	The 2D pixel array of spots is added to the background array to produce the final image.
 
 	"""
 
-	spot_shapes = ['2D_Gaussian']	# list of spot shapes handled
-	snr_distrs = ['Gaussian']		# list of SNR distributions handled
-	spot_index = 1					# initialize the counter for the console output progress readout
+	spot_shapes = ['2D_Gauss']	# list of spot shapes handled
+	snr_distrs = ['Gauss']		# list of SNR distributions handled
 
 	"""
 	Constructor
 	"""
-	def __init__(self, bg_img_filename, cmap, img_sz, patch_sz, num_spots, spot_shape_params, snr_distr_params):
+	def __init__(self, bg_img_filename, cmap, img_sz, patch_sz, num_spots, spot_shape_params, snr_distr_params, intensity_threshold):
+
 		if (spot_shape_params[0] not in self.spot_shapes):
 			raise ValueError('Invalid spot shape name entered.')
 		if (snr_distr_params[0] not in self.snr_distrs):
@@ -57,49 +60,69 @@ class SpotImage():
 
 		self.margin = math.floor(self.patch_sz/2)			# setting margin such that no patches hang off the edges
 		self.bg_array = self.img_to_array(bg_img_filename)
-		self.threshold = filters.threshold_otsu(self.bg_array)
+		self.threshold = filters.threshold_otsu(self.bg_array) + intensity_threshold
 		self.valid_coords = self.get_valid_coords()			# set of coordinates where beads may be placed
+
+	"""
+	Generate a spot image.
+	The spot_array and spot_img are saved as attributes of the SpotImage object
+	for later access.
+	"""
+	def generate_spot_image(self, plot_spots, plot_img, save_spots, spots_filename, save_img, spot_img_filename):
+		self.spot_array = self.generate_spot_array()
+		self.spot_img = np.add(self.bg_array, self.spot_array)
+
+		if plot_spots:	
+			plt.imshow(self.spot_array, cmap = self.cmap)
+			plt.show()
+		if plot_img:
+			plt.imshow(self.spot_img, cmap = self.cmap)
+			plt.show()
+		if save_spots:
+			cv2.imwrite(spots_filename, self.spot_array)
+		if save_img:
+			cv2.imwrite(spot_img_filename, self.spot_img)
+
+	"""
+	Save csv files of spot image data for later reference
+	as ground truth values.
+	"""
+	def get_spot_array_csv(self, csv_filename):
+		np.savetxt(csv_filename, self.spot_array, delimiter=",")
+
+	def get_spot_img_csv(self, csv_filename):
+		np.savetxt(csv_filename, self.spot_img, delimiter=",")
+
+	def get_coord_list_csv(self, csv_filename):
+		np.savetxt(csv_filename, self.coord_list, delimiter=",")
+
+	def get_snr_list_csv(self, csv_filename):
+		np.savetxt(csv_filename, self.snr_list, delimiter=",")
 
 	"""
 	Returns an image as an array of gray values, squished down to img_sz x img_sz.
 	"""
 	def img_to_array(self, img_filename):
 		img = cv2.imread(img_filename)					# img is a numpy 2D array
-		img = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)		
-		resized_img = cv2.resize(img, (self.img_sz, self.img_sz))
-		cv2.imwrite('bg.png',resized_img)
+		img_cvt = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)		
+		resized_img = cv2.resize(img_cvt, (self.img_sz, self.img_sz))
 		return resized_img	
 
+	"""
+	Returns the set of coordinates where spots may be added.
+	Coordinates below the threshold found by Otsu's are excluded from this set.
+	"""
 	def get_valid_coords(self):
 		valid_coords = []
-		print(self.threshold)
 		# valid_array = np.zeros([self.img_sz, self.img_sz])		# for visualizing the valid coordinates
-		for row_ind in range(self.img_sz):
-			for col_ind in range(self.img_sz):
-				if (self.bg_array[row_ind][col_ind] > self.threshold):
+		for row_ind in range(self.margin, self.img_sz - self.margin):
+			for col_ind in range(self.margin, self.img_sz - self.margin):
+				if (self.bg_array[row_ind][col_ind] >= self.threshold):
 					valid_coords.append([col_ind,row_ind])
 		# 			valid_array[row_ind][col_ind] = 1				
 		# plt.imshow(valid_array, cmap = self.cmap)
 		# plt.show()
-		return(valid_coords)
-
-	"""
-	Generate a spot image.
-	"""
-	def generate_spot_image(self, plot_spots, plot_img, save_spots, spots_filename, save_img, spot_img_filename):
-		spot_array = self.spot_list_to_spot_array()
-		spot_img = np.add(self.bg_array, spot_array)
-
-		if plot_spots:	
-			plt.imshow(spot_array, cmap = self.cmap)
-			plt.show()
-		if plot_img:
-			plt.imshow(spot_img, cmap = self.cmap)
-			plt.show()
-		if save_spots:
-			cv2.imwrite(spots_filename, spot_array)
-		if save_img:
-			cv2.imwrite(spot_img_filename, spot_img)	
+		return(valid_coords)	
 
 	"""
 	Generate a list of random spots. 
@@ -107,8 +130,9 @@ class SpotImage():
 	"""
 	def get_spot_list(self):
 		# Generate a random list of num_spots coordinates
-		coord_list = [self.get_spot_coord() for i in range(self.num_spots)]
-		spot_list = [[coord_list[i], self.get_patch(coord_list[i][0], coord_list[i][1])] for i in range(self.num_spots)]
+		self.coord_list = [self.get_spot_coord() for i in range(self.num_spots)]
+		self.snr_list = [self.get_snr() for i in range(self.num_spots)]
+		spot_list = [[self.coord_list[i], self.get_patch(self.coord_list[i][0], self.coord_list[i][1], self.snr_list[i])] for i in range(self.num_spots)]
 		return spot_list
 
 	def get_spot_coord(self):
@@ -119,13 +143,12 @@ class SpotImage():
 		The spot obeys spot_shape_params.
 		The spot has an SNR sampled from the SNR distribution.
 	"""
-	def get_patch(self, x, y):
+	def get_patch(self, x, y, snr):
 		patch = np.zeros([self.patch_sz, self.patch_sz])
-		snr = self.get_snr()					# get snr from snr distribution
 		sigma = self.get_noise(x,y)				# get sigma corresp. to noise at equiv. patch on background
 		max_intensity = snr*sigma
 		x_0 = y_0 = math.floor(self.patch_sz/2)
-		if (self.spot_shape_params[0] == '2D_Gaussian'):
+		if (self.spot_shape_params[0] == '2D_Gauss'):
 			if (len(self.spot_shape_params) < 2):
 				raise ValueError('Spot sigma required for 2D Gaussian spot shape.')
 			spot_sigma = self.spot_shape_params[1]
@@ -136,15 +159,17 @@ class SpotImage():
 					exp_num = x_dist**2 + y_dist**2
 					exp_den = 2*(spot_sigma**2)
 					exp_quantity = exp_num/exp_den
-					patch[i][j] = max_intensity*np.exp(-exp_quantity)
-		self.spot_index = self.spot_index + 1
+					value = max_intensity*np.exp(-exp_quantity)		
+					if (value < 0):				
+						value = 0
+					patch[i][j] = value
 		return patch
 
 	"""
-	Sample an SNR from the specified distribution.
+	Sample an SNR from the specified SNR distribution.
 	"""
 	def get_snr(self):
-		if (self.snr_distr_params[0] == 'Gaussian'):
+		if (self.snr_distr_params[0] == 'Gauss'):
 			if (len(self.snr_distr_params) < 3):
 				raise ValueError('Mu and sigma required for Gaussian SNR distribution.')
 			mu = self.snr_distr_params[1]
@@ -167,9 +192,9 @@ class SpotImage():
 		return sigma
 
 	"""
-	Returns spot_array generated.
+	Returns spot_array generated from spot_list.
 	"""
-	def spot_list_to_spot_array(self):
+	def generate_spot_array(self):
 		spot_array = np.zeros([self.img_sz, self.img_sz])
 		spot_list = self.get_spot_list()
 		for spot in spot_list:
@@ -195,4 +220,3 @@ class SpotImage():
 				spot_array_val = spot_array[array_origin_y + row_ind][array_origin_x + col_ind]		# the pre-existing value at that location in spot_array
 				spot_array[array_origin_y + row_ind][array_origin_x + col_ind] = spot_array_val + patch[row_ind][col_ind]
 		return spot_array
-

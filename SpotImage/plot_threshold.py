@@ -21,8 +21,6 @@ img = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
 resized_img = cv2.resize(img, (300, 300))
 
 val = filters.threshold_otsu(resized_img)
-print(val)
-
 
 hist, bins_center = exposure.histogram(resized_img)
 

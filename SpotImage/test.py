@@ -3,32 +3,32 @@ from SpotImage import SpotImage
 """ 
 Parameterizing the spot image. 
 """
-bg_img_filename = 'MAX_C2_crop1.tiff'
-bg_img_filename = 'MAX_C2-ISP_FixTest_PFA_L-probe_40x_1-3NA_1-6x_20180608_1_MMStack_Pos0.ome.tif'
+
+bg_img_filename = 'MAX_ISP_300_3.tif'
 cmap = 'gray'		# color map	
 img_sz = 300		# typical image size
 patch_sz = 11		# typical patch size, as sampled from beads_300pxroi.png; using odd number so that center point exists
 
-num_spots = 100
-spot_sigma = 1		# produces spots that look somewhat typical in size
-spot_shape_params = ['2D_Gaussian', spot_sigma]
+num_spots = 200
+spot_sigma = 1.75		# produces spots that look somewhat typical in size
+spot_shape_params = ['2D_Gauss', spot_sigma]
 
-snr_mu = 30			# looks like a typical image
-snr_sigma = 1		# chosen to look like a typical image
-snr_distr_params = ['Gaussian', snr_mu, snr_sigma]
+snr_mu = 12				# looks like a typical image
+snr_sigma = 20			# looks like a typical image
+snr_distr_params = ['Gauss', snr_mu, snr_sigma]
 
-si = SpotImage(bg_img_filename, cmap, img_sz, patch_sz, num_spots, spot_shape_params, snr_distr_params) # Load data into a SpotImage object
+intensity_threshold = 3	# increase realism: raise the threshold found by Otsu's so that spots appear in brighter parts of cells/tissue
 
-# si.get_valid_coords()
+si = SpotImage(bg_img_filename, cmap, img_sz, patch_sz, num_spots, spot_shape_params, snr_distr_params, intensity_threshold) # Load data into a SpotImage object
 
-""" 
+"""
 Visualizing and saving the spots and spot image. 
 """
 plot_spots = True
 plot_img = True
 save_spots = True
-spots_filename = "spot_array.png"
 save_img = True
-spot_img_filename = "spot_img.png"
+spots_filename = "".join(bg_img_filename.rsplit(bg_img_filename[-4:])) + "_nspots" + str(num_spots) + "_spot_sig" + str(spot_sigma) + "_snr" + str(snr_mu) + "_" + str(snr_sigma) + "_spot_array.png"
+spot_img_filename = "".join(bg_img_filename.rsplit(bg_img_filename[-4:])) + "_nspots" + str(num_spots) + "_spot_sig" + str(spot_sigma) + "_snr" + str(snr_mu) + "_" + str(snr_sigma) + "_spot_img.png"
 
 si.generate_spot_image(plot_spots, plot_img, save_spots, spots_filename, save_img, spot_img_filename)
