@@ -22,7 +22,7 @@ Options for visualizing and saving the spots and spot image.
 
 plot_spots = True
 plot_img = True
-save_spots = False
+save_spots = True
 save_img = True
 
 """
@@ -52,3 +52,4 @@ for bg_img_filename in bg_img_filename_list:
 			coord_snr_list_csv = "".join(bg_img_filename.rsplit(bg_img_filename[-4:])) + "_nspots" + str(num_spots) + "_spot_sig" + str(spot_sigma) + "_snr" + str(snr_mu) + "_" + str(snr_sigma) + "_coord_snr_list.csv"
 			si.get_coord_snr_list_csv(coord_snr_list_csv)
 
+print("hello")

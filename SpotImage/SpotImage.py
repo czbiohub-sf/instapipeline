@@ -77,52 +77,16 @@ class SpotImage():
 
 		if plot_spots:	
 			plt.imshow(self.spot_array, cmap = self.cmap)
-			plt.title("".join(self.bg_img_filename.rsplit(self.bg_img_filename[-4:])) + "_nspots" + str(self.num_spots) + "_spot_sig" + str(self.spot_shape_params[1]) + "_snr" + str(self.snr_distr_params[1]) + "_" + str(self.snr_distr_params[2]) + "_spot_array")
+			plt.title(spots_filename)
 			plt.show()
+			if save_spots:
+				plt.imsave(spots_filename, self.spot_array, cmap = self.cmap)
 		if plot_img:
 			plt.imshow(self.spot_img, cmap = self.cmap)
-			plt.title("".join(self.bg_img_filename.rsplit(self.bg_img_filename[-4:])) + "_nspots" + str(self.num_spots) + "_spot_sig" + str(self.spot_shape_params[1]) + "_snr" + str(self.snr_distr_params[1]) + "_" + str(self.snr_distr_params[2]) + "_spot_img")
+			plt.title(spot_img_filename)
 			plt.show()
-		if save_spots:
-			cv2.imwrite(spots_filename, self.spot_array)
-		if save_img:
-			cv2.imwrite(spot_img_filename, self.spot_img)
-
-	# def generate_spot_image(self, plot_spots, plot_img, save_spots, spots_filename, save_img, spot_img_filename):
-	# 	self.spot_array = self.generate_spot_array()
-	# 	self.spot_img = np.add(self.bg_array, self.spot_array)
-
-	# 	if plot_spots:	
-	# 		plt.imshow(self.spot_array, cmap = self.cmap)
-	# 		plt.title("".join(self.bg_img_filename.rsplit(self.bg_img_filename[-4:])) + "_nspots" + str(self.num_spots) + "_spot_sig" + str(self.spot_shape_params[1]) + "_snr" + str(self.snr_distr_params[1]) + "_" + str(self.snr_distr_params[2]) + "_spot_array")
-	# 		plt.show()
-	# 	if plot_img:
-	# 		plt.imshow(self.spot_img, cmap = self.cmap)
-	# 		plt.title("".join(self.bg_img_filename.rsplit(self.bg_img_filename[-4:])) + "_nspots" + str(self.num_spots) + "_spot_sig" + str(self.spot_shape_params[1]) + "_snr" + str(self.snr_distr_params[1]) + "_" + str(self.snr_distr_params[2]) + "_spot_img")
-	# 		plt.show()
-
-		# hist,bins = np.histogram(self.spot_img.flatten(),256,[0,256])
-		# cdf = hist.cumsum()
-		# cdf_m = np.ma.masked_equal(cdf,0)
-		# cdf_m = (cdf_m - cdf_m.min())*255/(cdf_m.max()-cdf_m.min())
-		# cdf = np.ma.filled(cdf_m,0).astype('uint8')
-		# print(cdf)
-
-		# if save_spots:
-		# 	spot_array_tr = cdf[self.spot_array]
-		# 	cv2.imwrite(spots_filename, spot_array_tr)
-		# if save_img:
-		# 	spot_img_tr = cdf[self.spot_img]
-		# 	cv2.imwrite(spot_img_filename, self.spot_img)
-		# if save_spots:
-		# 	cv2.imwrite(spots_filename, self.spot_array)
-		# if save_img:
-		# 	cv2.imwrite(spot_img_filename, self.spot_img)
-		# 	image = Image.open(spot_img_filename)
-		# 	contrast = ImageEnhance.Contrast(image)
-		# 	for i in range (10):
-		# 		val = i/2
-		# 		contrast.enhance(val).save(spot_img_filename + str(val) + '.tif',"TIF")
+			if save_img:
+				plt.imsave(spot_img_filename, self.spot_img, cmap = self.cmap)
 
 	"""
 	Save csv files of spot image data for later reference
@@ -146,17 +110,11 @@ class SpotImage():
 	"""
 	def img_to_array(self, img_filename):
 
-		# image = Image.open(img_filename)
-		# contrast = ImageEnhance.Contrast(image)
-		
-		# pil_img = contrast.enhance(5)
-		# img = np.array(pil_img)
-
 		img = cv2.imread(img_filename)					# img is a numpy 2D array
 		img_cvt = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)	
 		resized_img = cv2.resize(img_cvt, (self.img_sz, self.img_sz))
 		print()
-		return resized_img	
+		return resized_img
 
 	"""
 	Returns the set of coordinates where spots may be added.
