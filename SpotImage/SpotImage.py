@@ -110,7 +110,7 @@ class SpotImage():
 
 	"""
 	Returns the set of coordinates where spots may be added.
-	Coordinates below the threshold found by Otsu's are excluded from this set.
+	Coordinates below self.threshold are excluded from this set.
 	"""
 	def get_valid_coords(self):
 		valid_coords = []
@@ -129,12 +129,14 @@ class SpotImage():
 	Each spot has a random location and a patch of intensity values.
 	"""
 	def get_spot_list(self):
-		# Generate a random list of num_spots coordinates
 		self.coord_list = [self.get_spot_coord() for i in range(self.num_spots)]
 		self.snr_list = [self.get_snr() for i in range(self.num_spots)]
 		spot_list = [[self.coord_list[i], self.get_patch(self.coord_list[i][0], self.coord_list[i][1], self.snr_list[i])] for i in range(self.num_spots)]
 		return spot_list
 
+	"""
+	Select a random spot coordinate from the list of valid spots.
+	"""
 	def get_spot_coord(self):
 		return random.choice(self.valid_coords)
 
@@ -202,6 +204,7 @@ class SpotImage():
 		return spot_array
 
 	"""
+	Adds one spot to spot_array.
 	Inputs:
 		spot = array with 3 elems [spot_x, spot_y, patch]
 				where patch is a 2D square array
