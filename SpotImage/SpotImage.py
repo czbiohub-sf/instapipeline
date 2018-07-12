@@ -1,13 +1,15 @@
 """ This module contains the SpotImage class.
 """
 
-import numpy as np
-import math
 import cv2
-import random
+import math
 import matplotlib.pyplot as plt
+import numpy as np
+import random
 from skimage import filters
 from skimage.restoration import estimate_sigma
+
+from PIL import ImageEnhance, Image
 
 # ------- #
 
@@ -51,6 +53,7 @@ class SpotImage():
 			raise ValueError('Invalid SNR distribution name entered.')
 		if (patch_sz > img_sz):
 			raise ValueError('Patch size is greater than image size.')
+		self.bg_img_filename = bg_img_filename
 		self.cmap = cmap
 		self.img_sz = img_sz
 		self.patch_sz = patch_sz
@@ -74,14 +77,52 @@ class SpotImage():
 
 		if plot_spots:	
 			plt.imshow(self.spot_array, cmap = self.cmap)
+			plt.title("".join(self.bg_img_filename.rsplit(self.bg_img_filename[-4:])) + "_nspots" + str(self.num_spots) + "_spot_sig" + str(self.spot_shape_params[1]) + "_snr" + str(self.snr_distr_params[1]) + "_" + str(self.snr_distr_params[2]) + "_spot_array")
 			plt.show()
 		if plot_img:
 			plt.imshow(self.spot_img, cmap = self.cmap)
+			plt.title("".join(self.bg_img_filename.rsplit(self.bg_img_filename[-4:])) + "_nspots" + str(self.num_spots) + "_spot_sig" + str(self.spot_shape_params[1]) + "_snr" + str(self.snr_distr_params[1]) + "_" + str(self.snr_distr_params[2]) + "_spot_img")
 			plt.show()
 		if save_spots:
 			cv2.imwrite(spots_filename, self.spot_array)
 		if save_img:
 			cv2.imwrite(spot_img_filename, self.spot_img)
+
+	# def generate_spot_image(self, plot_spots, plot_img, save_spots, spots_filename, save_img, spot_img_filename):
+	# 	self.spot_array = self.generate_spot_array()
+	# 	self.spot_img = np.add(self.bg_array, self.spot_array)
+
+	# 	if plot_spots:	
+	# 		plt.imshow(self.spot_array, cmap = self.cmap)
+	# 		plt.title("".join(self.bg_img_filename.rsplit(self.bg_img_filename[-4:])) + "_nspots" + str(self.num_spots) + "_spot_sig" + str(self.spot_shape_params[1]) + "_snr" + str(self.snr_distr_params[1]) + "_" + str(self.snr_distr_params[2]) + "_spot_array")
+	# 		plt.show()
+	# 	if plot_img:
+	# 		plt.imshow(self.spot_img, cmap = self.cmap)
+	# 		plt.title("".join(self.bg_img_filename.rsplit(self.bg_img_filename[-4:])) + "_nspots" + str(self.num_spots) + "_spot_sig" + str(self.spot_shape_params[1]) + "_snr" + str(self.snr_distr_params[1]) + "_" + str(self.snr_distr_params[2]) + "_spot_img")
+	# 		plt.show()
+
+		# hist,bins = np.histogram(self.spot_img.flatten(),256,[0,256])
+		# cdf = hist.cumsum()
+		# cdf_m = np.ma.masked_equal(cdf,0)
+		# cdf_m = (cdf_m - cdf_m.min())*255/(cdf_m.max()-cdf_m.min())
+		# cdf = np.ma.filled(cdf_m,0).astype('uint8')
+		# print(cdf)
+
+		# if save_spots:
+		# 	spot_array_tr = cdf[self.spot_array]
+		# 	cv2.imwrite(spots_filename, spot_array_tr)
+		# if save_img:
+		# 	spot_img_tr = cdf[self.spot_img]
+		# 	cv2.imwrite(spot_img_filename, self.spot_img)
+		# if save_spots:
+		# 	cv2.imwrite(spots_filename, self.spot_array)
+		# if save_img:
+		# 	cv2.imwrite(spot_img_filename, self.spot_img)
+		# 	image = Image.open(spot_img_filename)
+		# 	contrast = ImageEnhance.Contrast(image)
+		# 	for i in range (10):
+		# 		val = i/2
+		# 		contrast.enhance(val).save(spot_img_filename + str(val) + '.tif',"TIF")
 
 	"""
 	Save csv files of spot image data for later reference
@@ -93,19 +134,28 @@ class SpotImage():
 	def get_spot_img_csv(self, csv_filename):
 		np.savetxt(csv_filename, self.spot_img, delimiter=",")
 
-	def get_coord_list_csv(self, csv_filename):
-		np.savetxt(csv_filename, self.coord_list, delimiter=",")
-
-	def get_snr_list_csv(self, csv_filename):
-		np.savetxt(csv_filename, self.snr_list, delimiter=",")
+	def get_coord_snr_list_csv(self, csv_filename):
+		coord_snr_list = [None]*self.num_spots
+		for i in range(self.num_spots):
+			spot = [self.coord_list[i][0], self.coord_list[i][1], self.snr_list[i]]
+			coord_snr_list[i] = spot
+		np.savetxt(csv_filename, coord_snr_list, delimiter=",")
 
 	"""
 	Returns an image as an array of gray values, squished down to img_sz x img_sz.
 	"""
 	def img_to_array(self, img_filename):
+
+		# image = Image.open(img_filename)
+		# contrast = ImageEnhance.Contrast(image)
+		
+		# pil_img = contrast.enhance(5)
+		# img = np.array(pil_img)
+
 		img = cv2.imread(img_filename)					# img is a numpy 2D array
-		img_cvt = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)		
+		img_cvt = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)	
 		resized_img = cv2.resize(img_cvt, (self.img_sz, self.img_sz))
+		print()
 		return resized_img	
 
 	"""
