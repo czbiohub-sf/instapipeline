@@ -25,7 +25,8 @@ class SpotImage():
 	-	number of spots (num_spots)
 	-	spot size and shape (patch_sz, spot_shape_params)
 	-	SNR distribution from which to sample SNR of each spot (snr_distr_params)
-	-	how much to constrain spots to brighter areas (intensity_threshold)
+	-	minimum SNR of a spot (snr_threshold)
+	-	how much to constrain spots to brighter areas (bg_intensity_threshold)
 
 	Implementation:
 	->	The background image is scaled and color-mapped in a 2D pixel array.
@@ -45,7 +46,7 @@ class SpotImage():
 	"""
 	Constructor
 	"""
-	def __init__(self, bg_img_filename, cmap, img_sz, patch_sz, num_spots, spot_shape_params, snr_distr_params, intensity_threshold):
+	def __init__(self, bg_img_filename, cmap, img_sz, patch_sz, num_spots, spot_shape_params, snr_distr_params, snr_threshold, bg_intensity_threshold):
 
 		if (spot_shape_params[0] not in self.spot_shapes):
 			raise ValueError('Invalid spot shape name entered.')
@@ -60,10 +61,11 @@ class SpotImage():
 		self.num_spots = num_spots
 		self.spot_shape_params = spot_shape_params
 		self.snr_distr_params = snr_distr_params
+		self.snr_threshold = snr_threshold
 
 		self.margin = math.floor(self.patch_sz/2)			# setting margin such that no patches hang off the edges
 		self.bg_array = self.img_to_array(bg_img_filename)
-		self.threshold = filters.threshold_otsu(self.bg_array) + intensity_threshold
+		self.threshold = filters.threshold_otsu(self.bg_array) + bg_intensity_threshold
 		self.valid_coords = self.get_valid_coords()			# set of coordinates where beads may be placed
 
 	"""
@@ -185,6 +187,8 @@ class SpotImage():
 			mu = self.snr_distr_params[1]
 			sigma = self.snr_distr_params[2]
 			snr = np.random.normal(mu, sigma)
+			if (snr < self.snr_threshold):
+				snr = self.snr_threshold
 		return snr
 
 	"""

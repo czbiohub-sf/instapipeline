@@ -13,6 +13,7 @@ spot_sigma = 1.75
 spot_shape_params = ['2D_Gauss', spot_sigma]
 
 snr_sigma = 20		
+snr_threshold = 3
 
 intensity_threshold = 2	# increase realism: raise the threshold found by Otsu's so that spots appear in brighter parts of cells/tissue
 
@@ -43,7 +44,7 @@ for bg_img_filename in bg_img_filename_list:
 
 			snr_distr_params = ['Gauss', snr_mu, snr_sigma]
 
-			si = SpotImage(bg_img_filename, cmap, img_sz, patch_sz, num_spots, spot_shape_params, snr_distr_params, intensity_threshold) # Load data into a SpotImage object
+			si = SpotImage(bg_img_filename, cmap, img_sz, patch_sz, num_spots, spot_shape_params, snr_distr_params, snr_threshold, intensity_threshold) # Load data into a SpotImage object
 
 			spots_filename = "".join(bg_img_filename.rsplit(bg_img_filename[-4:])) + "_nspots" + str(num_spots) + "_spot_sig" + str(spot_sigma) + "_snr" + str(snr_mu) + "_" + str(snr_sigma) + "_spot_array.tif"
 			spot_img_filename = "".join(bg_img_filename.rsplit(bg_img_filename[-4:])) + "_nspots" + str(num_spots) + "_spot_sig" + str(spot_sigma) + "_snr" + str(snr_mu) + "_" + str(snr_sigma) + "_spot_img.tif"
