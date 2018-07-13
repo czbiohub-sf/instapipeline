@@ -22,8 +22,8 @@ Options for visualizing and saving the spots and spot image.
 
 plot_spots = True
 plot_img = True
-save_spots = True
-save_img = True
+save_spots = False
+save_img = False
 
 """
 Generate images for the experiment
