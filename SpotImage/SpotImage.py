@@ -179,6 +179,8 @@ class SpotImage():
 
 	"""
 	Sample an SNR from the specified SNR distribution.
+	Enforces that the SNR must be at least 3 (since there 
+	is no reason to expect people to detect a signal with SNR < 3).
 	"""
 	def get_snr(self):
 		if (self.snr_distr_params[0] == 'Gauss'):
