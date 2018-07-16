@@ -46,7 +46,7 @@ class SpotImage():
 	"""
 	Constructor
 	"""
-	def __init__(self, bg_img_filename, cmap, img_sz, patch_sz, num_spots, spot_shape_params, snr_distr_params, snr_threshold, bg_intensity_threshold):
+	def __init__(self, bg_img_filename, cmap, img_sz, patch_sz, num_spots, spot_shape_params, snr_distr_params, snr_threshold, bg_intensity_threshold, brightness_bias):
 
 		if (spot_shape_params[0] not in self.spot_shapes):
 			raise ValueError('Invalid spot shape name entered.')
@@ -62,9 +62,12 @@ class SpotImage():
 		self.spot_shape_params = spot_shape_params
 		self.snr_distr_params = snr_distr_params
 		self.snr_threshold = snr_threshold
+		self.brightness_bias = brightness_bias
 
 		self.margin = math.floor(self.patch_sz/2)			# setting margin such that no patches hang off the edges
 		self.bg_array = self.img_to_array(bg_img_filename)
+		self.min_bg_intensity = np.amin(self.bg_array)
+		self.max_bg_intensity = np.amax(self.bg_array)
 		self.threshold = filters.threshold_otsu(self.bg_array) + bg_intensity_threshold
 		self.valid_coords = self.get_valid_coords()			# set of coordinates where beads may be placed
 
@@ -115,7 +118,6 @@ class SpotImage():
 		img = cv2.imread(img_filename)					# img is a numpy 2D array
 		img_cvt = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)	
 		resized_img = cv2.resize(img_cvt, (self.img_sz, self.img_sz))
-		print()
 		return resized_img
 
 	"""
@@ -124,14 +126,14 @@ class SpotImage():
 	"""
 	def get_valid_coords(self):
 		valid_coords = []
-		# valid_array = np.zeros([self.img_sz, self.img_sz])		# for visualizing the valid coordinates
+		valid_array = np.zeros([self.img_sz, self.img_sz])		# for visualizing the valid coordinates
 		for row_ind in range(self.margin, self.img_sz - self.margin):
 			for col_ind in range(self.margin, self.img_sz - self.margin):
 				if (self.bg_array[row_ind][col_ind] >= self.threshold):
 					valid_coords.append([col_ind,row_ind])
-		# 			valid_array[row_ind][col_ind] = 1				
-		# plt.imshow(valid_array, cmap = self.cmap)
-		# plt.show()
+					valid_array[row_ind][col_ind] = 1				
+		plt.imshow(valid_array, cmap = self.cmap)
+		plt.show()
 		return(valid_coords)	
 
 	"""
@@ -148,7 +150,13 @@ class SpotImage():
 	Select a random spot coordinate from the list of valid spots.
 	"""
 	def get_spot_coord(self):
-		return random.choice(self.valid_coords)
+		coord = random.choice(self.valid_coords)
+		if self.brightness_bias:
+			bg_intensity = self.bg_array[coord[0], coord[1]] 
+			while(bg_intensity < random.randint(self.min_bg_intensity, self.max_bg_intensity)):
+				coord = random.choice(self.valid_coords)
+				bg_intensity = self.bg_array[coord[0], coord[1]] 
+		return coord
 
 	"""
 	Generate one 2D square array with one spot.
