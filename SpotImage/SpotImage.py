@@ -46,7 +46,7 @@ class SpotImage():
 	"""
 	Constructor
 	"""
-	def __init__(self, bg_img_filename, cmap, img_sz, patch_sz, num_spots, spot_shape_params, snr_distr_params, snr_threshold, bg_intensity_threshold, brightness_bias):
+	def __init__(self, bg_img_filename, cmap, img_sz, patch_sz, num_spots, spot_shape_params, snr_distr_params, snr_threshold, global_intensity_dial, brightness_bias, brightness_bias_dial, biasing_method):
 
 		if (spot_shape_params[0] not in self.spot_shapes):
 			raise ValueError('Invalid spot shape name entered.')
@@ -63,13 +63,18 @@ class SpotImage():
 		self.snr_distr_params = snr_distr_params
 		self.snr_threshold = snr_threshold
 		self.brightness_bias = brightness_bias
+		self.brightness_bias_dial = brightness_bias_dial
+		self.biasing_method = biasing_method
+		self.global_intensity_dial = global_intensity_dial
 
 		self.margin = math.floor(self.patch_sz/2)			# setting margin such that no patches hang off the edges
 		self.bg_array = self.img_to_array(bg_img_filename)
 		self.min_bg_intensity = np.amin(self.bg_array)
 		self.max_bg_intensity = np.amax(self.bg_array)
-		self.threshold = filters.threshold_otsu(self.bg_array) + bg_intensity_threshold
+		self.threshold = filters.threshold_otsu(self.bg_array)
 		self.valid_coords = self.get_valid_coords()			# set of coordinates where beads may be placed
+
+		self.spot_counter = 0
 
 	"""
 	Generate a spot image.
@@ -126,14 +131,14 @@ class SpotImage():
 	"""
 	def get_valid_coords(self):
 		valid_coords = []
-		valid_array = np.zeros([self.img_sz, self.img_sz])		# for visualizing the valid coordinates
+		# valid_array = np.zeros([self.img_sz, self.img_sz])		# for visualizing the valid coordinates
 		for row_ind in range(self.margin, self.img_sz - self.margin):
 			for col_ind in range(self.margin, self.img_sz - self.margin):
 				if (self.bg_array[row_ind][col_ind] >= self.threshold):
 					valid_coords.append([col_ind,row_ind])
-					valid_array[row_ind][col_ind] = 1				
-		plt.imshow(valid_array, cmap = self.cmap)
-		plt.show()
+		# 			valid_array[row_ind][col_ind] = 1				
+		# plt.imshow(valid_array, cmap = self.cmap)
+		# plt.show()
 		return(valid_coords)	
 
 	"""
@@ -151,11 +156,62 @@ class SpotImage():
 	"""
 	def get_spot_coord(self):
 		coord = random.choice(self.valid_coords)
+
 		if self.brightness_bias:
-			bg_intensity = self.bg_array[coord[0], coord[1]] 
-			while(bg_intensity < random.randint(self.min_bg_intensity, self.max_bg_intensity)):
-				coord = random.choice(self.valid_coords)
+			"""
+			Method 1:
+				While the background intensity is less than a randomly generated number
+				between backgound_intensity_min and backgound_intensity_max + brightness_bias_dial, 
+				reassign the coordinate. 
+			"""
+			if (self.biasing_method == 1):
 				bg_intensity = self.bg_array[coord[0], coord[1]] 
+				while(bg_intensity < random.randint(self.min_bg_intensity, self.max_bg_intensity + self.brightness_bias_dial)):
+					coord = random.choice(self.valid_coords)
+					bg_intensities = []
+					for i in range(-1,2):
+						for j in range(-1,2):
+							bg_intensities.append(self.bg_array[coord[0]+i, coord[1]+j])
+					bg_intensity = np.median(bg_intensities)
+			
+			"""
+			Method 2: Threshold Dilation
+				If the intensity of the kernel on the background is closer to the 
+				validity threshold than the max background intensity, the coordinate
+				is accepted 1/(brightness_bias_dial) of the time and reassigned the
+				rest of the time.
+			"""
+			if (self.biasing_method == 2):
+				bg_intensities = []
+				for i in range(-1,2):
+					for j in range(-1,2):
+						bg_intensities.append(self.bg_array[coord[0]+i, coord[1]+j])
+				bg_intensity = np.median(bg_intensities)
+				while (bg_intensity < ((self.threshold + self.max_bg_intensity)/2)):
+					if (random.randint(0,self.brightness_bias_dial) != 1):		# a fraction of the time
+						coord = random.choice(self.valid_coords)
+						bg_intensities = []
+						for i in range(-1,2):
+							for j in range(-1,2):
+								bg_intensities.append(self.bg_array[coord[0]+i, coord[1]+j])
+						bg_intensity = np.median(bg_intensities)
+					else:
+						break
+
+			"""
+			Method 3: 
+				Increase global intensity dial for fraction (2/3) of all spots.
+			"""
+			if (self.biasing_method == 3):
+				if (self.spot_counter > (self.num_spots * (2/3)):
+					while (self.bg_array[coord[0],coord[1]] < (self.threshold + self.global_intensity_dial)):
+						coord = random.choice(self.valid_coords)
+						# if(coord[0] < 200):
+						# 	coord[0] += 100
+						# 	print(self.spot_counter)
+						# 	print(coord)
+
+		self.spot_counter += 1
 		return coord
 
 	"""
@@ -206,8 +262,8 @@ class SpotImage():
 	of size patch_sz and centered on (x,y).
 	"""
 	def get_noise(self, x, y):
-		origin_x = x - self.margin
-		origin_y = y - self.margin
+		origin_x = x - self.margin - 1
+		origin_y = y - self.margin - 1
 		patch = np.zeros([self.patch_sz, self.patch_sz])
 		for row in range(self.patch_sz):
 			for col in range(self.patch_sz):
