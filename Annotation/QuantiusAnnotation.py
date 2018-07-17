@@ -46,7 +46,3 @@ class QuantiusAnnotation(BaseAnnotation):
 			to_return = to_return.append(coords)
 
 		return to_return
-
-
-
-

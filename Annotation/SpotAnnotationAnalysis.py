@@ -44,6 +44,8 @@ class SpotAnnotationAnalysis():
 	"""
 	def __init__(self, ba_obj):
 		self.ba = ba_obj
+		self.clusters_done = []
+		self.cluster_objects = []
 
 	"""
 	Inputs: 
@@ -57,7 +59,9 @@ class SpotAnnotationAnalysis():
 			centroid_y = y coord of cluster centroid
 			members = list of annotations belonging to the cluster
 	"""
-	def get_clusters(self, clustering_alg, df, clustering_params):
+	def get_clusters(self, df, clustering_params):
+
+		clustering_alg = clustering_params[0]
 
 		if (clustering_alg not in self.clustering_algs):
 			raise ValueError('Invalid clustering algorithm name entered.')
@@ -65,12 +69,13 @@ class SpotAnnotationAnalysis():
 		if (clustering_alg == 'AffinityPropagation'):											# If AffinityPropagation is selected:
 			cluster_centroids_list = []																# Initialize a list of cluster centroids
 
-			if(len(clustering_params) != 1):														# Check that there's only one clustering parameter
+			if(len(clustering_params) != 2):														# Check that there's only one clustering parameter
 				raise ValueError('Please enter a list containing the preference parameter.')
 
-			coords = self.ba.get_click_properties(df)[:,:2]															# Get all the coordinates from the annotation dataframe (dissociated from timestamps)
+			coords = self.ba.get_click_properties(df)[:,:2]											# Get all the coordinates from the annotation dataframe (dissociated from timestamps)
 
-			af = AffinityPropagation(preference = clustering_params[0]).fit(coords)					# Run AffinityPropagation on those coordinates
+			af = self.get_cluster_object(coords, clustering_params)
+
 			cluster_centers_indices = af.cluster_centers_indices_									# Get the indices of the cluster centers (list)
 			num_clusters = len(cluster_centers_indices)
 
@@ -100,6 +105,27 @@ class SpotAnnotationAnalysis():
 		return to_return
 
 	"""
+	Checks to see whether the cluster object has already been generated
+	for the given df and clustering parameters and returns or calculates
+	appropriately.
+	""" 
+	def get_cluster_object(self, coords, clustering_params):
+
+		if (clustering_params[0] == 'AffinityPropagation'):
+
+			for i in range(len(self.clusters_done)):
+				coords_done = self.clusters_done[i][0]
+				clustering_params_done = self.clusters_done[i][1]
+				if ((np.array_equal(coords, coords_done)) and clustering_params == clustering_params_done):
+					return self.cluster_objects[i]
+
+			af = AffinityPropagation(preference = clustering_params[1]).fit(coords)				
+			self.clusters_done.append([coords, clustering_params])
+			self.cluster_objects.append(af)
+
+			return af
+
+	"""
 	Inputs:
 		string name of clustering alg to use
 		df with annotation data (should already be cropped)
@@ -116,10 +142,10 @@ class SpotAnnotationAnalysis():
 			NN_dist = distance from centroid to nearest neighbor reference
 			members = list of coordinates of annotations belonging to cluster
 	"""
-	def anno_and_ref_to_df(self, clustering_alg, df, clustering_params, csv_filename, img_filename):
+	def anno_and_ref_to_df(self, df, clustering_params, csv_filename, img_filename):
 
 		anno_one_crop = self.ba.slice_by_image(df, img_filename)	# Remove data from other croppings.
-		clusters = self.get_clusters(clustering_alg, anno_one_crop, clustering_params)
+		clusters = self.get_clusters(anno_one_crop, clustering_params)
 		img_height = anno_one_crop['height'].values[0]
 		ref_kdt = self.csv_to_kdt(csv_filename, img_height)
 		ref_array = np.asarray(ref_kdt.data)
@@ -268,7 +294,7 @@ class SpotAnnotationAnalysis():
 	Returns:
 		none
 	"""
-	def plot_annotations(self, df, img_filename, csv_filename, worker_marker_size, cluster_marker_size, show_ref_points, show_workers, show_clusters, show_correctness_workers, show_correctness_clusters, show_NN_inc, correctness_threshold, clustering_alg, clustering_params, bigger_window_size):
+	def plot_annotations(self, df, img_filename, csv_filename, worker_marker_size, cluster_marker_size, show_ref_points, show_workers, show_clusters, show_correctness_workers, show_correctness_clusters, show_NN_inc, correctness_threshold, clustering_params, bigger_window_size):
 		if bigger_window_size:
 			fig = plt.figure(figsize=(14,12))
 		else:
@@ -278,7 +304,7 @@ class SpotAnnotationAnalysis():
 		worker_list = self.ba.get_workers(anno_one_crop)
 
 		if show_clusters or show_correctness_workers:
-			clusters = self.anno_and_ref_to_df(clustering_alg, df, clustering_params, csv_filename, img_filename)
+			clusters = self.anno_and_ref_to_df(df, clustering_params, csv_filename, img_filename)
 			member_lists = clusters['members'].values	# list of lists
 
 			if correctness_threshold is not None:
@@ -422,10 +448,10 @@ class SpotAnnotationAnalysis():
 			#		aaaaand... plot NND vs. time_spent and color with correctness!
 
 			coords = self.ba.get_click_properties(anno_one_crop)[:,:2]
-			coords_with_times = self.ba.get_coords_and_time_spent(anno_one_crop)		# coordinates <-> time_spent
-			clusters = self.anno_and_ref_to_df('AffinityPropagation', df, clustering_params, csv_filename, img_filename)	# clusters -> NND, coordinates
+			coords_with_times = self.ba.get_click_properties(anno_one_crop)[:,:3]
+			clusters = self.anno_and_ref_to_df(df, clustering_params, csv_filename, img_filename)	# clusters -> NND, coordinates
 			cluster_correctness = self.get_cluster_correctness(clusters, correctness_threshold)		# clusters <-> correctness
-			af = AffinityPropagation(preference = clustering_params[0]).fit(coords)
+			af = self.get_cluster_object(coords, clustering_params)
 			labels = af.labels_	
 
 			for i in range(len(coords)):
@@ -493,17 +519,18 @@ class SpotAnnotationAnalysis():
 
 		# plot all clicks
 		if show_correctness:
-			coords = self.ba.get_click_properties(anno_one_crop)[:,:2]
-			coords_with_time_and_worker_id = self.ba.get_click_properties(anno_one_crop)		# coordinates <-> time_spent
-			clusters = self.anno_and_ref_to_df('AffinityPropagation', df, clustering_params, csv_filename, img_filename)	# clusters -> NND, coordinates
+			click_properties = self.ba.get_click_properties(anno_one_crop)		
+			coords = click_properties[:,:2]
+
+			clusters = self.anno_and_ref_to_df(df, clustering_params, csv_filename, img_filename)	# clusters -> NND, coordinates
 			cluster_correctness = self.get_cluster_correctness(clusters, correctness_threshold)		# clusters <-> correctness
-			af = AffinityPropagation(preference = clustering_params[0]).fit(coords)
+			af = self.get_cluster_object(coords, clustering_params)
 			labels = af.labels_	
 			img_height = anno_one_crop['height'].values[0]
 			ref_kdt = self.csv_to_kdt(csv_filename, img_height)
 
 			for i in range(len(coords)):
-				worker_id = coords_with_time_and_worker_id[i][3]
+				worker_id = click_properties[i][3]
 				worker_index = np.where(worker_list == worker_id)
 
 				coordinate = coords[i]
@@ -571,18 +598,18 @@ class SpotAnnotationAnalysis():
 
 		# plot all clicks
 		if show_correctness:
-			coords = self.ba.get_click_properties(anno_one_crop)[:,:2]
-			coords_with_time_and_worker_id = self.ba.get_click_properties(anno_one_crop)		# coordinates <-> time_spent
-			clusters = self.anno_and_ref_to_df('AffinityPropagation', df, clustering_params, csv_filename, img_filename)	# clusters -> NND, coordinates
+			click_properties = self.ba.get_click_properties(anno_one_crop)		# coordinates <-> time_spent
+			coords = click_properties[:,:2]
+			clusters = self.anno_and_ref_to_df(df, clustering_params, csv_filename, img_filename)	# clusters -> NND, coordinates
 			cluster_correctness = self.get_cluster_correctness(clusters, correctness_threshold)		# clusters <-> correctness
-			af = AffinityPropagation(preference = clustering_params[0]).fit(coords)
+			af = self.get_cluster_object(coords, clustering_params)
 			labels = af.labels_	
 			img_height = anno_one_crop['height'].values[0]
 			ref_kdt = self.csv_to_kdt(csv_filename, img_height)
 
 			for i in range(len(coords)):
-				time_spent = coords_with_time_and_worker_id[i][2]
-				worker_id = coords_with_time_and_worker_id[i][3]
+				time_spent = click_properties[i][2]
+				worker_id = click_properties[i][3]
 				worker_index = np.where(worker_list == worker_id)
 
 				coordinate = coords[i]
@@ -676,18 +703,18 @@ class SpotAnnotationAnalysis():
 		anno_one_worker = self.ba.slice_by_worker(anno_one_crop, uid)
 
 		if show_correctness:
-			coords = self.ba.get_click_properties(anno_one_worker)[:,:2]
-			coords_with_time_and_worker_id = self.ba.get_click_properties(anno_one_worker)		# coordinates <-> time_spent
-			clusters = self.anno_and_ref_to_df('AffinityPropagation', df, clustering_params, csv_filename, img_filename)	# clusters -> NND, coordinates
+			click_properties = self.ba.get_click_properties(anno_one_worker)		
+			coords = click_properties[:,:2]
+			clusters = self.anno_and_ref_to_df(df, clustering_params, csv_filename, img_filename)	# clusters -> NND, coordinates
 			cluster_correctness = self.get_cluster_correctness(clusters, correctness_threshold)		# clusters <-> correctness
-			af = AffinityPropagation(preference = clustering_params[0]).fit(coords)
+			af = self.get_cluster_object(coords, clustering_params)
 			labels = af.labels_
 			img_height = anno_one_worker['height'].values[0]
 			ref_kdt = self.csv_to_kdt(csv_filename, img_height)
 			num_clicks = len(coords)
 
 			for i in range(num_clicks):
-				time_spent = coords_with_time_and_worker_id[i][2]
+				time_spent = click_properties[i][2]
 				click_index = i
 
 				coordinate = coords[i]

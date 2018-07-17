@@ -63,26 +63,22 @@ class BaseAnnotation:
 	def slice_by_worker(self, df, uid):
 		return df[df.worker_id == uid]
 
-	# # Returns np array with all coordinates in the dataframe
-	# def get_coords(self, df):
-	# 	return df.loc[:, ['x', 'y']].as_matrix()
-
-	# Returns np array with all coordinates in the dataframe and associated times spent
-	# time_spent = 0 indicates fencepost case (first click of an occasion)
-	def get_coords_and_time_spent(self, df):
-		occasions = np.unique(df.loc[:, ['time_when_completed']].as_matrix())			# get the list of occasions
-		to_return = np.array([]).reshape(0,3)
-		for occasion in occasions:
-			one_occasion_df = df[df.time_when_completed == occasion]							# occasion[0] is the string time of completion
-			one_occasion_array = one_occasion_df.loc[:, ['x', 'y', 'timestamp']].as_matrix()
-			for i in range(len(one_occasion_array)-1, -1, -1):
-				if(i==0):
-					time_spent = 0
-				else:
-					time_spent = one_occasion_array[i][2] - one_occasion_array[i-1][2]
-				one_occasion_array[i][2] = time_spent
-			to_return = np.vstack([to_return, one_occasion_array])
-		return to_return
+	# # Returns np array with all coordinates in the dataframe and associated times spent
+	# # time_spent = 0 indicates fencepost case (first click of an occasion)
+	# def get_coords_and_time_spent(self, df):
+	# 	occasions = np.unique(df.loc[:, ['time_when_completed']].as_matrix())			# get the list of occasions
+	# 	to_return = np.array([]).reshape(0,3)
+	# 	for occasion in occasions:
+	# 		one_occasion_df = df[df.time_when_completed == occasion]							# occasion[0] is the string time of completion
+	# 		one_occasion_array = one_occasion_df.loc[:, ['x', 'y', 'timestamp']].as_matrix()
+	# 		for i in range(len(one_occasion_array)-1, -1, -1):
+	# 			if(i==0):
+	# 				time_spent = 0
+	# 			else:
+	# 				time_spent = one_occasion_array[i][2] - one_occasion_array[i-1][2]
+	# 			one_occasion_array[i][2] = time_spent
+	# 		to_return = np.vstack([to_return, one_occasion_array])
+	# 	return to_return
 
 	# Returns np array with all clicks in the dataframe and with associated
 	#	coordinates
