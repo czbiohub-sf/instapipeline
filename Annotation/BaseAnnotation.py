@@ -63,23 +63,6 @@ class BaseAnnotation:
 	def slice_by_worker(self, df, uid):
 		return df[df.worker_id == uid]
 
-	# # Returns np array with all coordinates in the dataframe and associated times spent
-	# # time_spent = 0 indicates fencepost case (first click of an occasion)
-	# def get_coords_and_time_spent(self, df):
-	# 	occasions = np.unique(df.loc[:, ['time_when_completed']].as_matrix())			# get the list of occasions
-	# 	to_return = np.array([]).reshape(0,3)
-	# 	for occasion in occasions:
-	# 		one_occasion_df = df[df.time_when_completed == occasion]							# occasion[0] is the string time of completion
-	# 		one_occasion_array = one_occasion_df.loc[:, ['x', 'y', 'timestamp']].as_matrix()
-	# 		for i in range(len(one_occasion_array)-1, -1, -1):
-	# 			if(i==0):
-	# 				time_spent = 0
-	# 			else:
-	# 				time_spent = one_occasion_array[i][2] - one_occasion_array[i-1][2]
-	# 			one_occasion_array[i][2] = time_spent
-	# 		to_return = np.vstack([to_return, one_occasion_array])
-	# 	return to_return
-
 	# Returns np array with all clicks in the dataframe and with associated
 	#	coordinates
 	#	time spent (time_spent = 0 indicates fencepost case (first click of an occasion))
@@ -88,7 +71,7 @@ class BaseAnnotation:
 		occasions = np.unique(df.loc[:, ['time_when_completed']].as_matrix())			# get the list of occasions
 		to_return = np.array([]).reshape(0,4)
 		for occasion in occasions:
-			one_occasion_df = df[df.time_when_completed == occasion]							# occasion[0] is the string time of completion
+			one_occasion_df = df[df.time_when_completed == occasion]							
 			one_occasion_array = one_occasion_df.loc[:, ['x', 'y', 'timestamp', 'worker_id']].as_matrix()
 			for i in range(len(one_occasion_array)-1, -1, -1):
 				if(i==0):
@@ -97,6 +80,24 @@ class BaseAnnotation:
 					time_spent = one_occasion_array[i][2] - one_occasion_array[i-1][2]
 				one_occasion_array[i][2] = time_spent
 			to_return = np.vstack([to_return, one_occasion_array])
+		return to_return
+
+	# Returns dataframe with all fast clicks screened
+	# Clicks of which time_spent < time_threshold are "fast"
+	def screen_clicks_time_spent(self, df, time_threshold):
+		to_return = pd.DataFrame()
+		occasions = np.unique(df.loc[:, ['time_when_completed']].as_matrix())			# get the list of occasions
+		for occasion in occasions:
+			one_occasion_df = df[df.time_when_completed == occasion]
+			one_occasion_timestamps = one_occasion_df.loc[:, ['timestamp']].as_matrix()
+			for i in range(len(one_occasion_timestamps)-1, -1, -1):
+				if(i==0):
+					one_occasion_df = one_occasion_df.drop([i])
+				else:
+					time_spent = one_occasion_timestamps[i][0] - one_occasion_timestamps[i-1][0]
+					if(time_spent<time_threshold):
+						one_occasion_df = one_occasion_df.drop([i])
+			to_return = to_return.append(one_occasion_df)
 		return to_return
 
 	# Flips the values of a list about a height
