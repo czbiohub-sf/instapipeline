@@ -68,7 +68,7 @@ class SpotAnnotationAnalysis():
 			if(len(clustering_params) != 1):														# Check that there's only one clustering parameter
 				raise ValueError('Please enter a list containing the preference parameter.')
 
-			coords = self.ba.get_coords(df)															# Get all the coordinates from the annotation dataframe (dissociated from timestamps)
+			coords = self.ba.get_click_properties(df)[:,:2]															# Get all the coordinates from the annotation dataframe (dissociated from timestamps)
 
 			af = AffinityPropagation(preference = clustering_params[0]).fit(coords)					# Run AffinityPropagation on those coordinates
 			cluster_centers_indices = af.cluster_centers_indices_									# Get the indices of the cluster centers (list)
@@ -210,7 +210,7 @@ class SpotAnnotationAnalysis():
 
 		for worker in worker_list:			
 			anno = self.ba.slice_by_worker(anno_one_crop, worker)	
-			coords = self.ba.get_coords(anno)
+			coords = self.ba.get_click_properties(anno)[:,:2]
 			dist, ind = ref_kdt.query(coords, k=1)
 			dist_list = dist.tolist()
 			values = []
@@ -302,7 +302,7 @@ class SpotAnnotationAnalysis():
 				handle_list = []
 				for worker, color in zip(worker_list, self.colors):			# For each worker, use a different color.
 				    anno = self.ba.slice_by_worker(anno_one_crop, worker)		
-				    coords = self.ba.get_coords(anno)
+				    coords = self.ba.get_click_properties(anno)[:,:2]
 				    x_coords = coords[:,0]
 				    y_coords = coords[:,1]
 				    y_coords_flipped = self.ba.flip(y_coords, img_height)
@@ -421,7 +421,7 @@ class SpotAnnotationAnalysis():
 			#		correctness: index of coordinate is i=index of label. label[i] is index of correctness. correctness[index] is the appropriate correctness.
 			#		aaaaand... plot NND vs. time_spent and color with correctness!
 
-			coords = self.ba.get_coords(anno_one_crop)
+			coords = self.ba.get_click_properties(anno_one_crop)[:,:2]
 			coords_with_times = self.ba.get_coords_and_time_spent(anno_one_crop)		# coordinates <-> time_spent
 			clusters = self.anno_and_ref_to_df('AffinityPropagation', df, clustering_params, csv_filename, img_filename)	# clusters -> NND, coordinates
 			cluster_correctness = self.get_cluster_correctness(clusters, correctness_threshold)		# clusters <-> correctness
@@ -493,8 +493,8 @@ class SpotAnnotationAnalysis():
 
 		# plot all clicks
 		if show_correctness:
-			coords = self.ba.get_coords(anno_one_crop)
-			coords_with_time_and_worker_id = self.ba.get_coords_time_spent_worker_id(anno_one_crop)		# coordinates <-> time_spent
+			coords = self.ba.get_click_properties(anno_one_crop)[:,:2]
+			coords_with_time_and_worker_id = self.ba.get_click_properties(anno_one_crop)		# coordinates <-> time_spent
 			clusters = self.anno_and_ref_to_df('AffinityPropagation', df, clustering_params, csv_filename, img_filename)	# clusters -> NND, coordinates
 			cluster_correctness = self.get_cluster_correctness(clusters, correctness_threshold)		# clusters <-> correctness
 			af = AffinityPropagation(preference = clustering_params[0]).fit(coords)
@@ -571,8 +571,8 @@ class SpotAnnotationAnalysis():
 
 		# plot all clicks
 		if show_correctness:
-			coords = self.ba.get_coords(anno_one_crop)
-			coords_with_time_and_worker_id = self.ba.get_coords_time_spent_worker_id(anno_one_crop)		# coordinates <-> time_spent
+			coords = self.ba.get_click_properties(anno_one_crop)[:,:2]
+			coords_with_time_and_worker_id = self.ba.get_click_properties(anno_one_crop)		# coordinates <-> time_spent
 			clusters = self.anno_and_ref_to_df('AffinityPropagation', df, clustering_params, csv_filename, img_filename)	# clusters -> NND, coordinates
 			cluster_correctness = self.get_cluster_correctness(clusters, correctness_threshold)		# clusters <-> correctness
 			af = AffinityPropagation(preference = clustering_params[0]).fit(coords)
@@ -676,8 +676,8 @@ class SpotAnnotationAnalysis():
 		anno_one_worker = self.ba.slice_by_worker(anno_one_crop, uid)
 
 		if show_correctness:
-			coords = self.ba.get_coords(anno_one_worker)
-			coords_with_time_and_worker_id = self.ba.get_coords_time_spent_worker_id(anno_one_worker)		# coordinates <-> time_spent
+			coords = self.ba.get_click_properties(anno_one_worker)[:,:2]
+			coords_with_time_and_worker_id = self.ba.get_click_properties(anno_one_worker)		# coordinates <-> time_spent
 			clusters = self.anno_and_ref_to_df('AffinityPropagation', df, clustering_params, csv_filename, img_filename)	# clusters -> NND, coordinates
 			cluster_correctness = self.get_cluster_correctness(clusters, correctness_threshold)		# clusters <-> correctness
 			af = AffinityPropagation(preference = clustering_params[0]).fit(coords)

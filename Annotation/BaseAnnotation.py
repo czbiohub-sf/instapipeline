@@ -63,9 +63,9 @@ class BaseAnnotation:
 	def slice_by_worker(self, df, uid):
 		return df[df.worker_id == uid]
 
-	# Returns np array with all coordinates in the dataframe
-	def get_coords(self, df):
-		return df.loc[:, ['x', 'y']].as_matrix()
+	# # Returns np array with all coordinates in the dataframe
+	# def get_coords(self, df):
+	# 	return df.loc[:, ['x', 'y']].as_matrix()
 
 	# Returns np array with all coordinates in the dataframe and associated times spent
 	# time_spent = 0 indicates fencepost case (first click of an occasion)
@@ -84,7 +84,11 @@ class BaseAnnotation:
 			to_return = np.vstack([to_return, one_occasion_array])
 		return to_return
 
-	def get_coords_time_spent_worker_id(self, df):
+	# Returns np array with all clicks in the dataframe and with associated
+	#	coordinates
+	#	time spent (time_spent = 0 indicates fencepost case (first click of an occasion))
+	#	worker_ID
+	def get_click_properties(self, df):
 		occasions = np.unique(df.loc[:, ['time_when_completed']].as_matrix())			# get the list of occasions
 		to_return = np.array([]).reshape(0,4)
 		for occasion in occasions:

@@ -64,12 +64,19 @@ show_workers = True
 show_clusters = True
 clustering_alg = 'AffinityPropagation'
 clustering_params = [-350]
-show_correctness_workers = True
+show_correctness_workers = False
 show_correctness_clusters = False
 show_NN_inc = False
-correctness_threshold = 10
+correctness_threshold = None
 
-#print(sa.get_clusters(clustering_alg, anno_all, clustering_params))
+#sa.plot_annotations(anno_all, img_filename, csv_filename, worker_marker_size, cluster_marker_size, show_ref_points, show_workers, show_clusters, show_correctness_workers, show_correctness_clusters, show_NN_inc, correctness_threshold, clustering_alg, clustering_params, bigger_window_size)
 
-sa.plot_annotations(anno_all, img_filename, csv_filename, worker_marker_size, cluster_marker_size, show_ref_points, show_workers, show_clusters, show_correctness_workers, show_correctness_clusters, show_NN_inc, correctness_threshold, clustering_alg, clustering_params, bigger_window_size)
+click_properties = ba.get_click_properties(anno_all)
+coords = click_properties[:,:2]
+print(coords)
+coords2 = ba.get_coords(anno_all)
+print(coords2)
+print(click_properties)
+
+
 
