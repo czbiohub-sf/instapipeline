@@ -568,7 +568,7 @@ class SpotAnnotationAnalysis():
 
 		plt.title('Nearest Neighbor Distance (NND) vs. Worker Index For Each Click')
 		plt.xlabel('Worker Index')
-		plt.ylabel('Nearest Neighbor Distance (NND) [ms]')
+		plt.ylabel('Nearest Neighbor Distance (NND)')
 		plt.xticks(np.arange(0, len(worker_list), step=1))
 		plt.show()
 
@@ -639,6 +639,9 @@ class SpotAnnotationAnalysis():
 			avg_times = []
 			for i in range(len(worker_list)):
 				worker_times = time_list[i]
+				if not worker_times:				# if list of worker times is empty
+					avg_times.append(0)
+					continue
 				worker_times.pop(0)
 				worker_avg_time = np.average(worker_times)
 				avg_times.append(worker_avg_time) 
@@ -720,6 +723,8 @@ class SpotAnnotationAnalysis():
 				coordinate = coords[i]
 				dist, ind = ref_kdt.query([coordinate], k=1)
 				index = labels[i]
+				if not isinstance(index, int):
+					continue
 				if(cluster_correctness[index][1]):
 					color = 'g'
 					marker_selection = 'o'
