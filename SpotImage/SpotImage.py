@@ -62,6 +62,7 @@ class SpotImage():
 		self.spot_shape_params = spot_shape_params
 		self.snr_distr_params = snr_distr_params
 		self.snr_threshold = snr_threshold
+		
 		self.brightness_bias = brightness_bias
 		self.brightness_bias_dial = brightness_bias_dial
 		self.biasing_method = biasing_method
@@ -203,7 +204,7 @@ class SpotImage():
 				Increase global intensity dial for fraction (2/3) of all spots.
 			"""
 			if (self.biasing_method == 3):
-				if (self.spot_counter > (self.num_spots * (2/3)):
+				if (self.spot_counter > (self.num_spots * (2/3))):
 					while (self.bg_array[coord[0],coord[1]] < (self.threshold + self.global_intensity_dial)):
 						coord = random.choice(self.valid_coords)
 						# if(coord[0] < 200):

@@ -37,16 +37,17 @@ spot_img_filename = "Spot Image"
 # # No bias
 
 num_spots = 300
-# brightness_bias = False
-# si = SpotImage(bg_img_filename, cmap, img_sz, patch_sz, num_spots, spot_shape_params, snr_distr_params, snr_threshold, global_intensity_dial, brightness_bias, brightness_bias_dial, biasing_method)
-# si.generate_spot_image(plot_spots, plot_img, save_spots, spots_filename, save_img, spot_img_filename)
+brightness_bias = False
+si = SpotImage(bg_img_filename, cmap, img_sz, patch_sz, num_spots, spot_shape_params, snr_distr_params, snr_threshold, global_intensity_dial, brightness_bias, brightness_bias_dial, biasing_method)
+si.generate_spot_image(plot_spots, plot_img, save_spots, spots_filename, save_img, spot_img_filename)
+si.get_coord_snr_list_csv("test.csv")
 
 # Method 2
 
-biasing_method = 1
-brightness_bias_dial = 0
-si = SpotImage(bg_img_filename, cmap, img_sz, patch_sz, num_spots, spot_shape_params, snr_distr_params, snr_threshold, global_intensity_dial, brightness_bias, brightness_bias_dial, biasing_method)
-si.generate_spot_image(plot_spots, plot_img, save_spots, spots_filename, save_img, spot_img_filename)
+# biasing_method = 1
+# brightness_bias_dial = 0
+# si = SpotImage(bg_img_filename, cmap, img_sz, patch_sz, num_spots, spot_shape_params, snr_distr_params, snr_threshold, global_intensity_dial, brightness_bias, brightness_bias_dial, biasing_method)
+# si.generate_spot_image(plot_spots, plot_img, save_spots, spots_filename, save_img, spot_img_filename)
 
 
 
