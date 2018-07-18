@@ -30,13 +30,13 @@ class SpotAnnotationAnalysis():
 
 	# list of colors used for plotting different turkers
 	colors = ['#3399FF', '#CC33FF', '#FFFF00', '#FF33CC', 
-    '#9966FF', '#009999', '#FF3399', '#B88A00', 
+    '#9966FF', '#009999', '#99E3FF', '#B88A00', 
     '#33FFCC', '#FF3366', '#F5B800', '#FF6633',
-    '#FF9966', '#FF3399', '#CCFF33', '#FF667F',
+    '#FF9966', '#FF9ECE', '#CCFF33', '#FF667F',
     '#EB4E00', '#FFCC33', '#FF66CC', '#33CCFF', 
-    '#CCFF66', '#667FFF', '#FF99FF', '#FF1F8F',
-    '#9999FF', '#99FFCC', '#FF9999', '#E5FFFF',
-    '#8A00B8', '#E5FFFF']
+    '#ACFF07', '#667FFF', '#FF99FF', '#FF1F8F',
+    '#9999FF', '#99FFCC', '#FF9999', '#91FFFF',
+    '#8A00B8', '#91BBFF', '#FFB71C', '#FF1C76']
 
 	"""
 	Constructor takes in a BaseAnnotation object and saves it as 
