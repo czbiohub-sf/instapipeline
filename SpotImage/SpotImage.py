@@ -8,7 +8,6 @@ import numpy as np
 import random
 from skimage import filters
 from skimage.restoration import estimate_sigma
-
 from PIL import ImageEnhance, Image
 
 # ------- #
@@ -131,13 +130,12 @@ class SpotImage():
 	as ground truth values.
 	"""
 	def get_coord_snr_list_csv(self, csv_filename):
-		np.savetxt(csv_filename, self.get_coord_snr_list(), delimiter=",")
+		np.savetxt(csv_filename, self.get_coord_snr_list(), delimiter=",", comments='', header = "col,row,snr")
 
 	"""
 	Returns an image as an array of gray values, squished down to img_sz x img_sz.
 	"""
 	def img_to_array(self, img_filename):
-
 		img = cv2.imread(img_filename)					# img is a numpy 2D array
 		img_cvt = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)	
 		resized_img = cv2.resize(img_cvt, (self.img_sz, self.img_sz))
