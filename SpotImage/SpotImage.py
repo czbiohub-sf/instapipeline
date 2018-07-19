@@ -109,22 +109,29 @@ class SpotImage():
 			if save_img:
 				plt.imsave(spot_img_filename, self.spot_img, cmap = self.cmap)
 
-	"""
-	Save csv files of spot image data for later reference
-	as ground truth values.
-	"""
-	def get_spot_array_csv(self, csv_filename):
-		np.savetxt(csv_filename, self.spot_array, delimiter=",")
-
-	def get_spot_img_csv(self, csv_filename):
-		np.savetxt(csv_filename, self.spot_img, delimiter=",")
-
-	def get_coord_snr_list_csv(self, csv_filename):
+	def get_coord_snr_list(self):
 		coord_snr_list = [None]*self.num_spots
 		for i in range(self.num_spots):
 			spot = [self.coord_list[i][0], self.coord_list[i][1], self.snr_list[i]]
 			coord_snr_list[i] = spot
-		np.savetxt(csv_filename, coord_snr_list, delimiter=",")
+		return coord_snr_list
+
+	def plot_coords(self):
+		fig = plt.figure(figsize=(4,4))
+		for coord in self.coord_list:
+			plt.scatter(coord[0], coord[1], facecolors = 'b', s = 10)
+		plt.axis('equal')
+		plt.xlim(0, self.img_sz)
+		plt.ylim(0, self.img_sz)
+		plt.title('Coordinates')
+		plt.show()
+
+	"""
+	Save csv file of spot image data for later reference
+	as ground truth values.
+	"""
+	def get_coord_snr_list_csv(self, csv_filename):
+		np.savetxt(csv_filename, self.get_coord_snr_list(), delimiter=",")
 
 	"""
 	Returns an image as an array of gray values, squished down to img_sz x img_sz.
