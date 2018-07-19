@@ -46,43 +46,53 @@ class SpotImage():
 	"""
 	Constructor
 	"""
-	def __init__(self, bg_img_filename, cmap, img_sz, patch_sz, num_spots, spot_shape_params, snr_distr_params, snr_threshold, global_intensity_dial, brightness_bias, brightness_bias_dial, biasing_method):
+	def __init__(self, bg_img_filename, cmap, img_sz, patch_sz, spot_shape_params, brightness_bias, brightness_bias_dial, biasing_method, global_intensity_dial):
 
 		if (spot_shape_params[0] not in self.spot_shapes):
 			raise ValueError('Invalid spot shape name entered.')
-		if (snr_distr_params[0] not in self.snr_distrs):
-			raise ValueError('Invalid SNR distribution name entered.')
 		if (patch_sz > img_sz):
 			raise ValueError('Patch size is greater than image size.')
 		self.bg_img_filename = bg_img_filename
 		self.cmap = cmap
 		self.img_sz = img_sz
 		self.patch_sz = patch_sz
-		self.num_spots = num_spots
 		self.spot_shape_params = spot_shape_params
-		self.snr_distr_params = snr_distr_params
-		self.snr_threshold = snr_threshold
-		
+
+		# sole purpose of these parameters is to determine what goes into self.total_coord_list 
 		self.brightness_bias = brightness_bias
 		self.brightness_bias_dial = brightness_bias_dial
 		self.biasing_method = biasing_method
 		self.global_intensity_dial = global_intensity_dial
 
-		self.margin = math.floor(self.patch_sz/2)			# setting margin such that no patches hang off the edges
+		self.margin = math.floor(self.patch_sz/2)				# setting margin such that no patches hang off the edges
 		self.bg_array = self.img_to_array(bg_img_filename)
 		self.min_bg_intensity = np.amin(self.bg_array)
 		self.max_bg_intensity = np.amax(self.bg_array)
 		self.threshold = filters.threshold_otsu(self.bg_array)
-		self.valid_coords = self.get_valid_coords()			# set of coordinates where beads may be placed
+		self.valid_coords = self.get_valid_coords()				# set of coordinates where beads may be placed
 
 		self.spot_counter = 0
+		self.total_coord_list = [self.get_spot_coord() for i in range(500)]
 
 	"""
 	Generate a spot image.
 	The spot_array and spot_img are saved as attributes of the SpotImage object
 	for later access.
 	"""
-	def generate_spot_image(self, plot_spots, plot_img, save_spots, spots_filename, save_img, spot_img_filename):
+	def generate_spot_image(self, num_spots, snr_distr_params, snr_threshold, plot_spots, plot_img, save_spots, spots_filename, save_img, spot_img_filename):
+		
+		if (snr_distr_params[0] not in self.snr_distrs):
+			raise ValueError('Invalid SNR distribution name entered.')
+
+		# assign class attributes that determine what goes in self.coord_list
+		self.num_spots = num_spots
+
+		# assign class attributes that determine what goes in self.snr_list
+		self.snr_distr_params = snr_distr_params
+		self.snr_threshold = snr_threshold
+
+		# assign class attributes: spot_list, coord_list, snr_list, spot_array, spot_img
+		self.spot_list = self.generate_spot_list()			# generate_spot_list also updates self.coord_list and self.snr_list
 		self.spot_array = self.generate_spot_array()
 		self.spot_img = np.add(self.bg_array, self.spot_array)
 
@@ -146,9 +156,9 @@ class SpotImage():
 	Generate a list of random spots. 
 	Each spot has a random location and a patch of intensity values.
 	"""
-	def get_spot_list(self):
-		self.coord_list = [self.get_spot_coord() for i in range(self.num_spots)]
-		self.snr_list = [self.get_snr() for i in range(self.num_spots)]
+	def generate_spot_list(self):
+		self.coord_list = [self.total_coord_list[i] for i in range(500)] 
+		self.snr_list = [self.get_snr() for i in range(500)]
 		spot_list = [[self.coord_list[i], self.get_patch(self.coord_list[i][0], self.coord_list[i][1], self.snr_list[i])] for i in range(self.num_spots)]
 		return spot_list
 
@@ -277,9 +287,8 @@ class SpotImage():
 	"""
 	def generate_spot_array(self):
 		spot_array = np.zeros([self.img_sz, self.img_sz])
-		spot_list = self.get_spot_list()
-		for spot in spot_list:
-			self.add_spot(spot, spot_array)
+		for i in range(self.num_spots):
+			self.add_spot(self.spot_list[i], spot_array)
 		return spot_array
 
 	"""
