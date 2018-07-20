@@ -54,12 +54,37 @@ class SpotAnnotationAnalysis():
 		worker_scores = self.get_worker_scores(df)
 
 		# Naïvely cluster annotations
-		naive_clusters = self.get_clusters(df, clustering_params)
+			# this dataframe: centroid_x | centroid_y | members
+			# indices are cluster IDs
+			# members = list of annotations belonging to the cluster
+			# 	each annotation comes with properties of that annotation (x coord, y coord, time spent, and worker ID)
+		naive_clusters = self.get_clusters(df, clustering_params) # this dataframe: centroid_x | centroid_y | members
  		
 		# Score clusters based on
 		# 	Scores/ratings of workers who contributed to that cluster
 		# 	Number of workers who contributed to that cluster
 
+
+	def plot_worker_scores_hist(self, df, bigger_window_size):
+
+		# get worker scores as list
+		worker_scores = self.get_worker_scores(df)
+		worker_scores = worker_scores["score"].values
+		worker_scores_list = []
+		for score in worker_scores:
+			worker_scores_list.append(score)
+
+		if bigger_window_size:
+			fig = plt.figure(figsize=(14,12))
+		else:
+			fig = plt.figure(figsize = (12,7))
+
+		n_bins = 10
+		plt.hist(worker_scores_list, n_bins)
+		plt.title('Worker scores')
+		plt.xlabel('Average Pairwise NND')
+		plt.ylabel('Quantity of workers')
+		plt.show()
 
     # Returns a dataframe with score for all workers in the inputted df.
     # For each worker, worker_score = sum(pair scores of that worker).
@@ -68,16 +93,20 @@ class SpotAnnotationAnalysis():
 	def get_worker_scores(self, df):
 		worker_list = self.ba.get_workers(df)
 		pair_scores = self.get_pair_scores(df)
-		print(pair_scores)
 
+		# worker_scores = pd.DataFrame(index = worker_list, columns = ["score", "num_clicks", "score_scaled"])
 		worker_scores = pd.DataFrame(index = worker_list, columns = ["score"])
 		for worker in worker_list:
-			print(worker)
 			worker_pair_scores = pair_scores[worker].values
-			print(worker_pair_scores)
 			worker_score = sum(worker_pair_scores)
 			worker_scores["score"][worker] = worker_score
 
+			# worker_df = self.ba.slice_by_worker(df, worker)
+			# worker_click_properties = self.ba.get_click_properties(worker_df)
+			# worker_scores["num_clicks"][worker] = len(worker_click_properties)
+
+			# score_scaled = worker_score/len(worker_click_properties)
+			# worker_scores["score_scaled"][worker] = score_scaled
 		return worker_scores
 
     # returns a dataframe with pair scores for all pairs of workers the inputted df
@@ -88,11 +117,11 @@ class SpotAnnotationAnalysis():
 		pair_scores = pd.DataFrame(index = worker_list, columns = worker_list)
 
 		counter = 0
-		print("Calculating score for:")
+#		print("Calculating scores for:")
 
 		for worker in worker_list:
 			counter += 1
-			print(worker, "(", counter, "/", len(worker_list), ")")
+#			print(worker, "(", counter, "/", len(worker_list), ")")
 
 			worker_df = self.ba.slice_by_worker(df, worker)
 			worker_coords = self.ba.get_click_properties(worker_df)[:,:2]
@@ -132,12 +161,12 @@ class SpotAnnotationAnalysis():
 		pandas dataframe with annotation data (should already be cropped)
 		list of clustering params for clustering alg
 	Returns:
-		this dataframe: centroid_x | centroid_y | members
+		this dataframe: centroid_x | centroid_y | members (x | y | time_spent | worker_id)
 			* (the index is the Cluster ID)
 			centroid_x = x coord of cluster centroid
 			centroid_y = y coord of cluster centroid
 			members = list of annotations belonging to the cluster
-				each annotation comes with properties of that annotation (coordinates, time spent, and worker ID)
+				each annotation comes with properties of that annotation (x coord, y coord, time spent, and worker ID)
 	"""
 	def get_clusters(self, df, clustering_params):
 
@@ -461,7 +490,6 @@ class SpotAnnotationAnalysis():
 		plt.imshow(img, cmap = 'gray')
 		plt.show()
 
-
 	"""
 	Plots the average time spent per click for all workers 
 	in the dataframe.
@@ -767,6 +795,35 @@ class SpotAnnotationAnalysis():
 		plt.xlabel('Worker Index')
 		plt.ylabel('Time Spent [ms]')
 		plt.xticks(np.arange(0, len(worker_list), step=1))
+		plt.show()
+
+	def total_worker_time_hist(self, df):
+		
+		total_time_list = []
+		for worker in worker_list:
+			total_time = self.ba.get_total_time(df, worker)
+			total_time_list.append(total_time)
+		bins = np.linspace(0, 2, 40)
+		plt.hist(total_time_list, bins)
+		plt.title('Total Time Spent by Workers')
+		plt.xlabel('Time Spent [ms]')
+		plt.ylabel('Quantity of Workers')
+		plt.show()
+
+	def plot_total_worker_time_hist(self, df, bigger_window_size):
+		total_time_list = []
+		for worker in self.ba.get_workers(df):
+			total_time = self.ba.get_total_time(df, worker)
+			total_time_list.append(total_time[0])
+		n_bins = 10
+		if bigger_window_size:
+			fig = plt.figure(figsize=(14,12))
+		else:
+			fig = plt.figure(figsize = (12,7))
+		plt.hist(total_time_list, n_bins)
+		plt.title('Total Time Spent by Workers')
+		plt.xlabel('Time Spent [ms]')
+		plt.ylabel('Quantity of Workers')
 		plt.show()
 
 	"""

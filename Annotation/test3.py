@@ -13,9 +13,11 @@ bigger_window_size = True
 ba = QuantiusAnnotation(json_filename)	# Load data into an annotation object
 sa = SpotAnnotationAnalysis(ba)			# Annotation object is saved as a property of a SpotAnnotationAnalysis object
 
-anno_all = ba.df()						# Get the dataframe from the annotation object
+anno_all = ba.df()
+anno_one_crop = ba.slice_by_image(anno_all, img_filename)
 
+# worker_scores = sa.get_worker_scores(anno_all)
+# print(worker_scores)
 
-sa.get_worker_scores(anno_all)
-
-
+sa.plot_worker_scores_hist(anno_one_crop, False)
+sa.plot_total_worker_time_hist(anno_one_crop, False)
