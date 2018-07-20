@@ -46,9 +46,99 @@ class SpotAnnotationAnalysis():
 		self.ba = ba_obj
 		self.clusters_done = []
 		self.cluster_objects = []
+		self.clusters_found = []
+
+	# def test_alg(self, df, clustering_params):
+
+ 		# # Score workers based on pairwise matching (this step does not use clusters)		
+ 		# pair_scores = self.get_pair_Scores(df)
+
+ 		# # Naïvely cluster annotations
+ 		# naive_clusters = self.get_clusters(df, clustering_params)
+
+ 		
+ 		# Score clusters based on
+	    	# Scores/ratings of workers who contributed to that cluster
+    		# Number of workers who contributed to that cluster
+
+    	# dfList = df['one'].tolist()
+
+    # returns a dataframe with score for all workers in the inputted df
+    # for each worker, worker_score = sum(pair scores of that worker)
+    # indices of dataframe are worker IDs
+    # column header of dataframe is the worker_score 
+	def get_worker_scores(self, df):
+		worker_list = self.ba.get_workers(df)[:3]
+		pair_scores = self.get_pair_scores(df)
+		print(pair_scores)
+
+		worker_scores = pd.DataFrame(index = worker_list, columns = ["score"])
+		for worker in worker_list:
+			print(worker)
+			worker_pair_scores = pair_scores[worker].values
+			print(worker_pair_scores)
+			worker_score = sum(worker_pair_scores)
+			worker_scores["score"][worker] = worker_score
+
+		return worker_scores
+
+    # returns a dataframe with pair scores for all pairs of workers the inputted df
+    # indices and columns of the dataframe are worker IDs
+	def get_pair_scores(self, df):
+
+		worker_list = self.ba.get_workers(df)[:3]
+		pair_scores = pd.DataFrame(index = worker_list, columns = worker_list)
+
+		counter = 0
+		print("Calculating score for:")
+
+		for worker in worker_list:
+			counter += 1
+			print(worker, "(", counter, "/", len(worker_list), ")")
+
+			worker_df = self.ba.slice_by_worker(df, worker)
+			worker_coords = self.ba.get_click_properties(worker_df)[:,:2]
+			worker_kdt = KDTree(worker_coords, leaf_size=2, metric='euclidean')
+
+			for other_worker in worker_list:
+				if worker == other_worker:
+					pair_scores[worker][other_worker] = 0
+					continue
+
+				other_worker_df = self.ba.slice_by_worker(df, other_worker)
+				other_worker_coords = self.ba.get_click_properties(other_worker_df)[:,:2]
+				other_worker_kdt = KDTree(other_worker_coords, leaf_size=2, metric='euclidean')
+
+				list_A = [None]*len(worker_coords)
+				for i in range(len(worker_coords)):
+					worker_coord = worker_coords[i]
+					dist, ind = other_worker_kdt.query([worker_coord], k=1)
+					nnd = dist[0][0]
+					list_A[i] = nnd
+
+				list_B = [None]*len(other_worker_coords)
+				for j in range(len(other_worker_coords)):
+					other_worker_coord = other_worker_coords[j]
+					dist, ind = worker_kdt.query([other_worker_coord], k=1)
+					nnd = dist[0][0]
+					list_B[j] = nnd
+
+				pair_score = (np.mean(list_A) + np.mean(list_B))/2
+				pair_scores[worker][other_worker] = pair_score
+
+		return pair_scores
+
+
+
+
+
+
+
+
+
 
 	"""
-	Inputs: 
+	Inputs:
 		string name of clustering alg to use
 		pandas dataframe with annotation data (should already be cropped)
 		list of clustering params for clustering alg
