@@ -48,27 +48,25 @@ class SpotAnnotationAnalysis():
 		self.cluster_objects = []
 		self.clusters_found = []
 
-	# def test_alg(self, df, clustering_params):
+	def test_alg(self, df, clustering_params):
 
- 		# # Score workers based on pairwise matching (this step does not use clusters)		
- 		# pair_scores = self.get_pair_Scores(df)
+		# Score workers based on pairwise matching (this step does not use clusters)		
+		worker_scores = self.get_worker_scores(df)
 
- 		# # Naïvely cluster annotations
- 		# naive_clusters = self.get_clusters(df, clustering_params)
-
+		# Naïvely cluster annotations
+		naive_clusters = self.get_clusters(df, clustering_params)
  		
- 		# Score clusters based on
-	    	# Scores/ratings of workers who contributed to that cluster
-    		# Number of workers who contributed to that cluster
+		# Score clusters based on
+		# 	Scores/ratings of workers who contributed to that cluster
+		# 	Number of workers who contributed to that cluster
 
-    	# dfList = df['one'].tolist()
 
-    # returns a dataframe with score for all workers in the inputted df
-    # for each worker, worker_score = sum(pair scores of that worker)
+    # Returns a dataframe with score for all workers in the inputted df.
+    # For each worker, worker_score = sum(pair scores of that worker).
     # indices of dataframe are worker IDs
     # column header of dataframe is the worker_score 
 	def get_worker_scores(self, df):
-		worker_list = self.ba.get_workers(df)[:3]
+		worker_list = self.ba.get_workers(df)
 		pair_scores = self.get_pair_scores(df)
 		print(pair_scores)
 
@@ -86,7 +84,7 @@ class SpotAnnotationAnalysis():
     # indices and columns of the dataframe are worker IDs
 	def get_pair_scores(self, df):
 
-		worker_list = self.ba.get_workers(df)[:3]
+		worker_list = self.ba.get_workers(df)
 		pair_scores = pd.DataFrame(index = worker_list, columns = worker_list)
 
 		counter = 0
@@ -128,15 +126,6 @@ class SpotAnnotationAnalysis():
 
 		return pair_scores
 
-
-
-
-
-
-
-
-
-
 	"""
 	Inputs:
 		string name of clustering alg to use
@@ -148,6 +137,7 @@ class SpotAnnotationAnalysis():
 			centroid_x = x coord of cluster centroid
 			centroid_y = y coord of cluster centroid
 			members = list of annotations belonging to the cluster
+				each annotation comes with properties of that annotation (coordinates, time spent, and worker ID)
 	"""
 	def get_clusters(self, df, clustering_params):
 
@@ -162,7 +152,8 @@ class SpotAnnotationAnalysis():
 			if(len(clustering_params) != 2):														# Check that there's only one clustering parameter
 				raise ValueError('Please enter a list containing the preference parameter.')
 
-			coords = self.ba.get_click_properties(df)[:,:2]											# Get all the coordinates from the annotation dataframe (dissociated from timestamps)
+			click_properties = self.ba.get_click_properties(df)
+			coords = click_properties[:,:2]															# Get all the coordinates from the annotation dataframe (dissociated from timestamps)
 
 			af = self.get_cluster_object(coords, clustering_params)
 
@@ -175,9 +166,9 @@ class SpotAnnotationAnalysis():
 			for i in range(len(cluster_members_lists)):
 				cluster_members_lists[i] = []
 
-			for j in range(len(coords)):
+			for j in range(len(click_properties)):
 				index = labels[j]
-				cluster_members_lists[index].append(coords[j])
+				cluster_members_lists[index].append(click_properties[j])
 
 			for k in range(num_clusters):
 				cluster_centers = coords[cluster_centers_indices[k]]	# np array
@@ -230,7 +221,8 @@ class SpotAnnotationAnalysis():
 			NN_x = x coord of nearest neighbor reference
 			NN_y = y coord of nearest neighbor reference
 			NN_dist = distance from centroid to nearest neighbor reference
-			members = list of coordinates of annotations belonging to cluster
+			members = list of annotations belonging to cluster
+				each annotation is a list of click properties: x_coord | y_coord | time_spent | worker_ID
 	"""
 	def anno_and_ref_to_df(self, df, clustering_params, csv_filename, img_filename):
 
@@ -264,7 +256,7 @@ class SpotAnnotationAnalysis():
 
 	"""
 	Inputs:
-		df in this form: centroid_x | centroid_y | x of nearest ref | y of nearest ref | NN_dist | members
+		df in this form: centroid_x | centroid_y | x of nearest ref | y of nearest ref | NN_dist | members (x | y | time_spent | worker_id)
 			* the index is the Centroid ID
 		int threshold
 			for each centroid, if NN_dist <= threshold, centroid is "correct"
@@ -406,13 +398,14 @@ class SpotAnnotationAnalysis():
 
 			if show_correctness_workers:
 				for i in range(len(member_lists)):			# for every cluster
-					members = member_lists[i]					# get the list of annotations in that cluster
+					members = member_lists[i]					# get the list of annotations (w/ click properties) in that cluster
 					if (cluster_correctness[i][1]):
 						color = 'g'						
 					else:								
 						color = 'm'
 					for member in members:						# plot each annotation in that cluster
-						plt.scatter([member[0]], self.ba.flip([member[1]], img_height), s = worker_marker_size, facecolors = color, alpha = 0.5)
+						coords = member[:2]
+						plt.scatter([coords[0]], self.ba.flip([coords[1]], img_height), s = worker_marker_size, facecolors = color, alpha = 0.5)
 
 			else:
 				handle_list = []
