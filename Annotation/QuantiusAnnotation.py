@@ -18,11 +18,11 @@ from BaseAnnotation import BaseAnnotation
 
 class QuantiusAnnotation(BaseAnnotation):
 
-	def _import_annotations(self, json_filename):
+	def _import_annotations(self, json_filepath):
 		
 		to_return = pd.DataFrame()
 
-		json_string = open(json_filename).read()
+		json_string = open(json_filepath).read()
 		results = json.loads(json_string)
 
 		for worker in results:

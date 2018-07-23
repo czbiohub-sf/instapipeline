@@ -64,12 +64,12 @@ class SpotAnnotationAnalysis():
 		# 	Scores/ratings of workers who contributed to that cluster
 		# 	Number of workers who contributed to that cluster
 
-	def plot_error_rate_vs_spotted(self, df, clustering_params, correctness_threshold, csv_filename, img_filename, bigger_window_size):
+	def plot_error_rate_vs_spotted(self, df, clustering_params, correctness_threshold, csv_filepath, img_filename, bigger_window_size):
 		if bigger_window_size:
 			fig = plt.figure(figsize=(14,12))
 		else:
 			fig = plt.figure(figsize = (12,7))
-		clusters = self.anno_and_ref_to_df(df, clustering_params, csv_filename, img_filename)
+		clusters = self.anno_and_ref_to_df(df, clustering_params, csv_filepath, img_filename)
 		worker_list = self.ba.get_workers(df)
 
 		num_good_clusters_list = []
@@ -86,7 +86,14 @@ class SpotAnnotationAnalysis():
 		plt.xlabel("Number of good clusters found by the worker")
 		plt.ylabel("Worker's error rate [%]")
 		plt.xticks(np.arange(0,max(num_good_clusters_list)+2,step=5))
-		plt.yticks(np.arange(0,max(error_rate_list)+1,step=2))
+
+		if (max(error_rate_list)<=20):
+			y_step = 1
+		elif(max(error_rate_list)<=50):
+			y_step = 2
+		else:
+			y_step = 5
+		plt.yticks(np.arange(0,max(error_rate_list)+1,step=y_step))
 
 		plt.show()
 
@@ -128,14 +135,14 @@ class SpotAnnotationAnalysis():
 	def get_worker_correct_rate(self, uid, clusters, correctness_threshold):
 		return (1 - self.get_worker_error_rate(uid, clusters, correctness_threshold))
 
-	def plot_workers_correct_rate(self, df, clustering_params, correctness_threshold, csv_filename, img_filename, bigger_window_size):
+	def plot_workers_correct_rate(self, df, clustering_params, correctness_threshold, csv_filepath, img_filename, bigger_window_size):
 		
 		if bigger_window_size:
 			fig = plt.figure(figsize=(14,12))
 		else:
 			fig = plt.figure(figsize = (12,7))
 
-		clusters = self.anno_and_ref_to_df(df, clustering_params, csv_filename, img_filename)
+		clusters = self.anno_and_ref_to_df(df, clustering_params, csv_filepath, img_filename)
 		worker_list = self.ba.get_workers(df)
 		
 		correct_rates = []
@@ -143,11 +150,11 @@ class SpotAnnotationAnalysis():
 			correct_rate = self.get_worker_correct_rate(worker, clusters, correctness_threshold)
 			correct_rates.append(correct_rate*100)
 
-		y,x,_ = plt.hist(correct_rates, bins=np.arange(math.floor(min(correct_rates)-1),math.ceil(max(correct_rates))+2, step=1)-0.5, color = 'g')
+		y,x,_ = plt.hist(correct_rates, bins=np.arange(0,105, step=1)-0.5, color = 'g')
 
 		plt.title("Fraction of annotations that were in a good cluster")
-		plt.xticks(np.arange(math.floor(min(correct_rates)-1),max(correct_rates)+1, step=1))
-		plt.yticks(np.arange(0,y.max()+1, step=2))
+		plt.xticks(np.arange(0,105, step=5))
+		plt.yticks(np.arange(0,y.max()+1, step=1))
 		plt.xlabel("Fraction of the worker's annotations that were in a good cluster [%]")
 		plt.ylabel("Quantity of workers")
 		plt.show()
@@ -155,11 +162,11 @@ class SpotAnnotationAnalysis():
 	"""
 	For each spot, plot SNR vs. number of annotations in the corresponding cluster.
 	"""
-	def plot_snr_vs_membership(self, df, clustering_params, csv_filename, img_height, img_filename, correctness_threshold, bigger_window_size):
+	def plot_snr_vs_membership(self, df, clustering_params, csv_filepath, img_height, img_filename, correctness_threshold, bigger_window_size):
 
 		clusters = self.get_clusters(df, clustering_params)			# this dataframe: centroid_x | centroid_y | members
 		
-		ref_df = pd.read_csv(csv_filename)
+		ref_df = pd.read_csv(csv_filepath)
 		ref_points = ref_df.loc[:, ['col', 'row']].as_matrix()	
 		snr_val_list = ref_df.loc[:, ['snr']].as_matrix()	
 
@@ -170,7 +177,7 @@ class SpotAnnotationAnalysis():
 			point = np.array([first_elem, second_elem])
 			ref_points[i] = point
 
-		anno_and_ref_df = self.anno_and_ref_to_df(df, clustering_params, csv_filename, img_filename)
+		anno_and_ref_df = self.anno_and_ref_to_df(df, clustering_params, csv_filepath, img_filename)
 		centroid_coords = anno_and_ref_df.loc[:, ['centroid_x', 'centroid_y']].as_matrix()		
 		centroids_kdt = KDTree(centroid_coords, leaf_size=2, metric='euclidean')
 
@@ -230,9 +237,13 @@ class SpotAnnotationAnalysis():
 			fig = plt.figure(figsize = (12,7))
 
 		plt.title("Number of spots detected vs. SNR")
-		y,x,_ = plt.hist(snr_detected, bins=np.arange(0,max(snr_detected)+10,5)-2.5, color = 'g')
-		plt.xticks(np.arange(0,max(snr_detected)+10,step=5))
-		plt.yticks(np.arange(0,y.max()+1, step=1))
+		y,x,_ = plt.hist(snr_detected, bins=np.arange(0,max(snr_detected)+2,1)-0.5, color = 'g')
+		plt.xticks(np.arange(0,max(snr_detected)+2,step=1))
+		if(max(snr_detected)<20):
+			y_step = 1
+		else:
+			y_step = 2
+		plt.yticks(np.arange(0,y.max()+1, step=y_step))
 		plt.xlabel("SNR")
 		plt.ylabel("Number of spots detected")
 		plt.show()
@@ -242,12 +253,15 @@ class SpotAnnotationAnalysis():
 		else:
 			fig = plt.figure(figsize = (12,7))
 
-		plt.title("Number of spots undetected vs. SNR")
-		y,x,_ = plt.hist(snr_undetected, bins=np.arange(max(snr_undetected)+2)-0.5, color = 'm')
-		plt.xticks(np.arange(0,max(snr_undetected)+2,step=1))
-		plt.yticks(np.arange(0,y.max()+1, step=1))
-		plt.xlabel("SNR")
-		plt.ylabel("Number of spots undetected")
+		if (len(snr_undetected)==0):
+			plt.title("No spots undetected")
+		else:
+			plt.title("Number of spots undetected vs. SNR")
+			y,x,_ = plt.hist(snr_undetected, bins=np.arange(max(snr_undetected)+2)-0.5, color = 'm')
+			plt.xticks(np.arange(0,max(snr_undetected)+2,step=1))
+			plt.yticks(np.arange(0,y.max()+1, step=1))
+			plt.xlabel("SNR")
+			plt.ylabel("Number of spots undetected")
 		plt.show()
 
 	def plot_annotations_per_cluster(self, df, clustering_params):
@@ -280,13 +294,19 @@ class SpotAnnotationAnalysis():
 		else:
 			fig = plt.figure(figsize = (12,7))
 
-		n_bins = 10
-		low = math.floor((min(worker_scores_list)-100)/50)*50
-		y,x,_ = plt.hist(worker_scores_list, bins=np.arange(low,max(worker_scores_list)+100, step=50)-25)
+		low = math.floor((min(worker_scores_list)-100)/100)*100
+		width = max(worker_scores_list) - low
+		if(width>2000):
+			step_size = 200
+		elif (width>1000):
+			step_size = 100
+		else:
+			step_size = 50
+		y,x,_ = plt.hist(worker_scores_list, bins=np.arange(low,max(worker_scores_list)+step_size*2, step=step_size)-step_size/2)
 		plt.title('Worker pairwise scores')
 		plt.xlabel('Sum of pairwise NND averages')
 		plt.ylabel('Quantity of workers')
-		plt.xticks(np.arange(low,max(worker_scores_list)+100,step=50))
+		plt.xticks(np.arange(low,max(worker_scores_list)+step_size*2,step=step_size))
 		plt.yticks(np.arange(0,y.max()+1))
 		plt.show()
 
@@ -444,7 +464,7 @@ class SpotAnnotationAnalysis():
 		string name of clustering alg to use
 		df with annotation data (should already be cropped)
 		list of clustering params for clustering alg
-		csv_filename (contains reference data)
+		csv_filepath (contains reference data)
 		img_filename (the cropping)
 	Returns:
 		this dataframe: centroid_x | centroid_y | x of nearest ref | y of nearest ref | NN_dist | members
@@ -457,12 +477,12 @@ class SpotAnnotationAnalysis():
 			members = list of annotations belonging to cluster
 				each annotation is a list of click properties: x_coord | y_coord | time_spent | worker_ID
 	"""
-	def anno_and_ref_to_df(self, df, clustering_params, csv_filename, img_filename):
+	def anno_and_ref_to_df(self, df, clustering_params, csv_filepath, img_filename):
 
 		anno_one_crop = self.ba.slice_by_image(df, img_filename)	# Remove data from other croppings.
 		clusters = self.get_clusters(anno_one_crop, clustering_params)
 		img_height = anno_one_crop['height'].values[0]
-		ref_kdt = self.csv_to_kdt(csv_filename, img_height)
+		ref_kdt = self.csv_to_kdt(csv_filepath, img_height)
 		ref_array = np.asarray(ref_kdt.data)
 
 		centroid_IDs = range(clusters.shape[0])
@@ -516,9 +536,9 @@ class SpotAnnotationAnalysis():
 	Returns:
 		k-d tree containing the same reference points flipped vertically
 	"""
-	def csv_to_kdt(self, csv_filename, img_height):
+	def csv_to_kdt(self, csv_filepath, img_height):
 
-		ref_df = pd.read_csv(csv_filename)
+		ref_df = pd.read_csv(csv_filepath)
 		ref_points = ref_df.loc[:, ['col', 'row']].as_matrix()
 
 		for i in range(len(ref_points)):
@@ -593,7 +613,7 @@ class SpotAnnotationAnalysis():
 	Inputs:
 		pandas df with annotation data
 		string img_filename to crop to
-		string csv_filename with reference data
+		string csv_filepath with reference data
 		int size of worker marker
 		int size of cluster centroid marker
 		bool whether to plot reference annotations
@@ -609,7 +629,7 @@ class SpotAnnotationAnalysis():
 	Returns:
 		none
 	"""
-	def plot_annotations(self, df, img_filename, csv_filename, worker_marker_size, cluster_marker_size, show_ref_points, show_workers, show_clusters, show_correctness_workers, show_correctness_clusters, show_NN_inc, correctness_threshold, clustering_params, bigger_window_size):
+	def plot_annotations(self, df, img_filename, img_filepath, csv_filepath, worker_marker_size, cluster_marker_size, show_ref_points, show_workers, show_clusters, show_correctness_workers, show_correctness_clusters, show_NN_inc, correctness_threshold, clustering_params, bigger_window_size):
 		if bigger_window_size:
 			fig = plt.figure(figsize=(14,12))
 		else:
@@ -619,7 +639,7 @@ class SpotAnnotationAnalysis():
 		worker_list = self.ba.get_workers(anno_one_crop)
 
 		if show_clusters or show_correctness_workers:
-			clusters = self.anno_and_ref_to_df(df, clustering_params, csv_filename, img_filename)
+			clusters = self.anno_and_ref_to_df(df, clustering_params, csv_filepath, img_filename)
 			member_lists = clusters['members'].values	# list of lists
 
 			if correctness_threshold is not None:
@@ -686,11 +706,16 @@ class SpotAnnotationAnalysis():
 			plt.title('Worker Annotations and Cluster Centroids')
 
 		if show_ref_points:
-			ref_df = pd.read_csv(csv_filename)							# plot reference points			
+			ref_df = pd.read_csv(csv_filepath)							# plot reference points			
 			ref_points = ref_df.loc[:, ['col', 'row']].as_matrix()
 			for point in ref_points:													
 				plt.scatter([point[0]], [point[1]], s = 20, facecolors = 'y')
-		img = mpimg.imread(img_filename)
+			legend_elements = [Line2D([0],[0], marker='o', color='w', markerfacecolor='y', label='Reference points')]
+			legend_list = legend_elements
+			if show_workers and not show_correctness_workers:
+				legend_list += handle_list
+			plt.legend(handles = legend_list, loc = 9, bbox_to_anchor = (1.2, 1.015))
+		img = mpimg.imread(img_filepath)
 		plt.imshow(img, cmap = 'gray')
 		plt.show()
 
@@ -708,15 +733,17 @@ class SpotAnnotationAnalysis():
 		avg_list = []
 		for worker in self.ba.get_workers(df):
 			avg_time = self.ba.get_avg_time_per_click(df, worker)
-			avg_list.append(avg_time)
+			avg_list.append(avg_time/1000)
 		n_bins = 10
 		if bigger_window_size:
 			fig = plt.figure(figsize=(14,12))
 		else:
 			fig = plt.figure(figsize = (12,7))
-		plt.hist(avg_list, n_bins)
+		y,x,_ = plt.hist(avg_list, bins = np.arange(0,max(avg_list)+0.5, step=0.25)-0.125)
 		plt.title('Average time spent per click')
-		plt.xlabel('Time [ms]')
+		plt.xticks(np.arange(0,max(avg_list)+0.5, step=0.25))
+		plt.yticks(np.arange(0,y.max()+1, step=1))
+		plt.xlabel('Time [s]')
 		plt.ylabel('Quantity of workers')
 		plt.show()
 
@@ -737,19 +764,19 @@ class SpotAnnotationAnalysis():
 	Inputs:
 		dataframe
 		img_filename (the cropping)
-		csv_filename (contains reference data)
+		csv_filepath (contains reference data)
 		bool whether to color each point by correctness of cluster
 		correctness_threshold
 		clustering_params
 	Returns:
 		none
 	"""
-	def plot_nnd_vs_time_spent(self, df, img_filename, csv_filename, show_correctness, correctness_threshold, clustering_params):
+	def plot_nnd_vs_time_spent(self, df, img_filename, csv_filepath, show_correctness, correctness_threshold, clustering_params):
 
 		anno_one_crop = self.ba.slice_by_image(df, img_filename)	# Remove data from other croppings.
 		fig = plt.figure(figsize = (10,7))
 		img_height = anno_one_crop['height'].values[0]
-		ref_kdt = self.csv_to_kdt(csv_filename, img_height)
+		ref_kdt = self.csv_to_kdt(csv_filepath, img_height)
 
 		if show_correctness:
 
@@ -763,7 +790,7 @@ class SpotAnnotationAnalysis():
 
 			coords = self.ba.get_click_properties(anno_one_crop)[:,:2]
 			coords_with_times = self.ba.get_click_properties(anno_one_crop)[:,:3]
-			clusters = self.anno_and_ref_to_df(df, clustering_params, csv_filename, img_filename)	# clusters -> NND, coordinates
+			clusters = self.anno_and_ref_to_df(df, clustering_params, csv_filepath, img_filename)	# clusters -> NND, coordinates
 			cluster_correctness = self.get_cluster_correctness(clusters, correctness_threshold)		# clusters <-> correctness
 			af = self.get_cluster_object(coords, clustering_params)
 			labels = af.labels_	
@@ -800,9 +827,9 @@ class SpotAnnotationAnalysis():
 			plt.legend(handles = handle_list, loc = 9, bbox_to_anchor = (1.2, 1.015))
 			plt.subplots_adjust(left=0.1, right=0.75)
 
-		plt.title('Nearest Neighbor Distance (NND) vs. Time Spent For Each Click [ms]')
+		plt.title('Nearest Neighbor Distance (NND) vs. Time Spent For Each Click [s]')
 		plt.xlabel('Time Spent [ms]')
-		plt.ylabel('Nearest Neighbor Distance (NND) [ms]')
+		plt.ylabel('Nearest Neighbor Distance (NND)')
 		plt.show()
 
 	"""
@@ -814,19 +841,19 @@ class SpotAnnotationAnalysis():
 	Inputs:
 		dataframe
 		img_filename (the cropping)
-		csv_filename (contains reference data)
+		csv_filepath (contains reference data)
 		bool whether to color each point by correctness of cluster
 		correctness_threshold
 		clustering_params
 	Returns:
 		none
 	"""
-	def plot_nnd_vs_worker_index(self, df, img_filename, csv_filename, show_correctness, correctness_threshold, clustering_params, show_avgs):
+	def plot_nnd_vs_worker_index(self, df, img_filename, csv_filepath, show_correctness, correctness_threshold, clustering_params, show_avgs):
 
 		anno_one_crop = self.ba.slice_by_image(df, img_filename)	# Remove data from other croppings.
 		worker_list = self.ba.get_workers(anno_one_crop)
 		img_height = anno_one_crop['height'].values[0]
-		ref_kdt = self.csv_to_kdt(csv_filename, img_height)
+		ref_kdt = self.csv_to_kdt(csv_filepath, img_height)
 		dist_list = self.calc_distances(anno_one_crop, ref_kdt, img_filename)	# list containing one list for each worker
 
 		fig = plt.figure(figsize = (10,7))
@@ -836,12 +863,12 @@ class SpotAnnotationAnalysis():
 			click_properties = self.ba.get_click_properties(anno_one_crop)		
 			coords = click_properties[:,:2]
 
-			clusters = self.anno_and_ref_to_df(df, clustering_params, csv_filename, img_filename)	# clusters -> NND, coordinates
+			clusters = self.anno_and_ref_to_df(df, clustering_params, csv_filepath, img_filename)	# clusters -> NND, coordinates
 			cluster_correctness = self.get_cluster_correctness(clusters, correctness_threshold)		# clusters <-> correctness
 			af = self.get_cluster_object(coords, clustering_params)
 			labels = af.labels_	
 			img_height = anno_one_crop['height'].values[0]
-			ref_kdt = self.csv_to_kdt(csv_filename, img_height)
+			ref_kdt = self.csv_to_kdt(csv_filepath, img_height)
 
 			for i in range(len(coords)):
 				worker_id = click_properties[i][3]
@@ -895,14 +922,14 @@ class SpotAnnotationAnalysis():
 	Inputs:
 		dataframe
 		img_filename (the cropping)
-		csv_filename
+		csv_filepath
 		bool whether to color each point by correctness of cluster
 		correctness_threshold
 		clustering_params
 	Returns:
 		none
 	"""
-	def plot_time_spent_vs_worker_index(self, df, img_filename, csv_filename, show_correctness, correctness_threshold, clustering_params, show_avgs):
+	def plot_time_spent_vs_worker_index(self, df, img_filename, csv_filepath, show_correctness, correctness_threshold, clustering_params, show_avgs):
 
 		anno_one_crop = self.ba.slice_by_image(df, img_filename)			# Remove data from other croppings.
 		worker_list = self.ba.get_workers(anno_one_crop)
@@ -914,12 +941,12 @@ class SpotAnnotationAnalysis():
 		if show_correctness:
 			click_properties = self.ba.get_click_properties(anno_one_crop)		# coordinates <-> time_spent
 			coords = click_properties[:,:2]
-			clusters = self.anno_and_ref_to_df(df, clustering_params, csv_filename, img_filename)	# clusters -> NND, coordinates
+			clusters = self.anno_and_ref_to_df(df, clustering_params, csv_filepath, img_filename)	# clusters -> NND, coordinates
 			cluster_correctness = self.get_cluster_correctness(clusters, correctness_threshold)		# clusters <-> correctness
 			af = self.get_cluster_object(coords, clustering_params)
 			labels = af.labels_	
 			img_height = anno_one_crop['height'].values[0]
-			ref_kdt = self.csv_to_kdt(csv_filename, img_height)
+			ref_kdt = self.csv_to_kdt(csv_filepath, img_height)
 
 			for i in range(len(coords)):
 				time_spent = click_properties[i][2]
@@ -958,14 +985,14 @@ class SpotAnnotationAnalysis():
 					continue
 				worker_times.pop(0)
 				worker_avg_time = np.average(worker_times)
-				avg_times.append(worker_avg_time) 
+				avg_times.append(worker_avg_time/1000) 
 			handle = plt.scatter(range(len(worker_list)), avg_times, s = 60, facecolors = 'b', marker = '_', label = 'Average time spent')
 			plt.legend(handles = [handle], loc = 9, bbox_to_anchor = (1.15, 0.55))
 			plt.subplots_adjust(left=0.1, right=0.8)
 
-		plt.title('Time Spent [ms] vs. Worker Index')
+		plt.title('Time Spent [s] vs. Worker Index')
 		plt.xlabel('Worker Index')
-		plt.ylabel('Time Spent [ms]')
+		plt.ylabel('Time Spent [s]')
 		plt.xticks(np.arange(0, len(worker_list), step=1))
 		plt.show()
 
@@ -989,14 +1016,14 @@ class SpotAnnotationAnalysis():
 		handle_list = []
 		for i in range(len(worker_list)):
 			total_time = self.ba.get_total_time(anno_one_crop, worker_list[i])
-			handle = plt.bar(i, total_time[0], color = self.colors[i], label = worker_list[i])
+			handle = plt.bar(i, total_time[0]/1000, color = self.colors[i], label = worker_list[i])
 			handle_list.append(handle)
 
 		plt.legend(handles = handle_list, loc = 9, bbox_to_anchor = (1.15, 1.015))
 		plt.subplots_adjust(left=0.1, right=0.8)
-		plt.title('Total Time Spent [ms] vs. Worker Index')
+		plt.title('Total Time Spent [s] vs. Worker Index')
 		plt.xlabel('Worker Index')
-		plt.ylabel('Time Spent [ms]')
+		plt.ylabel('Time Spent [s]')
 		plt.xticks(np.arange(0, len(worker_list), step=1))
 		plt.show()
 
@@ -1029,7 +1056,7 @@ class SpotAnnotationAnalysis():
 	Returns:
 		none
 	"""
-	def plot_time_spent_vs_click_index(self, df, img_filename, csv_filename, uid, show_correctness, correctness_threshold, clustering_params):
+	def plot_time_spent_vs_click_index(self, df, img_filename, csv_filepath, uid, show_correctness, correctness_threshold, clustering_params):
 
 		anno_one_crop = self.ba.slice_by_image(df, img_filename)	# Remove data from other croppings.
 		worker_list = self.ba.get_workers(anno_one_crop)
@@ -1039,12 +1066,12 @@ class SpotAnnotationAnalysis():
 		if show_correctness:
 			click_properties = self.ba.get_click_properties(anno_one_worker)		
 			coords = click_properties[:,:2]
-			clusters = self.anno_and_ref_to_df(df, clustering_params, csv_filename, img_filename)	# clusters -> NND, coordinates
+			clusters = self.anno_and_ref_to_df(df, clustering_params, csv_filepath, img_filename)	# clusters -> NND, coordinates
 			cluster_correctness = self.get_cluster_correctness(clusters, correctness_threshold)		# clusters <-> correctness
 			af = self.get_cluster_object(coords, clustering_params)
 			labels = af.labels_
 			img_height = anno_one_worker['height'].values[0]
-			ref_kdt = self.csv_to_kdt(csv_filename, img_height)
+			ref_kdt = self.csv_to_kdt(csv_filepath, img_height)
 			num_clicks = len(coords)
 
 			for i in range(num_clicks):
@@ -1075,14 +1102,14 @@ class SpotAnnotationAnalysis():
 			worker_time_list = time_list[i]
 			num_clicks = len(worker_time_list)
 			x_coords = range(num_clicks)
-			y_coords = worker_time_list
+			y_coords = [x / 1000 for x in worker_time_list]
 			handle = plt.scatter(x_coords, y_coords, s = 4, facecolors = 'c', label = 'One click')
 			plt.legend(handles = [handle], loc = 9, bbox_to_anchor = (1.15, 0.55))
 			plt.subplots_adjust(left=0.1, right=0.8)
 		
-		plt.title('Time Spent [ms] vs. Click Index for Worker ' + uid)
+		plt.title('Time Spent [s] vs. Click Index for Worker ' + uid)
 		plt.xlabel('Click Index')
-		plt.ylabel('Time Spent [ms]')
+		plt.ylabel('Time Spent [s]')
 		plt.xticks(np.arange(0, num_clicks, step=10))
 		plt.show()
 
