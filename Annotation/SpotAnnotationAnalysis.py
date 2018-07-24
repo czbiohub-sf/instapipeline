@@ -64,11 +64,13 @@ class SpotAnnotationAnalysis():
 		# 	Scores/ratings of workers who contributed to that cluster
 		# 	Number of workers who contributed to that cluster
 
+
 	def plot_error_rate_vs_spotted(self, df, clustering_params, correctness_threshold, csv_filepath, img_filename, bigger_window_size):
 		if bigger_window_size:
 			fig = plt.figure(figsize=(14,12))
 		else:
 			fig = plt.figure(figsize = (12,7))
+
 		clusters = self.anno_and_ref_to_df(df, clustering_params, csv_filepath, img_filename)
 		worker_list = self.ba.get_workers(df)
 
@@ -159,6 +161,67 @@ class SpotAnnotationAnalysis():
 		plt.ylabel("Quantity of workers")
 		plt.show()
 
+
+	"""
+	For a given dataset, take the subset of reference spots with an SNR > n 
+	and calculate the fraction of that subset that were detected by the turkers. 
+	Build a curve by varying n (3 through SNR_max) to see how high the minimum 
+	SNR needs to be for 100% of the spots to be detected.
+	"""
+	def plot_snr_sensitivity(self, df, clustering_params, csv_filepath, img_height, img_filename, correctness_threshold, bigger_window_size):
+		if bigger_window_size:
+			fig = plt.figure(figsize=(14,12))
+		else:
+			fig = plt.figure(figsize = (12,7))
+
+		anno_and_ref_df = self.anno_and_ref_to_df(df, clustering_params, csv_filepath, img_filename)
+		centroid_coords = anno_and_ref_df.loc[:, ['centroid_x', 'centroid_y']].as_matrix()		
+		centroids_kdt = KDTree(centroid_coords, leaf_size=2, metric='euclidean')
+
+		ref_df = pd.read_csv(csv_filepath)
+		ref_points = ref_df.loc[:, ['col', 'row']].as_matrix()	
+		for i in range(len(ref_points)):			# flip vertical axis
+			point = ref_points[i]
+			first_elem = point[0]
+			second_elem = img_height - point[1]
+			point = np.array([first_elem, second_elem])
+			ref_points[i] = point
+
+		snr_val_list = ref_df.loc[:, ['snr']].as_matrix()	
+
+		snr_min = 3
+		snr_max = math.ceil(max([snr_val_list[i][0] for i in range(len(snr_val_list))]))
+		n_list = range(snr_min,snr_max)
+		fraction_list = []
+		for n in n_list:
+			spots_detected = 0
+			spots_total = 0
+			# for each spot
+			for i in range(len(ref_points)):
+				# get SNR
+				snr = snr_val_list[i][0]
+				if(snr<n):
+					continue
+				spots_total += 1
+				ref_point = ref_points[i]
+				# get nearest neighbor centroid
+				dist, ind = centroids_kdt.query([ref_point], k=1)
+				if (dist[0][0] <= correctness_threshold):
+					spots_detected += 1
+			print("n")
+			print(n)
+			print("detected")
+			print(spots_detected)
+			print("total")
+			print(spots_total)
+			fraction_list.append(spots_detected/spots_total)
+		
+		plt.scatter(n_list,fraction_list, facecolors = 'g', s = 20)
+		plt.xlabel("Minimum SNR of subset")
+		plt.ylabel("Fraction of subset detected by workers")
+		plt.show()
+
+
 	"""
 	For each spot, plot SNR vs. number of annotations in the corresponding cluster.
 	"""
@@ -170,7 +233,7 @@ class SpotAnnotationAnalysis():
 		ref_points = ref_df.loc[:, ['col', 'row']].as_matrix()	
 		snr_val_list = ref_df.loc[:, ['snr']].as_matrix()	
 
-		for i in range(len(ref_points)):
+		for i in range(len(ref_points)):			# flip vertical axis
 			point = ref_points[i]
 			first_elem = point[0]
 			second_elem = img_height - point[1]

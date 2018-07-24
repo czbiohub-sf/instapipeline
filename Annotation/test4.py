@@ -3,38 +3,28 @@ from BaseAnnotation import BaseAnnotation
 from QuantiusAnnotation import QuantiusAnnotation
 worker_marker_size = 8
 cluster_marker_size = 40
-bigger_window_size = True
+bigger_window_size = False
 img_height = 300
+correctness_threshold = 4
 
-json_filename = 'SNR_test.json'
-img_filename = 'MAX_ISP_300_1_nspots50_spot_sig1.75_snr5_20_spot_img.png'
-img_filepath = '/Users/jenny.vo-phamhi/Documents/FISH-annotation/Annotation/gen_20180713/spot_images/tissue/MAX_ISP_300_1_nspots50_spot_sig1.75_snr5_20_spot_img.png'
-csv_filepath = '/Users/jenny.vo-phamhi/Documents/FISH-annotation/Annotation/gen_20180713/spot_data/tissue/MAX_ISP_300_1_nspots50_spot_sig1.75_snr5_20_coord_snr_list.csv'
-#csv_filepath = 'MAX_ISP_300_1_nspots50_spot_sig1.75_snr5_20_coord_snr_list.csv'
 
-ba = QuantiusAnnotation(json_filename)
+json_filename = 'SynthTests_tissue.json'
+gen_date = '20180719'
+bg_type = 'tissue'
+img_name = 'MAX_ISP_300_1_nspots150_spot_sig1.75_snr10_2.5'
+
+img_filename = img_name+'spot_img.png'
+img_filepath = '/Users/jenny.vo-phamhi/Documents/FISH-annotation/Annotation/gen_'+gen_date+'/spot_images/'+bg_type+'/'+img_name+'spot_img.png'
+csv_filepath = '/Users/jenny.vo-phamhi/Documents/FISH-annotation/Annotation/gen_'+gen_date+'/spot_data/'+bg_type+'/'+img_name+'_coord_snr_list.csv'
+json_filepath = '/Users/jenny.vo-phamhi/Documents/FISH-annotation/Annotation/gen_'+gen_date+'/'+json_filename
+
+ba = QuantiusAnnotation(json_filepath)
 sa = SpotAnnotationAnalysis(ba)
 anno_all = ba.df()
 anno_one_snr = ba.slice_by_image(anno_all, img_filename)
+clustering_params = ['AffinityPropagation', -350]
 
-show_ref_points = False
-show_workers = True
-show_clusters = False
-clustering_params = None
-show_correctness_workers = False
-show_correctness_clusters = False
-show_NN_inc = False
-correctness_threshold = None
+sa.plot_snr_sensitivity(anno_one_snr, clustering_params, csv_filepath, img_height, img_filename, correctness_threshold, bigger_window_size)
 
-sa.plot_annotations(anno_all, img_filename, csv_filepath, worker_marker_size, cluster_marker_size, show_ref_points, show_workers, show_clusters, show_correctness_workers, show_correctness_clusters, show_NN_inc, correctness_threshold, clustering_params, bigger_window_size, img_filepath)
 
-show_ref_points = True
-show_workers = True
-show_clusters = False
-clustering_params = None
-show_correctness_workers = False
-show_correctness_clusters = False
-show_NN_inc = False
-correctness_threshold = None
-
-sa.plot_annotations(anno_all, img_filename, csv_filepath, worker_marker_size, cluster_marker_size, show_ref_points, show_workers, show_clusters, show_correctness_workers, show_correctness_clusters, show_NN_inc, correctness_threshold, clustering_params, bigger_window_size, img_filepath)
+#sa.plot_snr_vs_membership(anno_one_snr, clustering_params, csv_filepath, img_height, img_filename, correctness_threshold, bigger_window_size)
