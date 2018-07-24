@@ -168,7 +168,7 @@ class SpotAnnotationAnalysis():
 	Build a curve by varying n (3 through SNR_max) to see how high the minimum 
 	SNR needs to be for 100% of the spots to be detected.
 	"""
-	def plot_snr_sensitivity(self, df, clustering_params, csv_filepath, img_height, img_filename, correctness_threshold, bigger_window_size):
+	def plot_snr_sensitivity(self, df, clustering_params, csv_filepath, img_height, img_filename, correctness_threshold, plot_title, bigger_window_size):
 		if bigger_window_size:
 			fig = plt.figure(figsize=(14,12))
 		else:
@@ -189,7 +189,7 @@ class SpotAnnotationAnalysis():
 
 		snr_val_list = ref_df.loc[:, ['snr']].as_matrix()	
 
-		snr_min = 3
+		snr_min = math.floor(min([snr_val_list[i][0] for i in range(len(snr_val_list))]))
 		snr_max = math.ceil(max([snr_val_list[i][0] for i in range(len(snr_val_list))]))
 		n_list = range(snr_min,snr_max)
 		fraction_list = []
@@ -208,17 +208,17 @@ class SpotAnnotationAnalysis():
 				dist, ind = centroids_kdt.query([ref_point], k=1)
 				if (dist[0][0] <= correctness_threshold):
 					spots_detected += 1
-			print("n")
-			print(n)
-			print("detected")
-			print(spots_detected)
-			print("total")
-			print(spots_total)
-			fraction_list.append(spots_detected/spots_total)
-		
-		plt.scatter(n_list,fraction_list, facecolors = 'g', s = 20)
-		plt.xlabel("Minimum SNR of subset")
-		plt.ylabel("Fraction of subset detected by workers")
+			if(spots_total == 0):
+				fraction_list.append(0)
+			else:
+				fraction_list.append((spots_detected/spots_total)*100)
+			print ('min_SNR ={0:2d}, spots_detected ={1:3d}, spots_total ={2:3d}'.format(n, spots_detected, spots_total))
+		plt.scatter(n_list, fraction_list, facecolors = 'g', s = 20)
+		plt.plot(n_list, fraction_list, color = 'green')
+
+		plt.title(plot_title)
+		plt.xlabel("Minimum SNR of spots in subset")
+		plt.ylabel("Fraction of subset of spots detected by workers [%]")
 		plt.show()
 
 
