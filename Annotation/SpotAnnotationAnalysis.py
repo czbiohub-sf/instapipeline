@@ -343,7 +343,7 @@ class SpotAnnotationAnalysis():
 		plt.ylabel("Number of clusters")
 		plt.show()
 
-	def plot_worker_pairwise_scores_hist(self, df, bigger_window_size):
+	def plot_worker_pairwise_scores_hist(self, df, bigger_window_size, plot_title):
 
 		# get worker scores as list
 		worker_scores = self.get_worker_scores(df)
@@ -366,7 +366,7 @@ class SpotAnnotationAnalysis():
 		else:
 			step_size = 50
 		y,x,_ = plt.hist(worker_scores_list, bins=np.arange(low,max(worker_scores_list)+step_size*2, step=step_size)-step_size/2)
-		plt.title('Worker pairwise scores')
+		plt.title(plot_title)
 		plt.xlabel('Sum of pairwise NND averages')
 		plt.ylabel('Quantity of workers')
 		plt.xticks(np.arange(low,max(worker_scores_list)+step_size*2,step=step_size))
