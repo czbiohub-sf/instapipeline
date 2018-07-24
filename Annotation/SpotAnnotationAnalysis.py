@@ -65,7 +65,7 @@ class SpotAnnotationAnalysis():
 		# 	Number of workers who contributed to that cluster
 
 
-	def plot_error_rate_vs_spotted(self, df, clustering_params, correctness_threshold, csv_filepath, img_filename, bigger_window_size):
+	def plot_error_rate_vs_spotted(self, df, clustering_params, correctness_threshold, csv_filepath, img_filename, bigger_window_size, plot_title):
 		if bigger_window_size:
 			fig = plt.figure(figsize=(14,12))
 		else:
@@ -87,11 +87,18 @@ class SpotAnnotationAnalysis():
 		plt.title("Error rate vs. number of good clusters found")
 		plt.xlabel("Number of good clusters found by the worker")
 		plt.ylabel("Worker's error rate [%]")
-		plt.xticks(np.arange(0,max(num_good_clusters_list)+2,step=5))
+
+		if (max(num_good_clusters_list)<=60):
+			x_step = 5
+		elif(max(num_good_clusters_list)<=110):
+			x_step = 10
+		else:
+			x_step = 20
+		plt.xticks(np.arange(0,max(num_good_clusters_list)+2,step=x_step))
 
 		if (max(error_rate_list)<=20):
 			y_step = 1
-		elif(max(error_rate_list)<=50):
+		elif(max(error_rate_list)<=40):
 			y_step = 2
 		else:
 			y_step = 5
@@ -115,6 +122,7 @@ class SpotAnnotationAnalysis():
 				worker = member[3]
 				if(uid==worker):
 					counter += 1
+					break
 		return counter
 
 	"""
@@ -137,7 +145,7 @@ class SpotAnnotationAnalysis():
 	def get_worker_correct_rate(self, uid, clusters, correctness_threshold):
 		return (1 - self.get_worker_error_rate(uid, clusters, correctness_threshold))
 
-	def plot_workers_correct_rate(self, df, clustering_params, correctness_threshold, csv_filepath, img_filename, bigger_window_size):
+	def plot_workers_correct_rate(self, df, clustering_params, correctness_threshold, csv_filepath, img_filename, bigger_window_size, plot_title):
 		
 		if bigger_window_size:
 			fig = plt.figure(figsize=(14,12))
@@ -154,7 +162,7 @@ class SpotAnnotationAnalysis():
 
 		y,x,_ = plt.hist(correct_rates, bins=np.arange(0,105, step=1)-0.5, color = 'g')
 
-		plt.title("Fraction of annotations that were in a good cluster")
+		plt.title(plot_title)
 		plt.xticks(np.arange(0,105, step=5))
 		plt.yticks(np.arange(0,y.max()+1, step=1))
 		plt.xlabel("Fraction of the worker's annotations that were in a good cluster [%]")
