@@ -46,11 +46,32 @@ class SpotAnnotationAnalysis():
 		self.ba = ba_obj
 		self.clusters_done = []
 		self.cluster_objects = []
-		self.clusters_found = []
 
 	"""
-	1. Score all workers in an image (pairwise)
-	2. Cluster workers with high pairwise scores
+	Provides Step 1 of the Big Screen.
+	"""
+	def slice_by_worker_pairwise_scores(self, df, m):
+
+		# score workers based on pairwise matching (this step does not use clusters)		
+		worker_pairwise_scores = self.get_worker_pairwise_scores(df)		# df with all workers. index = worker_ids, values = scores
+
+		# get IDs of all workers
+		worker_scores_list = worker_pairwise_scores['score'].tolist()		# list of scores
+
+		# find bad workers
+		pairwise_score_threshold = m*(np.std(worker_scores_list))+np.mean(worker_scores_list)
+		high_worker_pairwise_scores = worker_pairwise_scores[worker_pairwise_scores.score > pairwise_score_threshold]	# df with only bad workers
+		high_scoring_workers_list = high_worker_pairwise_scores.index.values
+
+		# drop bad workers
+		for worker in high_scoring_workers_list:
+			df = df[df.worker_id != worker]
+
+		return df
+
+	"""
+	1. Score all workers in an image (pairwise) and drop workers with bad pairwise scores.
+	2. Cluster workers with good pairwise scores
 
 	--- possible stopping point ---
 
@@ -58,46 +79,40 @@ class SpotAnnotationAnalysis():
 	4. Score workers based on membership in "putatively good" clusters
 	5. Score "putatively bad" clusters based on having those good workers
 	"""
-	def test_alg(self, df, clustering_params):
+	def test_alg(self, df, clustering_params, pairwise_threshold):
 
-		# 1. Score workers based on pairwise matching (this step does not use clusters)		
-		worker_pairwise_scores = self.get_worker_pairwise_scores(df)
+		# 1. Score all workers in an image (pairwise) and drop workers with bad pairwise scores.
+		df_good_workers_pairwise = self.slice_by_worker_pairwise_scores(df, pairwise_threshold)
 
-		worker_pairwise_scores = worker_pairwise_scores["score"].values
-		print(worker_pairwise_scores)
-		worker_scores_list = []
-		for score in worker_pairwise_scores:
-			worker_scores_list.append(score)
-		print("hello")
-		print(worker_scores_list)
+		# 2. Cluster workers with high pairwise scores
+		clusters_good_workers_pairwise = self.get_clusters(df_good_workers_pairwise, clustering_params) # this dataframe: centroid_x | centroid_y | members
 
-		# print(worker_pairwise_scores)
-		# pairwise_score_threshold = 500
-		# good_worker_pairwise_scores = worker_pairwise_scores[worker_pairwise_scores.score < pairwise_score_threshold]
-		# print(good_worker_pairwise_scores)
-		# good_workers_pairwise = good_worker_pairwise_scores.index.values
-		# print(good_workers_pairwise)
+		# 3. ID "putatively good" clusters (i.e. clusters with more members)
+		print(clusters_good_workers_pairwise)
 
+		# Let's look and see the distribution of num annotations per cluster.
+		self.plot_annotations_per_cluster(df_good_workers_pairwise, clustering_params)
 
-		# outlier_worker_pairwise_scores = self.get_outliers(worker_pairwise_scores, m)
+	def plot_annotations_per_cluster(self, df, clustering_params):
+		clusters = self.get_clusters(df, clustering_params)			# this dataframe: centroid_x | centroid_y | members
+		hist_list = []
+		for i in range(len(clusters.index)):
+			row = clusters.iloc[[i]]
+			members = row.iloc[0]['members']
+			worker_list = []
+			for member in members:
+				worker_list.append(member[3])
+			num_members = len(np.unique(worker_list))
+			hist_list.append(num_members)
+		plt.title("Number of member annotations in a cluster")
+		y,x,_ = plt.hist(hist_list, bins=np.arange(0,max(hist_list)+10,5)-2.5)
+		plt.xlabel("Number of member annotations")
+		plt.xticks(np.arange(0,max(hist_list)+5,step=5))
+		plt.yticks(np.arange(0,y.max()+5, step=5))
+		plt.ylabel("Number of clusters")
+		plt.show()
 
-		# Naïvely cluster annotations
-			# this dataframe: centroid_x | centroid_y | members
-			# indices are cluster IDs
-			# members = list of annotations belonging to the cluster
-			# 	each annotation comes with properties of that annotation (x coord, y coord, time spent, and worker ID)
-		#naive_clusters = self.get_clusters(df, clustering_params) # this dataframe: centroid_x | centroid_y | members
- 		
-		# Score clusters based on
-		# 	Scores/ratings of workers who contributed to that cluster
-		# 	Number of workers who contributed to that cluster
-
-	# def reject_outliers(data, m=2):
-	# 	to_return = data[abs(data - np.mean(data)) < (m * np.std(data))]
-	# 	return to_return
-
-
-	def plot_error_rate_vs_spotted(self, df, clustering_params, correctness_threshold, csv_filepath, img_filename, bigger_window_size, plot_title):
+	def plot_error_rate_vs_spotted(self, df, clustering_params, correctness_threshold, csv_filepath, img_filename, plot_title, bigger_window_size):
 		if bigger_window_size:
 			fig = plt.figure(figsize=(14,12))
 		else:
@@ -134,7 +149,8 @@ class SpotAnnotationAnalysis():
 			y_step = 2
 		else:
 			y_step = 5
-		plt.yticks(np.arange(0,max(error_rate_list)+1,step=y_step))
+#		plt.yticks(np.arange(0,max(error_rate_list)+1,step=y_step))
+		plt.yticks(np.arange(0,101,step=y_step))
 
 		plt.show()
 
@@ -177,7 +193,7 @@ class SpotAnnotationAnalysis():
 	def get_worker_correct_rate(self, uid, clusters, correctness_threshold):
 		return (1 - self.get_worker_error_rate(uid, clusters, correctness_threshold))
 
-	def plot_workers_correct_rate(self, df, clustering_params, correctness_threshold, csv_filepath, img_filename, bigger_window_size, plot_title):
+	def plot_workers_correct_rate(self, df, clustering_params, correctness_threshold, csv_filepath, img_filename, plot_title, bigger_window_size):
 		
 		if bigger_window_size:
 			fig = plt.figure(figsize=(14,12))
@@ -367,23 +383,7 @@ class SpotAnnotationAnalysis():
 			plt.ylabel("Number of spots undetected")
 		plt.show()
 
-	def plot_annotations_per_cluster(self, df, clustering_params):
-		clusters = self.get_clusters(df, clustering_params)			# this dataframe: centroid_x | centroid_y | members
-		hist_list = []
-		for i in range(len(clusters.index)):
-			row = clusters.iloc[[i]]
-			members = row.iloc[0]['members']
-			num_members = len(members)
-			hist_list.append(num_members)
-		plt.title("Number of member annotations in a cluster")
-		y,x,_ = plt.hist(hist_list, bins=np.arange(0,max(hist_list)+10,5)-2.5)
-		plt.xlabel("Number of member annotations")
-		plt.xticks(np.arange(0,max(hist_list)+5,step=5))
-		plt.yticks(np.arange(0,y.max()+1, step=1))
-		plt.ylabel("Number of clusters")
-		plt.show()
-
-	def plot_worker_pairwise_scores_hist(self, df, bigger_window_size, plot_title):
+	def plot_worker_pairwise_scores_hist(self, df, plot_title, bigger_window_size):
 
 		# get worker scores as list
 		worker_scores = self.get_worker_pairwise_scores(df)
