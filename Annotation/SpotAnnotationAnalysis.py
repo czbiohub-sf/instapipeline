@@ -48,21 +48,53 @@ class SpotAnnotationAnalysis():
 		self.cluster_objects = []
 		self.clusters_found = []
 
+	"""
+	1. Score all workers in an image (pairwise)
+	2. Cluster workers with high pairwise scores
+
+	--- possible stopping point ---
+
+	3. ID "putatively good" clusters (i.e. clusters with more members)
+	4. Score workers based on membership in "putatively good" clusters
+	5. Score "putatively bad" clusters based on having those good workers
+	"""
 	def test_alg(self, df, clustering_params):
 
-		# Score workers based on pairwise matching (this step does not use clusters)		
-		worker_scores = self.get_worker_scores(df)
+		# 1. Score workers based on pairwise matching (this step does not use clusters)		
+		worker_pairwise_scores = self.get_worker_pairwise_scores(df)
+
+		worker_pairwise_scores = worker_pairwise_scores["score"].values
+		print(worker_pairwise_scores)
+		worker_scores_list = []
+		for score in worker_pairwise_scores:
+			worker_scores_list.append(score)
+		print("hello")
+		print(worker_scores_list)
+
+		# print(worker_pairwise_scores)
+		# pairwise_score_threshold = 500
+		# good_worker_pairwise_scores = worker_pairwise_scores[worker_pairwise_scores.score < pairwise_score_threshold]
+		# print(good_worker_pairwise_scores)
+		# good_workers_pairwise = good_worker_pairwise_scores.index.values
+		# print(good_workers_pairwise)
+
+
+		# outlier_worker_pairwise_scores = self.get_outliers(worker_pairwise_scores, m)
 
 		# Naïvely cluster annotations
 			# this dataframe: centroid_x | centroid_y | members
 			# indices are cluster IDs
 			# members = list of annotations belonging to the cluster
 			# 	each annotation comes with properties of that annotation (x coord, y coord, time spent, and worker ID)
-		naive_clusters = self.get_clusters(df, clustering_params) # this dataframe: centroid_x | centroid_y | members
+		#naive_clusters = self.get_clusters(df, clustering_params) # this dataframe: centroid_x | centroid_y | members
  		
 		# Score clusters based on
 		# 	Scores/ratings of workers who contributed to that cluster
 		# 	Number of workers who contributed to that cluster
+
+	# def reject_outliers(data, m=2):
+	# 	to_return = data[abs(data - np.mean(data)) < (m * np.std(data))]
+	# 	return to_return
 
 
 	def plot_error_rate_vs_spotted(self, df, clustering_params, correctness_threshold, csv_filepath, img_filename, bigger_window_size, plot_title):
@@ -354,7 +386,7 @@ class SpotAnnotationAnalysis():
 	def plot_worker_pairwise_scores_hist(self, df, bigger_window_size, plot_title):
 
 		# get worker scores as list
-		worker_scores = self.get_worker_scores(df)
+		worker_scores = self.get_worker_pairwise_scores(df)
 		worker_scores = worker_scores["score"].values
 		worker_scores_list = []
 		for score in worker_scores:
@@ -374,6 +406,19 @@ class SpotAnnotationAnalysis():
 		else:
 			step_size = 50
 		y,x,_ = plt.hist(worker_scores_list, bins=np.arange(low,max(worker_scores_list)+step_size*2, step=step_size)-step_size/2)
+		
+		std1 = (np.std(worker_scores_list))+np.mean(worker_scores_list)
+		q3 = 1.5*(np.std(worker_scores_list))+np.mean(worker_scores_list)
+		std2 = 2*(np.std(worker_scores_list))+np.mean(worker_scores_list)
+
+		plt.axvline(x=std1, color='r')
+		plt.axvline(x=q3, color='g')
+		plt.axvline(x=std2, color='b')
+
+		legend_elements = [	Line2D([0],[0], color='r', label='mean + 1 stdev'), 
+							Line2D([0],[0], color='g', label='mean + 1.5 stdev'), 
+							Line2D([0],[0], color='b', label='mean + 2 stdev')]
+		plt.legend(handles = legend_elements)
 		plt.title(plot_title)
 		plt.xlabel('Sum of pairwise NND averages')
 		plt.ylabel('Quantity of workers')
@@ -385,7 +430,7 @@ class SpotAnnotationAnalysis():
     # For each worker, worker_score = sum(pair scores of that worker).
     # indices of dataframe are worker IDs
     # column header of dataframe is the worker_score 
-	def get_worker_scores(self, df):
+	def get_worker_pairwise_scores(self, df):
 		worker_list = self.ba.get_workers(df)
 		pair_scores = self.get_pair_scores(df)
 

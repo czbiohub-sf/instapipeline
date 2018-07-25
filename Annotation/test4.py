@@ -26,6 +26,10 @@ anno_one_snr = ba.slice_by_image(anno_all, img_filename)
 
 plot_title = img_name
 
-sa.plot_snr_sensitivity(anno_one_snr, clustering_params, csv_filepath, img_height, img_filename, correctness_threshold, plot_title, bigger_window_size)
+# sa.plot_snr_sensitivity(anno_one_snr, clustering_params, csv_filepath, img_height, img_filename, correctness_threshold, plot_title, bigger_window_size)
 
 #sa.plot_snr_vs_membership(anno_one_snr, clustering_params, csv_filepath, img_height, img_filename, correctness_threshold, bigger_window_size)
+
+# sa.plot_worker_pairwise_scores_hist(anno_one_snr, bigger_window_size, plot_title)
+
+sa.test_alg(anno_one_snr, clustering_params)
