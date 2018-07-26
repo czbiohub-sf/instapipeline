@@ -4,6 +4,7 @@
 import math
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
+import matplotlib.patches as mpatches
 from matplotlib.lines import Line2D
 import numpy as np
 from numpy import genfromtxt
@@ -15,6 +16,9 @@ from sklearn import metrics
 from sklearn.neighbors import KDTree
 from QuantiusAnnotation import QuantiusAnnotation
 from BaseAnnotation import BaseAnnotation
+
+from skimage import filters
+
 
 # ------- #
 
@@ -88,28 +92,81 @@ class SpotAnnotationAnalysis():
 		clusters_good_workers_pairwise = self.get_clusters(df_good_workers_pairwise, clustering_params) # this dataframe: centroid_x | centroid_y | members
 
 		# 3. ID "putatively good" clusters (i.e. clusters with more members)
-		print(clusters_good_workers_pairwise)
 
 		# Let's look and see the distribution of num annotations per cluster.
-		self.plot_annotations_per_cluster(df_good_workers_pairwise, clustering_params)
+		self.plot_annotations_per_cluster(df_good_workers_pairwise, clustering_params, show_correctness, correctness_threshold)
 
-	def plot_annotations_per_cluster(self, df, clustering_params):
+		# 4. Score workers based on membership in "putatively good" clusters
+		
+		# 5. Score "putatively bad" clusters based on having those good workers
+
+		# Return a dataframe of clusters with scores above some threshold.
+
+	def plot_annotations_per_cluster(self, df, clustering_params, show_correctness, correctness_threshold, csv_filepath, img_filename, plot_title):
 		clusters = self.get_clusters(df, clustering_params)			# this dataframe: centroid_x | centroid_y | members
-		hist_list = []
-		for i in range(len(clusters.index)):
-			row = clusters.iloc[[i]]
-			members = row.iloc[0]['members']
-			worker_list = []
-			for member in members:
-				worker_list.append(member[3])
-			num_members = len(np.unique(worker_list))
-			hist_list.append(num_members)
-		plt.title("Number of member annotations in a cluster")
-		y,x,_ = plt.hist(hist_list, bins=np.arange(0,max(hist_list)+10,5)-2.5)
-		plt.xlabel("Number of member annotations")
-		plt.xticks(np.arange(0,max(hist_list)+5,step=5))
-		plt.yticks(np.arange(0,y.max()+5, step=5))
+		
+		if not show_correctness:
+			hist_list = []
+			for i in range(len(clusters.index)):
+				row = clusters.iloc[[i]]
+				members = row.iloc[0]['members']
+				worker_list = []
+				for member in members:
+					worker_list.append(member[3])
+				num_members = len(np.unique(worker_list))
+				hist_list.append(num_members)
+			plt.title(plot_title)
+			y,x,_ = plt.hist(hist_list, bins=np.arange(0,max(hist_list)+4,2)-1)
+			width = max(hist_list)
+		else:
+			correct_list = []
+			incorrect_list = []
+			anno_and_ref_df = self.anno_and_ref_to_df(df, clustering_params, csv_filepath, img_filename)
+			cluster_correctness = self.get_cluster_correctness(anno_and_ref_df, correctness_threshold)
+			for i in range(len(clusters.index)):
+				row = clusters.iloc[[i]]
+				members = row.iloc[0]['members']
+				worker_list = []
+				for member in members:
+					worker_list.append(member[3])
+				num_members = len(np.unique(worker_list))
+				if (cluster_correctness[i][1]):		# if cluster is correct
+					correct_list.append(num_members)
+				else:
+					incorrect_list.append(num_members)
+				total_list.append(num_members)
+			width = max(correct_list)
+			if (max(incorrect_list) > width):
+				width = max(incorrect_list)
+
+			plt.figure()
+			
+			y,x,_ = plt.hist([correct_list, incorrect_list], bins = np.arange(0,width+4,2)-1, stacked = True, color = ['g','m'])
+			otsu_threshold = filters.threshold_otsu(np.asarray(total_list))
+			plt.axvline(x=otsu_threshold, color='r')
+
+			g_patch = mpatches.Patch(color='g', label='correct clusters')
+			m_patch = mpatches.Patch(color='m', label='incorrect clusters')
+			otsu_line = Line2D([0],[0], color='r', label='mean - 1 stdev')
+			plt.legend(handles=[g_patch,m_patch,otsu_line])
+			
+		# std1 = np.mean(hist_list) - (np.std(hist_list))
+		# q3 = np.mean(hist_list) - 1.5*(np.std(hist_list))
+		# std2 = np.mean(hist_list) - 2*(np.std(hist_list))
+
+		# plt.axvline(x=std1, color='r')
+		# plt.axvline(x=q3, color='g')
+		# plt.axvline(x=std2, color='b')
+
+		# legend_elements = [	Line2D([0],[0], color='r', label='mean - 1 stdev'), 
+		# 			Line2D([0],[0], color='g', label='mean - 1.5 stdev'), 
+		# 			Line2D([0],[0], color='b', label='mean - 2 stdev')]
+		# plt.legend(handles = legend_elements)
+
+		plt.xlabel("Number of unique workers annotating")
+		plt.xticks(np.arange(0,width+2,step=2))
 		plt.ylabel("Number of clusters")
+		plt.title(plot_title)
 		plt.show()
 
 	def plot_error_rate_vs_spotted(self, df, clustering_params, correctness_threshold, csv_filepath, img_filename, plot_title, bigger_window_size):
@@ -129,7 +186,7 @@ class SpotAnnotationAnalysis():
 			error_rate_list.append(self.get_worker_error_rate(worker, clusters, correctness_threshold) * 100)
 		
 		plt.scatter(num_good_clusters_list, error_rate_list, facecolors='c', s=20)
-		legend_elements = [Line2D([0],[0], marker='o', color='w', markerfacecolor='c', label='One worker')]
+		legend_elements = [Line2D([0],[0], marker='o', color='w', markerfacecolor='c', label='one worker')]
 		plt.legend(handles = legend_elements)
 		plt.title("Error rate vs. number of good clusters found")
 		plt.xlabel("Number of good clusters found by the worker")
@@ -397,32 +454,35 @@ class SpotAnnotationAnalysis():
 		else:
 			fig = plt.figure(figsize = (12,7))
 
-		low = math.floor((min(worker_scores_list)-100)/100)*100
-		width = max(worker_scores_list) - low
-		if(width>2000):
-			step_size = 200
-		elif (width>1000):
-			step_size = 100
-		else:
-			step_size = 50
+		step_size = 50
+		low = math.floor((min(worker_scores_list)-step_size)/step_size)*step_size
+
 		y,x,_ = plt.hist(worker_scores_list, bins=np.arange(low,max(worker_scores_list)+step_size*2, step=step_size)-step_size/2)
 		
-		std1 = (np.std(worker_scores_list))+np.mean(worker_scores_list)
-		q3 = 1.5*(np.std(worker_scores_list))+np.mean(worker_scores_list)
-		std2 = 2*(np.std(worker_scores_list))+np.mean(worker_scores_list)
+		# std1 = (np.std(worker_scores_list))+np.mean(worker_scores_list)
+		# q3 = 1.5*(np.std(worker_scores_list))+np.mean(worker_scores_list)
+		# std2 = 2*(np.std(worker_scores_list))+np.mean(worker_scores_list)
 
-		plt.axvline(x=std1, color='r')
-		plt.axvline(x=q3, color='g')
-		plt.axvline(x=std2, color='b')
+		# plt.axvline(x=std1, color='r')
+		# plt.axvline(x=q3, color='g')
+		# plt.axvline(x=std2, color='b')
 
-		legend_elements = [	Line2D([0],[0], color='r', label='mean + 1 stdev'), 
-							Line2D([0],[0], color='g', label='mean + 1.5 stdev'), 
-							Line2D([0],[0], color='b', label='mean + 2 stdev')]
-		plt.legend(handles = legend_elements)
+		# legend_elements = [	Line2D([0],[0], color='r', label='mean + 1 stdev'), 
+		# 					Line2D([0],[0], color='g', label='mean + 1.5 stdev'), 
+		# 					Line2D([0],[0], color='b', label='mean + 2 stdev')]
+		# plt.legend(handles = legend_elements)
+
 		plt.title(plot_title)
 		plt.xlabel('Sum of pairwise NND averages')
 		plt.ylabel('Quantity of workers')
-		plt.xticks(np.arange(low,max(worker_scores_list)+step_size*2,step=step_size))
+		width = max(worker_scores_list) - low
+		if(width>2000):
+			x_step = 200
+		elif (width>1000):
+			x_step = 100
+		else:
+			x_step = 50
+		plt.xticks(np.arange(low,max(worker_scores_list)+x_step*2,step=x_step))
 		plt.yticks(np.arange(0,y.max()+1))
 		plt.show()
 

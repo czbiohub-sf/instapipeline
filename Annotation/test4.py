@@ -36,14 +36,16 @@ clustering_params = ['AffinityPropagation', -350]
 show_correctness_workers = False
 show_correctness_clusters = False
 show_NN_inc = False
-correctness_threshold = None
 pairwise_threshold = 1
 
 # sa.plot_annotations(anno_one_snr, img_filename, img_filepath, csv_filepath, worker_marker_size, cluster_marker_size, 
 # 	show_ref_points, show_workers, show_clusters, show_correctness_workers, show_correctness_clusters, show_NN_inc, 
 # 	correctness_threshold, clustering_params, bigger_window_size)
 
-sa.test_alg(anno_one_snr, clustering_params, pairwise_threshold)
+show_correctness = True
+correctness_threshold = 4
+
+sa.plot_annotations_per_cluster(anno_one_snr, clustering_params, show_correctness, correctness_threshold, csv_filepath, img_filename, plot_title)
 
 
 
