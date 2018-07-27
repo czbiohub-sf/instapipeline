@@ -161,8 +161,9 @@ class SpotAnnotationAnalysis():
 			print(num_members)
 
 
+
 		# Let's look and see the distribution of num annotations per cluster.
-#		self.plot_annotations_per_cluster(df_good_workers_pairwise, clustering_params, show_correctness, correctness_threshold)
+		self.plot_annotations_per_cluster(df_good_workers_pairwise, clustering_params, show_correctness, correctness_threshold)
 
 		# 4. Score workers based on membership in "putatively good" clusters
 		
