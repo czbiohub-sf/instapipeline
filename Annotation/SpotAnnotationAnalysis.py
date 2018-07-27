@@ -143,6 +143,7 @@ class SpotAnnotationAnalysis():
 		# 2. Sort clusters with few/many workers annotating (“putatively incorrect/correct”).
 		small_clusters, large_clusters = self.sort_clusters_by_size(clusters_good_workers_pairwise)
 
+
 		# print("large_clusters")
 		# for i in range(len(large_clusters.index)):
 		# 	row = large_clusters.iloc[[i]]
