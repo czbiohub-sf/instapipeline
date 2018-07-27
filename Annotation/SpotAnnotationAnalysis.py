@@ -143,7 +143,6 @@ class SpotAnnotationAnalysis():
 		# 2. Sort clusters with few/many workers annotating (“putatively incorrect/correct”).
 		small_clusters, large_clusters = self.sort_clusters_by_size(clusters_good_workers_pairwise)
 
-
 		# print("large_clusters")
 		# for i in range(len(large_clusters.index)):
 		# 	row = large_clusters.iloc[[i]]
@@ -603,7 +602,7 @@ class SpotAnnotationAnalysis():
 				fraction_list.append(0)
 			else:
 				fraction_list.append((spots_detected/spots_total)*100)
-			print ('min_SNR ={0:2d}, spots_detected ={1:3d}, spots_total ={2:3d}'.format(n, spots_detected, spots_total))
+			#print ('min_SNR ={0:2d}, spots_detected ={1:3d}, spots_total ={2:3d}'.format(n, spots_detected, spots_total))
 		plt.scatter(n_list, fraction_list, facecolors = 'g', s = 20)
 		plt.plot(n_list, fraction_list, color = 'green')
 
