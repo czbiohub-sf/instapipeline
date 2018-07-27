@@ -45,8 +45,9 @@ pairwise_threshold = 1
 show_correctness = True
 correctness_threshold = 4
 
-sa.plot_annotations_per_cluster(anno_one_snr, clustering_params, show_correctness, correctness_threshold, csv_filepath, img_filename, plot_title)
+sa.plot_annotations_per_cluster(anno_one_snr, clustering_params, show_correctness, correctness_threshold, csv_filepath, img_filename, plot_title, bigger_window_size)
 
+sa.plot_worker_pairwise_scores_hist(anno_one_snr, plot_title, bigger_window_size)
 
 
 

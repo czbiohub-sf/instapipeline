@@ -10,14 +10,15 @@ import numpy as np
 from numpy import genfromtxt
 import pandas as pd
 import scipy
-import sklearn as skl
+from skimage import filters
 from sklearn.cluster import AffinityPropagation
+from sklearn.cluster import KMeans
 from sklearn import metrics
 from sklearn.neighbors import KDTree
 from QuantiusAnnotation import QuantiusAnnotation
 from BaseAnnotation import BaseAnnotation
 
-from skimage import filters
+
 
 
 # ------- #
@@ -83,26 +84,80 @@ class SpotAnnotationAnalysis():
 	4. Score workers based on membership in "putatively good" clusters
 	5. Score "putatively bad" clusters based on having those good workers
 	"""
-	def test_alg(self, df, clustering_params, pairwise_threshold):
+	# def test_alg(self, df, clustering_params, pairwise_threshold):
 
-		# 1. Score all workers in an image (pairwise) and drop workers with bad pairwise scores.
-		df_good_workers_pairwise = self.slice_by_worker_pairwise_scores(df, pairwise_threshold)
+	# 	# 1. Score all workers in an image (pairwise) and drop workers with bad pairwise scores.
+	# 	df_good_workers_pairwise = self.slice_by_worker_pairwise_scores(df, pairwise_threshold)
 
-		# 2. Cluster workers with high pairwise scores
-		clusters_good_workers_pairwise = self.get_clusters(df_good_workers_pairwise, clustering_params) # this dataframe: centroid_x | centroid_y | members
+	# 	# 2. Cluster workers with high pairwise scores
+	# 	clusters_good_workers_pairwise = self.get_clusters(df_good_workers_pairwise, clustering_params) # this dataframe: centroid_x | centroid_y | members
 
-		# 3. ID "putatively good" clusters (i.e. clusters with more members)
+	# 	# 3. ID "putatively good" clusters (i.e. clusters with more members)
 
-		# Let's look and see the distribution of num annotations per cluster.
-		self.plot_annotations_per_cluster(df_good_workers_pairwise, clustering_params, show_correctness, correctness_threshold)
+	# 	# Let's look and see the distribution of num annotations per cluster.
+	# 	self.plot_annotations_per_cluster(df_good_workers_pairwise, clustering_params, show_correctness, correctness_threshold)
 
-		# 4. Score workers based on membership in "putatively good" clusters
+	# 	# 4. Score workers based on membership in "putatively good" clusters
 		
-		# 5. Score "putatively bad" clusters based on having those good workers
+	# 	# 5. Score "putatively bad" clusters based on having those good workers
 
-		# Return a dataframe of clusters with scores above some threshold.
+	# 	# Return a dataframe of clusters with scores above some threshold.
 
-	def plot_annotations_per_cluster(self, df, clustering_params, show_correctness, correctness_threshold, csv_filepath, img_filename, plot_title):
+	def plot_worker_pairwise_scores_hist(self, df, plot_title, bigger_window_size):
+
+		# get worker scores as list
+		worker_scores = self.get_worker_pairwise_scores(df)
+		worker_scores = worker_scores["score"].values
+		worker_scores_list = []
+		for score in worker_scores:
+			worker_scores_list.append(score)
+
+		if bigger_window_size:
+			fig = plt.figure(figsize=(14,12))
+		else:
+			fig = plt.figure(figsize = (12,7))
+
+		step_size = 20
+		low = math.floor((min(worker_scores_list)-100)/100)*100
+
+		y,x,_ = plt.hist(worker_scores_list, bins=np.arange(low,max(worker_scores_list)+step_size*2, step=step_size)-step_size/2)
+
+		# threshold otsu
+		threshold_otsu = filters.threshold_otsu(np.asarray(worker_scores_list))
+
+		# threshold kmeans
+		total_array = np.asarray(worker_scores_list)
+		km = KMeans(n_clusters = 2).fit(total_array.reshape(-1,1))
+		cluster_centers = km.cluster_centers_
+		threshold_kmeans = (cluster_centers[0][0]+cluster_centers[1][0])/2
+
+		# threshold 3rd quartile
+		threshold_q3 = np.mean(worker_scores_list) + 1.5*np.std(worker_scores_list)
+
+		plt.axvline(x=threshold_otsu, color='r')
+		plt.axvline(x=threshold_kmeans, color='b')
+		plt.axvline(x=threshold_q3, color='g')
+
+		otsu_line = Line2D([0],[0], color='r', label='otsu threshold')
+		kmeans_line = Line2D([0],[0], color='b', label='k-means threshold')
+		q3_line = Line2D([0],[0], color='g', label='q3 threshold')
+		plt.legend(handles=[otsu_line, kmeans_line, q3_line])
+
+		plt.title(plot_title)
+		plt.xlabel('Sum of pairwise NND averages')
+		plt.ylabel('Quantity of workers')
+		width = max(worker_scores_list) - low
+		if(width>2000):
+			x_step = 200
+		elif (width>1000):
+			x_step = 100
+		else:
+			x_step = 50
+		plt.xticks(np.arange(low,max(worker_scores_list)+x_step*2,step=x_step))
+		plt.yticks(np.arange(0,y.max()+1))
+		plt.show()
+
+	def plot_annotations_per_cluster(self, df, clustering_params, show_correctness, correctness_threshold, csv_filepath, img_filename, plot_title, bigger_window_size):
 		clusters = self.get_clusters(df, clustering_params)			# this dataframe: centroid_x | centroid_y | members
 		
 		if not show_correctness:
@@ -121,6 +176,7 @@ class SpotAnnotationAnalysis():
 		else:
 			correct_list = []
 			incorrect_list = []
+			total_list = []
 			anno_and_ref_df = self.anno_and_ref_to_df(df, clustering_params, csv_filepath, img_filename)
 			cluster_correctness = self.get_cluster_correctness(anno_and_ref_df, correctness_threshold)
 			for i in range(len(clusters.index)):
@@ -139,29 +195,33 @@ class SpotAnnotationAnalysis():
 			if (max(incorrect_list) > width):
 				width = max(incorrect_list)
 
-			plt.figure()
+			fig = plt.figure()
 			
 			y,x,_ = plt.hist([correct_list, incorrect_list], bins = np.arange(0,width+4,2)-1, stacked = True, color = ['g','m'])
-			otsu_threshold = filters.threshold_otsu(np.asarray(total_list))
-			plt.axvline(x=otsu_threshold, color='r')
+
+			# threshold otsu
+			threshold_otsu = filters.threshold_otsu(np.asarray(total_list))
+
+			# treshold kmeans
+			total_array = np.asarray(total_list)
+			km = KMeans(n_clusters = 2).fit(total_array.reshape(-1,1))
+			cluster_centers = km.cluster_centers_
+			threshold_kmeans = (cluster_centers[0][0]+cluster_centers[1][0])/2
+			"""
+			^^ K-means threshold = midpoint of the two centroids 
+			since on either side of that midpoint, you are closer 
+			to one of the centroids or the other, and should therefore 
+			lie in that respective cluster.
+			>> https://stackoverflow.com/questions/45683096/how-to-get-the-threshold-value-of-k-means-algorithm-that-is-used-to-binarize-the
+			"""
+			plt.axvline(x=threshold_otsu, color='r')
+			plt.axvline(x=threshold_kmeans, color='b')
 
 			g_patch = mpatches.Patch(color='g', label='correct clusters')
 			m_patch = mpatches.Patch(color='m', label='incorrect clusters')
-			otsu_line = Line2D([0],[0], color='r', label='mean - 1 stdev')
-			plt.legend(handles=[g_patch,m_patch,otsu_line])
-			
-		# std1 = np.mean(hist_list) - (np.std(hist_list))
-		# q3 = np.mean(hist_list) - 1.5*(np.std(hist_list))
-		# std2 = np.mean(hist_list) - 2*(np.std(hist_list))
-
-		# plt.axvline(x=std1, color='r')
-		# plt.axvline(x=q3, color='g')
-		# plt.axvline(x=std2, color='b')
-
-		# legend_elements = [	Line2D([0],[0], color='r', label='mean - 1 stdev'), 
-		# 			Line2D([0],[0], color='g', label='mean - 1.5 stdev'), 
-		# 			Line2D([0],[0], color='b', label='mean - 2 stdev')]
-		# plt.legend(handles = legend_elements)
+			otsu_line = Line2D([0],[0], color='r', label='otsu threshold')
+			kmeans_line = Line2D([0],[0], color='b', label='k-means threshold')
+			plt.legend(handles=[g_patch, m_patch, otsu_line, kmeans_line])
 
 		plt.xlabel("Number of unique workers annotating")
 		plt.xticks(np.arange(0,width+2,step=2))
@@ -438,52 +498,6 @@ class SpotAnnotationAnalysis():
 			plt.yticks(np.arange(0,y.max()+1, step=1))
 			plt.xlabel("SNR")
 			plt.ylabel("Number of spots undetected")
-		plt.show()
-
-	def plot_worker_pairwise_scores_hist(self, df, plot_title, bigger_window_size):
-
-		# get worker scores as list
-		worker_scores = self.get_worker_pairwise_scores(df)
-		worker_scores = worker_scores["score"].values
-		worker_scores_list = []
-		for score in worker_scores:
-			worker_scores_list.append(score)
-
-		if bigger_window_size:
-			fig = plt.figure(figsize=(14,12))
-		else:
-			fig = plt.figure(figsize = (12,7))
-
-		step_size = 50
-		low = math.floor((min(worker_scores_list)-step_size)/step_size)*step_size
-
-		y,x,_ = plt.hist(worker_scores_list, bins=np.arange(low,max(worker_scores_list)+step_size*2, step=step_size)-step_size/2)
-		
-		# std1 = (np.std(worker_scores_list))+np.mean(worker_scores_list)
-		# q3 = 1.5*(np.std(worker_scores_list))+np.mean(worker_scores_list)
-		# std2 = 2*(np.std(worker_scores_list))+np.mean(worker_scores_list)
-
-		# plt.axvline(x=std1, color='r')
-		# plt.axvline(x=q3, color='g')
-		# plt.axvline(x=std2, color='b')
-
-		# legend_elements = [	Line2D([0],[0], color='r', label='mean + 1 stdev'), 
-		# 					Line2D([0],[0], color='g', label='mean + 1.5 stdev'), 
-		# 					Line2D([0],[0], color='b', label='mean + 2 stdev')]
-		# plt.legend(handles = legend_elements)
-
-		plt.title(plot_title)
-		plt.xlabel('Sum of pairwise NND averages')
-		plt.ylabel('Quantity of workers')
-		width = max(worker_scores_list) - low
-		if(width>2000):
-			x_step = 200
-		elif (width>1000):
-			x_step = 100
-		else:
-			x_step = 50
-		plt.xticks(np.arange(low,max(worker_scores_list)+x_step*2,step=x_step))
-		plt.yticks(np.arange(0,y.max()+1))
 		plt.show()
 
     # Returns a dataframe with score for all workers in the inputted df.
