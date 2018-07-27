@@ -18,9 +18,6 @@ from sklearn.neighbors import KDTree
 from QuantiusAnnotation import QuantiusAnnotation
 from BaseAnnotation import BaseAnnotation
 
-
-
-
 # ------- #
 
 class SpotAnnotationAnalysis():
@@ -53,9 +50,9 @@ class SpotAnnotationAnalysis():
 		self.cluster_objects = []
 
 	"""
-	Provides Step 1 of the Big Screen.
+	Drops all workers with average pairwise score greater than Otsu threshold.
 	"""
-	def slice_by_worker_pairwise_scores(self, df, m):
+	def slice_workers_by_pairwise_scores(self, df):
 
 		# score workers based on pairwise matching (this step does not use clusters)		
 		worker_pairwise_scores = self.get_worker_pairwise_scores(df)		# df with all workers. index = worker_ids, values = scores
@@ -63,9 +60,10 @@ class SpotAnnotationAnalysis():
 		# get IDs of all workers
 		worker_scores_list = worker_pairwise_scores['score'].tolist()		# list of scores
 
-		# find bad workers
-		pairwise_score_threshold = m*(np.std(worker_scores_list))+np.mean(worker_scores_list)
-		high_worker_pairwise_scores = worker_pairwise_scores[worker_pairwise_scores.score > pairwise_score_threshold]	# df with only bad workers
+		# threshold otsu
+		threshold = filters.threshold_otsu(np.asarray(worker_scores_list))
+
+		high_worker_pairwise_scores = worker_pairwise_scores[worker_pairwise_scores.score > threshold]	# df with only bad workers
 		high_scoring_workers_list = high_worker_pairwise_scores.index.values
 
 		# drop bad workers
@@ -75,87 +73,104 @@ class SpotAnnotationAnalysis():
 		return df
 
 	"""
-	1. Score all workers in an image (pairwise) and drop workers with bad pairwise scores.
-	2. Cluster workers with good pairwise scores
-
-	--- possible stopping point ---
-
-	3. ID "putatively good" clusters (i.e. clusters with more members)
-	4. Score workers based on membership in "putatively good" clusters
-	5. Score "putatively bad" clusters based on having those good workers
+	Input "clusters" is a df: centroid_x | centroid_y | members.
 	"""
-	# def test_alg(self, df, clustering_params, pairwise_threshold):
+	def sort_clusters_by_size(self, clusters):
 
-	# 	# 1. Score all workers in an image (pairwise) and drop workers with bad pairwise scores.
-	# 	df_good_workers_pairwise = self.slice_by_worker_pairwise_scores(df, pairwise_threshold)
-
-	# 	# 2. Cluster workers with high pairwise scores
-	# 	clusters_good_workers_pairwise = self.get_clusters(df_good_workers_pairwise, clustering_params) # this dataframe: centroid_x | centroid_y | members
-
-	# 	# 3. ID "putatively good" clusters (i.e. clusters with more members)
-
-	# 	# Let's look and see the distribution of num annotations per cluster.
-	# 	self.plot_annotations_per_cluster(df_good_workers_pairwise, clustering_params, show_correctness, correctness_threshold)
-
-	# 	# 4. Score workers based on membership in "putatively good" clusters
-		
-	# 	# 5. Score "putatively bad" clusters based on having those good workers
-
-	# 	# Return a dataframe of clusters with scores above some threshold.
-
-	def plot_worker_pairwise_scores_hist(self, df, plot_title, bigger_window_size):
-
-		# get worker scores as list
-		worker_scores = self.get_worker_pairwise_scores(df)
-		worker_scores = worker_scores["score"].values
-		worker_scores_list = []
-		for score in worker_scores:
-			worker_scores_list.append(score)
-
-		if bigger_window_size:
-			fig = plt.figure(figsize=(14,12))
-		else:
-			fig = plt.figure(figsize = (12,7))
-
-		step_size = 20
-		low = math.floor((min(worker_scores_list)-100)/100)*100
-
-		y,x,_ = plt.hist(worker_scores_list, bins=np.arange(low,max(worker_scores_list)+step_size*2, step=step_size)-step_size/2)
-
-		# threshold otsu
-		threshold_otsu = filters.threshold_otsu(np.asarray(worker_scores_list))
-
-		# threshold kmeans
-		total_array = np.asarray(worker_scores_list)
+		# Find threshold (k-means).
+		total_list = []
+		for i in range(len(clusters.index)):
+			row = clusters.iloc[[i]]
+			members = row.iloc[0]['members']
+			worker_list = []
+			for member in members:
+				worker_list.append(member[3])
+			num_members = len(np.unique(worker_list))
+			total_list.append(num_members)
+		total_array = np.asarray(total_list)
 		km = KMeans(n_clusters = 2).fit(total_array.reshape(-1,1))
 		cluster_centers = km.cluster_centers_
 		threshold_kmeans = (cluster_centers[0][0]+cluster_centers[1][0])/2
 
-		# threshold 3rd quartile
-		threshold_q3 = np.mean(worker_scores_list) + 1.5*np.std(worker_scores_list)
+		# Given threshold, sort.
+		small_clusters_list = []
+		large_clusters_list = []
+		small_counter = 0
+		large_counter = 0
+		for j in range(len(clusters.index)):
+			row = clusters.iloc[[j]]
+			members = row.iloc[0]['members']
+			centroid_x = row.iloc[0]['centroid_x']
+			centroid_y = row.iloc[0]['centroid_y']
 
-		plt.axvline(x=threshold_otsu, color='r')
-		plt.axvline(x=threshold_kmeans, color='b')
-		plt.axvline(x=threshold_q3, color='g')
+			worker_list = []
+			for member in members:
+				worker_list.append(member[3])
+			num_members = len(np.unique(worker_list))
 
-		otsu_line = Line2D([0],[0], color='r', label='otsu threshold')
-		kmeans_line = Line2D([0],[0], color='b', label='k-means threshold')
-		q3_line = Line2D([0],[0], color='g', label='q3 threshold')
-		plt.legend(handles=[otsu_line, kmeans_line, q3_line])
+			if (num_members < threshold_kmeans):
+				small_clusters_list.append([centroid_x, centroid_y, members])
+				small_counter += 1
+			else:
+				large_clusters_list.append([centroid_x, centroid_y, members])
+				large_counter += 1
 
-		plt.title(plot_title)
-		plt.xlabel('Sum of pairwise NND averages')
-		plt.ylabel('Quantity of workers')
-		width = max(worker_scores_list) - low
-		if(width>2000):
-			x_step = 200
-		elif (width>1000):
-			x_step = 100
-		else:
-			x_step = 50
-		plt.xticks(np.arange(low,max(worker_scores_list)+x_step*2,step=x_step))
-		plt.yticks(np.arange(0,y.max()+1))
-		plt.show()
+		small_clusters = pd.DataFrame(index = range(small_counter), columns = ['centroid_x','centroid_y','members'])
+		large_clusters = pd.DataFrame(index = range(large_counter), columns = ['centroid_x','centroid_y','members'])
+
+		for k in range(small_counter):
+			small_clusters['centroid_x'][k] = small_clusters_list[k][0]
+			small_clusters['centroid_y'][k] = small_clusters_list[k][1]
+			small_clusters['members'][k] = small_clusters_list[k][2]
+
+		for m in range(large_counter):
+			large_clusters['centroid_x'][m] = large_clusters_list[m][0]
+			large_clusters['centroid_y'][m] = large_clusters_list[m][1]
+			large_clusters['members'][m] = large_clusters_list[m][2]
+
+		return small_clusters, large_clusters
+
+	def test_alg(self, df, clustering_params):
+
+		# 1. Cluster workers with good pairwise scores.
+		df_good_workers_pairwise = self.slice_workers_by_pairwise_scores(df)
+		clusters_good_workers_pairwise = self.get_clusters(df_good_workers_pairwise, clustering_params)
+
+		# 2. Sort clusters with few/many workers annotating (“putatively incorrect/correct”).
+		small_clusters, large_clusters = self.sort_clusters_by_size(clusters_good_workers_pairwise)
+
+		print("large_clusters")
+		print(large_clusters)
+		# for i in range(len(large_clusters.index)):
+		# 	row = large_clusters.iloc[[i]]
+		# 	members = row.iloc[0]['members']
+		# 	worker_list = []
+		# 	for member in members:
+		# 		worker_list.append(member[3])
+		# 	num_members = len(np.unique(worker_list))
+		# 	print(num_members)
+
+		print("small_clusters")
+		print(small_clusters)
+		# for j in range(len(small_clusters.index)):
+		# 	row = large_clusters.iloc[[j]]
+		# 	members = row.iloc[0]['members']
+		# 	worker_list = []
+		# 	for member in members:
+		# 		worker_list.append(member[3])
+		# 	num_members = len(np.unique(worker_list))
+		# 	print(num_members)
+
+
+		# Let's look and see the distribution of num annotations per cluster.
+#		self.plot_annotations_per_cluster(df_good_workers_pairwise, clustering_params, show_correctness, correctness_threshold)
+
+		# 4. Score workers based on membership in "putatively good" clusters
+		
+		# 5. Score "putatively bad" clusters based on having those good workers
+
+		# Return a dataframe of clusters with scores above some threshold.
+
 
 	def plot_annotations_per_cluster(self, df, clustering_params, show_correctness, correctness_threshold, csv_filepath, img_filename, plot_title, bigger_window_size):
 		clusters = self.get_clusters(df, clustering_params)			# this dataframe: centroid_x | centroid_y | members
@@ -227,6 +242,60 @@ class SpotAnnotationAnalysis():
 		plt.xticks(np.arange(0,width+2,step=2))
 		plt.ylabel("Number of clusters")
 		plt.title(plot_title)
+		plt.show()
+
+	def plot_worker_pairwise_scores_hist(self, df, plot_title, bigger_window_size):
+
+		# get worker scores as list
+		worker_scores = self.get_worker_pairwise_scores(df)
+		worker_scores = worker_scores["score"].values
+		worker_scores_list = []
+		for score in worker_scores:
+			worker_scores_list.append(score)
+
+		if bigger_window_size:
+			fig = plt.figure(figsize=(14,12))
+		else:
+			fig = plt.figure(figsize = (12,7))
+
+		step_size = 20
+		low = math.floor((min(worker_scores_list)-100)/100)*100
+
+		y,x,_ = plt.hist(worker_scores_list, bins=np.arange(low,max(worker_scores_list)+step_size*2, step=step_size)-step_size/2)
+
+		# threshold otsu
+		threshold_otsu = filters.threshold_otsu(np.asarray(worker_scores_list))
+
+		# threshold kmeans
+		total_array = np.asarray(worker_scores_list)
+		km = KMeans(n_clusters = 2).fit(total_array.reshape(-1,1))
+		cluster_centers = km.cluster_centers_
+		threshold_kmeans = (cluster_centers[0][0]+cluster_centers[1][0])/2
+
+		# threshold 3rd quartile
+		threshold_q3 = np.mean(worker_scores_list) + 1.5*np.std(worker_scores_list)
+
+		plt.axvline(x=threshold_otsu, color='r')
+		plt.axvline(x=threshold_kmeans, color='b')
+		plt.axvline(x=threshold_q3, color='g')
+
+		otsu_line = Line2D([0],[0], color='r', label='otsu threshold')
+		kmeans_line = Line2D([0],[0], color='b', label='k-means threshold')
+		q3_line = Line2D([0],[0], color='g', label='q3 threshold')
+		plt.legend(handles=[otsu_line, kmeans_line, q3_line])
+
+		plt.title(plot_title)
+		plt.xlabel('Sum of pairwise NND averages')
+		plt.ylabel('Quantity of workers')
+		width = max(worker_scores_list) - low
+		if(width>2000):
+			x_step = 200
+		elif (width>1000):
+			x_step = 100
+		else:
+			x_step = 50
+		plt.xticks(np.arange(low,max(worker_scores_list)+x_step*2,step=x_step))
+		plt.yticks(np.arange(0,y.max()+1))
 		plt.show()
 
 	def plot_error_rate_vs_spotted(self, df, clustering_params, correctness_threshold, csv_filepath, img_filename, plot_title, bigger_window_size):
@@ -507,20 +576,11 @@ class SpotAnnotationAnalysis():
 	def get_worker_pairwise_scores(self, df):
 		worker_list = self.ba.get_workers(df)
 		pair_scores = self.get_pair_scores(df)
-
-		# worker_scores = pd.DataFrame(index = worker_list, columns = ["score", "num_clicks", "score_scaled"])
 		worker_scores = pd.DataFrame(index = worker_list, columns = ["score"])
 		for worker in worker_list:
 			worker_pair_scores = pair_scores[worker].values
 			worker_score = sum(worker_pair_scores)
 			worker_scores["score"][worker] = worker_score
-
-			# worker_df = self.ba.slice_by_worker(df, worker)
-			# worker_click_properties = self.ba.get_click_properties(worker_df)
-			# worker_scores["num_clicks"][worker] = len(worker_click_properties)
-
-			# score_scaled = worker_score/len(worker_click_properties)
-			# worker_scores["score_scaled"][worker] = score_scaled
 		return worker_scores
 
     # returns a dataframe with pair scores for all pairs of workers the inputted df

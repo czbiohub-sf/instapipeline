@@ -10,7 +10,7 @@ img_height = 300
 json_filename = 'SynthTests_tissue.json'
 gen_date = '20180719'
 bg_type = 'tissue'
-img_name = 'MAX_ISP_300_1_nspots150_spot_sig1.75_snr10_2.5'
+img_name = 'MAX_ISP_300_1_nspots50_spot_sig1.75_snr10_2.5'
 
 img_filename = img_name+'spot_img.png'
 img_filepath = '/Users/jenny.vo-phamhi/Documents/FISH-annotation/Annotation/gen_'+gen_date+'/spot_images/'+bg_type+'/'+img_name+'spot_img.png'
@@ -45,9 +45,11 @@ pairwise_threshold = 1
 show_correctness = True
 correctness_threshold = 4
 
-sa.plot_annotations_per_cluster(anno_one_snr, clustering_params, show_correctness, correctness_threshold, csv_filepath, img_filename, plot_title, bigger_window_size)
+# sa.plot_annotations_per_cluster(anno_one_snr, clustering_params, show_correctness, correctness_threshold, csv_filepath, img_filename, plot_title, bigger_window_size)
 
-sa.plot_worker_pairwise_scores_hist(anno_one_snr, plot_title, bigger_window_size)
+# sa.plot_worker_pairwise_scores_hist(anno_one_snr, plot_title, bigger_window_size)
+
+sa.test_alg(anno_one_snr, clustering_params)
 
 
 
