@@ -91,7 +91,6 @@ class SpotAnnotationAnalysis():
 		km = KMeans(n_clusters = 2).fit(total_array.reshape(-1,1))
 		cluster_centers = km.cluster_centers_
 		threshold_kmeans = (cluster_centers[0][0]+cluster_centers[1][0])/2
-		print(threshold_kmeans)
 
 		# Given threshold, sort.
 		small_clusters_list = []
@@ -137,39 +136,73 @@ class SpotAnnotationAnalysis():
 		df_good_workers_pairwise = self.slice_workers_by_pairwise_scores(df)
 		clusters_good_workers_pairwise = self.get_clusters(df_good_workers_pairwise, clustering_params)
 
-		# 2. Sort clusters with few/many workers annotating (“putatively incorrect/correct”).
+		# 2. Look at clusters from Step 1. Sort clusters with few/many workers annotating (“putatively incorrect/correct”).
 		small_clusters, large_clusters = self.sort_clusters_by_size(clusters_good_workers_pairwise)
 
-		print("large_clusters")
+		# 3. Look at all workers. Sort workers who are in few/many "putatively correct" clusters.
+		# other_crowd, good_crowd = self.sort_workers_by_membership_in_large_clusters(df, large_clusters)
+
+
+
+	def plot_workers_pc_yield(self, df, large_clusters, plot_title):
+		worker_list = self.ba.get_workers(df)
+		hist_list = []
+		for uid in worker_list:
+			pc_clusters_found = self.get_pc_clusters_found(large_clusters, uid)
+			hist_list.append(pc_clusters_found)
+
+		step_size = 5
+		if (max(hist_list) > 50):
+			step_size = 10
+		if (max(hist_list) > 100):
+			step_size = 20
+
+		y,x,_ = plt.hist(hist_list, bins=np.arange(0,max(hist_list)+step_size*2, step=step_size)-step_size/2)
+		
+		# threshold otsu
+		threshold_otsu = filters.threshold_otsu(np.asarray(hist_list))
+
+		# threshold kmeans
+		total_array = np.asarray(hist_list)
+		km = KMeans(n_clusters = 2).fit(total_array.reshape(-1,1))
+		cluster_centers = km.cluster_centers_
+		threshold_kmeans = (cluster_centers[0][0]+cluster_centers[1][0])/2
+
+		# threshold 3rd quartile
+		threshold_q3 = np.mean(hist_list) + 1.5*np.std(hist_list)
+
+		plt.axvline(x=threshold_otsu, color='r')
+		plt.axvline(x=threshold_kmeans, color='b')
+
+		otsu_line = Line2D([0],[0], color='r', label='otsu threshold')
+		kmeans_line = Line2D([0],[0], color='b', label='k-means threshold')
+		plt.legend(handles=[otsu_line, kmeans_line])
+
+		plt.xticks(np.arange(0,max(hist_list)+step_size*2, step=step_size))
+		plt.yticks(np.arange(0,y.max()+1))
+
+		plt.title(plot_title)
+		plt.xlabel("Quantity of putatively correct clusters found by a worker")
+		plt.ylabel("Quantity of workers")
+		plt.show()
+
+	def get_pc_clusters_found(self, large_clusters, uid):
+		counter = 0
 		for i in range(len(large_clusters.index)):
 			row = large_clusters.iloc[[i]]
 			members = row.iloc[0]['members']
-			worker_list = []
 			for member in members:
-				worker_list.append(member[3])
-			num_members = len(np.unique(worker_list))
-			print(num_members)
+				worker = member[3]
+				if(uid==worker):
+					counter+=1
+					break
+		return counter
 
-		print("small_clusters")
-		for j in range(len(small_clusters.index)):
-			row = small_clusters.iloc[[j]]
-			members = row.iloc[0]['members']
-			worker_list = []
-			for member in members:
-				worker_list.append(member[3])
-			num_members = len(np.unique(worker_list))
-			print(num_members)
+	# def sort_workers_by_membership_in_large_clusters(df, large_clusters):
+	# 	# other_crowd = []
+	# 	# good_crowd = []
 
-
-
-		# Let's look and see the distribution of num annotations per cluster.
-		self.plot_annotations_per_cluster(df_good_workers_pairwise, clustering_params, show_correctness, correctness_threshold)
-
-		# 4. Score workers based on membership in "putatively good" clusters
-		
-		# 5. Score "putatively bad" clusters based on having those good workers
-
-		# Return a dataframe of clusters with scores above some threshold.
+	# 	# return other_crowd, good_crowd
 
 	def plot_snr_vs_members(self, df, clustering_params, csv_filepath, img_height, img_filename, correctness_threshold):
 
