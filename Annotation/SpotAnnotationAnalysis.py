@@ -123,16 +123,13 @@ class SpotAnnotationAnalysis():
 			small_clusters['centroid_x'][k] = small_clusters_list[k][0]
 			small_clusters['centroid_y'][k] = small_clusters_list[k][1]
 			small_clusters['members'][k] = small_clusters_list[k][2]
-			print(len(small_clusters_list[k][2]))
 
 		for m in range(large_counter):
 			large_clusters['centroid_x'][m] = large_clusters_list[m][0]
 			large_clusters['centroid_y'][m] = large_clusters_list[m][1]
 			large_clusters['members'][m] = large_clusters_list[m][2]
-			print(len(large_clusters_list[m][2]))
 
 		return small_clusters, large_clusters
-
 
 	def test_alg(self, df, clustering_params):
 
@@ -143,25 +140,25 @@ class SpotAnnotationAnalysis():
 		# 2. Sort clusters with few/many workers annotating (“putatively incorrect/correct”).
 		small_clusters, large_clusters = self.sort_clusters_by_size(clusters_good_workers_pairwise)
 
-		# print("large_clusters")
-		# for i in range(len(large_clusters.index)):
-		# 	row = large_clusters.iloc[[i]]
-		# 	members = row.iloc[0]['members']
-		# 	worker_list = []
-		# 	for member in members:
-		# 		worker_list.append(member[3])
-		# 	num_members = len(np.unique(worker_list))
-		# 	print(num_members)
+		print("large_clusters")
+		for i in range(len(large_clusters.index)):
+			row = large_clusters.iloc[[i]]
+			members = row.iloc[0]['members']
+			worker_list = []
+			for member in members:
+				worker_list.append(member[3])
+			num_members = len(np.unique(worker_list))
+			print(num_members)
 
-		# print("small_clusters")
-		# for j in range(len(small_clusters.index)):
-		# 	row = large_clusters.iloc[[j]]
-		# 	members = row.iloc[0]['members']
-		# 	worker_list = []
-		# 	for member in members:
-		# 		worker_list.append(member[3])
-		# 	num_members = len(np.unique(worker_list))
-		# 	print(num_members)
+		print("small_clusters")
+		for j in range(len(small_clusters.index)):
+			row = small_clusters.iloc[[j]]
+			members = row.iloc[0]['members']
+			worker_list = []
+			for member in members:
+				worker_list.append(member[3])
+			num_members = len(np.unique(worker_list))
+			print(num_members)
 
 
 		# Let's look and see the distribution of num annotations per cluster.
