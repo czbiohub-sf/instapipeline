@@ -140,9 +140,36 @@ class SpotAnnotationAnalysis():
 		small_clusters, large_clusters = self.sort_clusters_by_size(clusters_good_workers_pairwise)
 
 		# 3. Look at all workers. Sort workers who are in few/many "putatively correct" clusters.
-		# other_crowd, good_crowd = self.sort_workers_by_membership_in_large_clusters(df, large_clusters)
+		other_crowd, good_crowd = self.sort_workers_by_membership_in_large_clusters(df, large_clusters)
 
+		print(other_crowd)
+		print(good_crowd)
 
+	def sort_workers_by_membership_in_large_clusters(self, df, large_clusters):
+		other_crowd = []
+		good_crowd = []
+
+		worker_list = self.ba.get_workers(df)
+
+		# find threshold (kmeans)
+		total_list = []
+		for uid in worker_list:
+			pc_clusters_found = self.get_pc_clusters_found(large_clusters, uid)
+			total_list.append(pc_clusters_found)
+		total_array = np.asarray(total_list)
+		km = KMeans(n_clusters = 2).fit(total_array.reshape(-1,1))
+		cluster_centers = km.cluster_centers_
+		threshold_kmeans = (cluster_centers[0][0]+cluster_centers[1][0])/2
+
+		# given threshold, sort all workers
+		for uid in worker_list:
+			pc_clusters_found = self.get_pc_clusters_found(large_clusters, uid)
+			if(pc_clusters_found) > threshold_kmeans:
+				good_crowd.append(uid)
+			else:
+				other_crowd.append(uid)
+
+		return other_crowd, good_crowd
 
 	def plot_workers_pc_yield(self, df, large_clusters, plot_title):
 		worker_list = self.ba.get_workers(df)
@@ -167,9 +194,6 @@ class SpotAnnotationAnalysis():
 		km = KMeans(n_clusters = 2).fit(total_array.reshape(-1,1))
 		cluster_centers = km.cluster_centers_
 		threshold_kmeans = (cluster_centers[0][0]+cluster_centers[1][0])/2
-
-		# threshold 3rd quartile
-		threshold_q3 = np.mean(hist_list) + 1.5*np.std(hist_list)
 
 		plt.axvline(x=threshold_otsu, color='r')
 		plt.axvline(x=threshold_kmeans, color='b')
@@ -197,12 +221,6 @@ class SpotAnnotationAnalysis():
 					counter+=1
 					break
 		return counter
-
-	# def sort_workers_by_membership_in_large_clusters(df, large_clusters):
-	# 	# other_crowd = []
-	# 	# good_crowd = []
-
-	# 	# return other_crowd, good_crowd
 
 	def plot_snr_vs_members(self, df, clustering_params, csv_filepath, img_height, img_filename, correctness_threshold):
 

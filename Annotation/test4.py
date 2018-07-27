@@ -38,19 +38,9 @@ show_correctness_clusters = False
 show_NN_inc = False
 pairwise_threshold = 1
 
-# sa.plot_annotations(anno_one_snr, img_filename, img_filepath, csv_filepath, worker_marker_size, cluster_marker_size, 
-# 	show_ref_points, show_workers, show_clusters, show_correctness_workers, show_correctness_clusters, show_NN_inc, 
-# 	correctness_threshold, clustering_params, bigger_window_size)
 
 show_correctness = True
 correctness_threshold = 4
-
-# sa.plot_annotations_per_cluster(anno_one_snr, clustering_params, show_correctness, correctness_threshold, csv_filepath, img_filename, plot_title, bigger_window_size)
-# sa.plot_worker_pairwise_scores_hist(anno_one_snr, plot_title, bigger_window_size)
-# # sa.plot_snr_vs_membership(anno_one_snr, clustering_params, csv_filepath, img_height, img_filename, correctness_threshold, bigger_window_size)
-# # sa.plot_snr_vs_members(anno_one_snr, clustering_params, csv_filepath, img_height, img_filename, correctness_threshold, bigger_window_size)
-# sa.plot_annotations_and_snr_per_cluster(anno_one_snr, clustering_params, show_correctness, correctness_threshold, csv_filepath, img_filename, img_height, plot_title, bigger_window_size)
-
 
 
 sa.test_alg(anno_one_snr, clustering_params)
