@@ -91,6 +91,7 @@ class SpotAnnotationAnalysis():
 		km = KMeans(n_clusters = 2).fit(total_array.reshape(-1,1))
 		cluster_centers = km.cluster_centers_
 		threshold_kmeans = (cluster_centers[0][0]+cluster_centers[1][0])/2
+		print(threshold_kmeans)
 
 		# Given threshold, sort.
 		small_clusters_list = []
@@ -122,13 +123,16 @@ class SpotAnnotationAnalysis():
 			small_clusters['centroid_x'][k] = small_clusters_list[k][0]
 			small_clusters['centroid_y'][k] = small_clusters_list[k][1]
 			small_clusters['members'][k] = small_clusters_list[k][2]
+			print(len(small_clusters_list[k][2]))
 
 		for m in range(large_counter):
 			large_clusters['centroid_x'][m] = large_clusters_list[m][0]
 			large_clusters['centroid_y'][m] = large_clusters_list[m][1]
 			large_clusters['members'][m] = large_clusters_list[m][2]
+			print(len(large_clusters_list[m][2]))
 
 		return small_clusters, large_clusters
+
 
 	def test_alg(self, df, clustering_params):
 
@@ -139,8 +143,7 @@ class SpotAnnotationAnalysis():
 		# 2. Sort clusters with few/many workers annotating (“putatively incorrect/correct”).
 		small_clusters, large_clusters = self.sort_clusters_by_size(clusters_good_workers_pairwise)
 
-		print("large_clusters")
-		print(large_clusters)
+		# print("large_clusters")
 		# for i in range(len(large_clusters.index)):
 		# 	row = large_clusters.iloc[[i]]
 		# 	members = row.iloc[0]['members']
@@ -150,8 +153,7 @@ class SpotAnnotationAnalysis():
 		# 	num_members = len(np.unique(worker_list))
 		# 	print(num_members)
 
-		print("small_clusters")
-		print(small_clusters)
+		# print("small_clusters")
 		# for j in range(len(small_clusters.index)):
 		# 	row = large_clusters.iloc[[j]]
 		# 	members = row.iloc[0]['members']
@@ -171,6 +173,158 @@ class SpotAnnotationAnalysis():
 
 		# Return a dataframe of clusters with scores above some threshold.
 
+	def plot_snr_vs_members(self, df, clustering_params, csv_filepath, img_height, img_filename, correctness_threshold):
+
+		clusters = self.get_clusters(df, clustering_params)			# this dataframe: centroid_x | centroid_y | members
+		ref_df = pd.read_csv(csv_filepath)
+		ref_points = ref_df.loc[:, ['col', 'row']].as_matrix()	
+		snr_val_list = ref_df.loc[:, ['snr']].as_matrix()	
+
+		for i in range(len(ref_points)):			# flip vertical axis
+			point = ref_points[i]
+			first_elem = point[0]
+			second_elem = img_height - point[1]
+			point = np.array([first_elem, second_elem])
+			ref_points[i] = point
+
+		anno_and_ref_df = self.anno_and_ref_to_df(df, clustering_params, csv_filepath, img_filename)
+		centroid_coords = anno_and_ref_df.loc[:, ['centroid_x', 'centroid_y']].as_matrix()		
+		centroids_kdt = KDTree(centroid_coords, leaf_size=2, metric='euclidean')
+
+		snr_list = []
+		num_members_list = []
+
+		# for each spot
+		for i in range(len(ref_points)):
+			ref_point = ref_points[i]
+
+			# get SNR
+			snr = snr_val_list[i][0]	
+			# get nearest neighbor centroid
+			dist, ind = centroids_kdt.query([ref_point], k=1)
+			if (dist[0][0] <= correctness_threshold):			# if the spot is detected
+				centroid_coords_index = ind[0][0]
+				nearest_centroid = centroid_coords[centroid_coords_index]
+				nearest_centroid_x = nearest_centroid[0]
+				nearest_cluster = clusters.loc[clusters['centroid_x']==nearest_centroid_x]
+				members = nearest_cluster.iloc[0]['members']
+
+				worker_list = []
+				for member in members:
+					worker_list.append(member[3])
+				num_members = len(np.unique(worker_list))
+				num_members_list.append(num_members)
+				snr_list.append(snr)
+
+		legend_elements = [Line2D([0],[0], marker='o', color='w', markerfacecolor='g', label='one detected spot')]
+		plt.legend(handles = legend_elements)
+		plt.scatter(num_members_list, snr_list, color = 'g', s = 20)
+		plt.title("SNR vs. number of unique workers annotating")
+		plt.xlabel("Number of unique workers annotating")
+		plt.xticks(np.arange(0,30, step=2))
+		plt.yticks(np.arange(min(snr_list)-1,max(snr_list)+1, step=2))
+		plt.ylabel("SNR")
+		plt.show()
+
+
+	def plot_annotations_and_snr_per_cluster(self, df, clustering_params, show_correctness, correctness_threshold, csv_filepath, img_filename, img_height, plot_title, bigger_window_size):
+		clusters = self.get_clusters(df, clustering_params)			# this dataframe: centroid_x | centroid_y | members
+		
+		correct_list = []
+		incorrect_list = []
+		total_list = []
+		anno_and_ref_df = self.anno_and_ref_to_df(df, clustering_params, csv_filepath, img_filename)
+		cluster_correctness = self.get_cluster_correctness(anno_and_ref_df, correctness_threshold)
+		for i in range(len(clusters.index)):
+			row = clusters.iloc[[i]]
+			members = row.iloc[0]['members']
+			worker_list = []
+			for member in members:
+				worker_list.append(member[3])
+			num_members = len(np.unique(worker_list))
+			if (cluster_correctness[i][1]):		# if cluster is correct
+				correct_list.append(num_members)
+			else:
+				incorrect_list.append(num_members)
+			total_list.append(num_members)
+		width = max(correct_list)
+		if (max(incorrect_list) > width):
+			width = max(incorrect_list)
+
+		fig, ax1 = plt.subplots(figsize = (10,5))
+		
+		y,x,_ = ax1.hist([correct_list, incorrect_list], bins = np.arange(0,width+4,2)-1, stacked = True, color = ['g','m'])
+
+		# threshold otsu
+		threshold_otsu = filters.threshold_otsu(np.asarray(total_list))
+
+		# treshold kmeans
+		total_array = np.asarray(total_list)
+		km = KMeans(n_clusters = 2).fit(total_array.reshape(-1,1))
+		cluster_centers = km.cluster_centers_
+		threshold_kmeans = (cluster_centers[0][0]+cluster_centers[1][0])/2
+
+		ax1.axvline(x=threshold_otsu, color='r')
+		ax1.axvline(x=threshold_kmeans, color='b')
+
+		# NEXT PLOT			
+		ref_df = pd.read_csv(csv_filepath)
+		ref_points = ref_df.loc[:, ['col', 'row']].as_matrix()	
+		snr_val_list = ref_df.loc[:, ['snr']].as_matrix()	
+
+		for i in range(len(ref_points)):			# flip vertical axis
+			point = ref_points[i]
+			first_elem = point[0]
+			second_elem = img_height - point[1]
+			point = np.array([first_elem, second_elem])
+			ref_points[i] = point
+
+		anno_and_ref_df = self.anno_and_ref_to_df(df, clustering_params, csv_filepath, img_filename)
+		centroid_coords = anno_and_ref_df.loc[:, ['centroid_x', 'centroid_y']].as_matrix()		
+		centroids_kdt = KDTree(centroid_coords, leaf_size=2, metric='euclidean')
+
+		snr_list = []
+		num_members_list = []
+
+		# for each spot
+		for i in range(len(ref_points)):
+			ref_point = ref_points[i]
+
+			# get SNR
+			snr = snr_val_list[i][0]	
+			# get nearest neighbor centroid
+			dist, ind = centroids_kdt.query([ref_point], k=1)
+			if (dist[0][0] <= correctness_threshold):			# if the spot is detected
+				centroid_coords_index = ind[0][0]
+				nearest_centroid = centroid_coords[centroid_coords_index]
+				nearest_centroid_x = nearest_centroid[0]
+				nearest_cluster = clusters.loc[clusters['centroid_x']==nearest_centroid_x]
+				members = nearest_cluster.iloc[0]['members']
+
+				worker_list = []
+				for member in members:
+					worker_list.append(member[3])
+				num_members = len(np.unique(worker_list))
+				num_members_list.append(num_members)
+				snr_list.append(snr)
+
+		ax1.set_xlabel("Number of unique workers annotating")
+		ax1.set_ylabel("Number of clusters")
+
+		ax2 = ax1.twinx()
+		ax2.scatter(num_members_list, snr_list, color = 'y', s = 20)
+		ax2.set_ylabel("SNR")
+
+		g_patch = mpatches.Patch(color='g', label='correct clusters')
+		m_patch = mpatches.Patch(color='m', label='incorrect clusters')
+		otsu_line = Line2D([0],[0], color='r', label='otsu threshold')
+		kmeans_line = Line2D([0],[0], color='b', label='k-means threshold')
+		snr_dot = Line2D([0],[0], marker='o', color='w', markerfacecolor='y', label='SNR for one detected spot')
+		plt.legend(handles=[g_patch, m_patch, otsu_line, kmeans_line, snr_dot], bbox_to_anchor=(1.2, 1), loc=2, borderaxespad=0.)
+
+		plt.title(plot_title)
+		fig.tight_layout()
+		plt.show()
 
 	def plot_annotations_per_cluster(self, df, clustering_params, show_correctness, correctness_threshold, csv_filepath, img_filename, plot_title, bigger_window_size):
 		clusters = self.get_clusters(df, clustering_params)			# this dataframe: centroid_x | centroid_y | members
@@ -222,13 +376,7 @@ class SpotAnnotationAnalysis():
 			km = KMeans(n_clusters = 2).fit(total_array.reshape(-1,1))
 			cluster_centers = km.cluster_centers_
 			threshold_kmeans = (cluster_centers[0][0]+cluster_centers[1][0])/2
-			"""
-			^^ K-means threshold = midpoint of the two centroids 
-			since on either side of that midpoint, you are closer 
-			to one of the centroids or the other, and should therefore 
-			lie in that respective cluster.
-			>> https://stackoverflow.com/questions/45683096/how-to-get-the-threshold-value-of-k-means-algorithm-that-is-used-to-binarize-the
-			"""
+
 			plt.axvline(x=threshold_otsu, color='r')
 			plt.axvline(x=threshold_kmeans, color='b')
 
