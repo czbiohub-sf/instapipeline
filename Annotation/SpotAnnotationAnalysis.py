@@ -176,7 +176,7 @@ class SpotAnnotationAnalysis():
 				if(worker in crowd):
 					numerator += 1
 			denominator = len(unique_workers)
-			fract_members = numerator/denominator
+			fract_members = math.floor((numerator/denominator)*100)
 
 			if (cluster_correctness[i][1]):		
 				correct_list.append(fract_members)
@@ -184,17 +184,14 @@ class SpotAnnotationAnalysis():
 				incorrect_list.append(fract_members)
 			total_list.append(fract_members)
 
-		width = max(correct_list)
-		if (len(incorrect_list) != 0):
-			if (max(incorrect_list) > width):
-				width = max(incorrect_list)
+		width = 100
 
 		fig = plt.figure()
 		
-		y,x,_ = plt.hist([correct_list, incorrect_list], bins = np.arange(0,width+0.1,0.1)-0.05, stacked = True, color = ['g','m'])
+		y,x,_ = plt.hist([correct_list, incorrect_list], bins = np.arange(0,width+20,10)-5, stacked = True, color = ['g','m'])
 
-		# threshold otsu
-		threshold_otsu = filters.threshold_otsu(np.asarray(total_list))
+		# # threshold otsu
+		# threshold_otsu = filters.threshold_otsu(np.asarray(total_list))
 
 		# treshold kmeans
 		total_array = np.asarray(total_list)
@@ -202,18 +199,23 @@ class SpotAnnotationAnalysis():
 		cluster_centers = km.cluster_centers_
 		threshold_kmeans = (cluster_centers[0][0]+cluster_centers[1][0])/2
 
-		plt.axvline(x=threshold_otsu, color='r')
+		# plt.axvline(x=threshold_otsu, color='r')
 		plt.axvline(x=threshold_kmeans, color='b')
 
 		g_patch = mpatches.Patch(color='g', label='correct clusters')
 		m_patch = mpatches.Patch(color='m', label='incorrect clusters')
-		otsu_line = Line2D([0],[0], color='r', label='otsu threshold')
+		# otsu_line = Line2D([0],[0], color='r', label='otsu threshold')
 		kmeans_line = Line2D([0],[0], color='b', label='k-means threshold')
-		plt.legend(handles=[g_patch, m_patch, otsu_line, kmeans_line])
+		plt.legend(handles=[g_patch, m_patch, kmeans_line])
 		ymin, ymax = plt.ylim()
-		plt.xlabel("Fraction of cluster’s annotations good crowd")
-		plt.xticks(np.arange(0,width+0.1,step=0.1))
-		plt.yticks(np.arange(0,ymax+2, step = 1))
+		y_step = 5
+		if ymax<10:
+			y_step = 1
+		if (ymax>50):
+			y_step = 10
+		plt.xlabel("Percent of cluster’s annotations from good crowd [%]")
+		plt.xticks(np.arange(0,width+10,step=10))
+		plt.yticks(np.arange(0,ymax+2, step = y_step))
 		plt.ylabel("Number of clusters")
 		plt.title(plot_title)
 		plt.show()
