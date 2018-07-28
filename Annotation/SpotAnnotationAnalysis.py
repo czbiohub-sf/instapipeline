@@ -142,8 +142,108 @@ class SpotAnnotationAnalysis():
 		# 3. Look at all workers. Sort workers who are in few/many "putatively correct" clusters.
 		other_crowd, good_crowd = self.sort_workers_by_membership_in_large_clusters(df, large_clusters)
 
-		print(other_crowd)
-		print(good_crowd)
+		# 4. Keep "putatively incorrect" clusters which are mostly comprised of workers who are in many "putatively correct" clusters.
+		self.plot_fraction_from_crowd_per_cluster(small_clusters, good_crowd)
+
+		# 5. Keep "putatively correct" clusters which are mostly comprised of workers who are in many "putatively correct" clusters.
+		self.plot_fraction_from_crowd_per_cluster(large_clusters, good_crowd)
+
+	"""
+	The list should contain, for each “putatively incorrect” cluster, 
+	the fraction of the cluster’s annotations which are from workers 
+	who are in many “putatively correct” clusters.
+	"""
+	def plot_fraction_from_crowd_per_cluster(self, clusters, crowd, show_correctness, correctness_threshold, csv_filepath, img_height, plot_title, bigger_window_size):
+	
+		correct_list = []
+		incorrect_list = []
+		total_list = []
+		anno_and_ref_df = self.anno_and_ref_to_df_input_clusters(clusters, csv_filepath, img_height)
+		cluster_correctness = self.get_cluster_correctness(anno_and_ref_df, correctness_threshold)
+		for i in range(len(clusters.index)):
+
+			# get list of unique members in that cluster
+			row = clusters.iloc[[i]]
+			members = row.iloc[0]['members']
+			worker_list = []
+			for member in members:
+				worker_list.append(member[3])
+			unique_workers = np.unique(worker_list)
+
+			# get fraction of good crowd workers in that list
+			numerator = 0
+			for worker in unique_workers:
+				if(worker in crowd):
+					numerator += 1
+			denominator = len(unique_workers)
+			fract_members = numerator/denominator
+
+			if (cluster_correctness[i][1]):		
+				correct_list.append(fract_members)
+			else:
+				incorrect_list.append(fract_members)
+			total_list.append(fract_members)
+
+		width = max(correct_list)
+		if (len(incorrect_list) != 0):
+			if (max(incorrect_list) > width):
+				width = max(incorrect_list)
+
+		fig = plt.figure()
+		
+		y,x,_ = plt.hist([correct_list, incorrect_list], bins = np.arange(0,width+0.1,0.1)-0.05, stacked = True, color = ['g','m'])
+
+		# threshold otsu
+		threshold_otsu = filters.threshold_otsu(np.asarray(total_list))
+
+		# treshold kmeans
+		total_array = np.asarray(total_list)
+		km = KMeans(n_clusters = 2).fit(total_array.reshape(-1,1))
+		cluster_centers = km.cluster_centers_
+		threshold_kmeans = (cluster_centers[0][0]+cluster_centers[1][0])/2
+
+		plt.axvline(x=threshold_otsu, color='r')
+		plt.axvline(x=threshold_kmeans, color='b')
+
+		g_patch = mpatches.Patch(color='g', label='correct clusters')
+		m_patch = mpatches.Patch(color='m', label='incorrect clusters')
+		otsu_line = Line2D([0],[0], color='r', label='otsu threshold')
+		kmeans_line = Line2D([0],[0], color='b', label='k-means threshold')
+		plt.legend(handles=[g_patch, m_patch, otsu_line, kmeans_line])
+		ymin, ymax = plt.ylim()
+		plt.xlabel("Fraction of cluster’s annotations good crowd")
+		plt.xticks(np.arange(0,width+0.1,step=0.1))
+		plt.yticks(np.arange(0,ymax+2, step = 1))
+		plt.ylabel("Number of clusters")
+		plt.title(plot_title)
+		plt.show()
+
+	def anno_and_ref_to_df_input_clusters(self, clusters, csv_filepath, img_height):
+
+		ref_kdt = self.csv_to_kdt(csv_filepath, img_height)
+		ref_array = np.asarray(ref_kdt.data)
+
+		centroid_IDs = range(clusters.shape[0])
+		column_names = ['centroid_x', 'centroid_y', 'NN_x', 'NN_y', 'NN_dist', 'members']
+		to_return = pd.DataFrame(index = centroid_IDs, columns = column_names)
+
+		for i in centroid_IDs:
+
+			to_return['centroid_x'][i] = clusters['centroid_x'][i]
+			to_return['centroid_y'][i] = clusters['centroid_y'][i]
+
+			coords = [[to_return['centroid_x'][i], to_return['centroid_y'][i]]]
+
+			dist, ind = ref_kdt.query(coords, k=1)
+			index = ind[0][0]
+			nearest_neighbor = ref_array[index]
+
+			to_return['NN_x'][i] = nearest_neighbor[0]
+			to_return['NN_y'][i] = nearest_neighbor[1]
+			to_return['NN_dist'][i] = dist[0][0]
+			to_return['members'][i] = clusters['members'][i]		
+
+		return to_return
 
 	def sort_workers_by_membership_in_large_clusters(self, df, large_clusters):
 		other_crowd = []
@@ -274,7 +374,6 @@ class SpotAnnotationAnalysis():
 		plt.yticks(np.arange(min(snr_list)-1,max(snr_list)+1, step=2))
 		plt.ylabel("SNR")
 		plt.show()
-
 
 	def plot_annotations_and_snr_per_cluster(self, df, clustering_params, show_correctness, correctness_threshold, csv_filepath, img_filename, img_height, plot_title, bigger_window_size):
 		clusters = self.get_clusters(df, clustering_params)			# this dataframe: centroid_x | centroid_y | members
