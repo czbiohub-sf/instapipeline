@@ -73,24 +73,77 @@ class SpotAnnotationAnalysis():
 		return df
 
 	"""
+	Build curve by varying number of unique workers required for valid cluster.
+	"""
+	def plot_cluster_membership_threshold_roc(self, df_1, df_2, clustering_params, csv_filepath_1, csv_filepath_2, img_height, correctness_threshold, plot_title, bigger_window_size):
+		if bigger_window_size:
+			fig = plt.figure(figsize=(14,12))
+		else:
+			fig = plt.figure(figsize = (12,7))
+
+		tpr_list_1, fpr_list_1 = self.get_tpr_fpr_lists(df_1, clustering_params, csv_filepath_1, img_height, correctness_threshold)
+		tpr_list_2, fpr_list_2 = self.get_tpr_fpr_lists(df_2, clustering_params, csv_filepath_2, img_height, correctness_threshold)
+
+		plt.scatter(fpr_list_1, tpr_list_1, facecolors = 'blue', s = 20)
+		plt.scatter(fpr_list_2, tpr_list_2, facecolors = 'orange', s = 20)
+
+		leg_elem_1 = Line2D([0],[0], marker='o', color='w', markerfacecolor='blue', label='inverted spot image')
+		leg_elem_2 = Line2D([0],[0], marker='o', color='w', markerfacecolor='orange', label='original spot image')
+		legend_elements = [leg_elem_1, leg_elem_2]
+		plt.legend(handles = legend_elements, bbox_to_anchor=(1.01, 1), loc=2)
+		plt.yticks(np.arange(0,1.01,step=0.1))
+		plt.title(plot_title)
+		plt.xlabel("False positive rate")
+		plt.ylabel("True positive rate")
+		plt.show()
+
+	def get_tpr_fpr_lists(self, df, clustering_params, csv_filepath, img_height, correctness_threshold):
+		worker_list = self.ba.get_workers(df)
+		num_workers = len(worker_list)
+		all_clusters = self.get_clusters(df, clustering_params)
+		tpr_list = []
+		fpr_list = []
+
+		for threshold in range(num_workers):
+			small_clusters, large_clusters = self.sort_clusters_by_size_input_threshold(all_clusters, threshold)
+			anno_and_ref_df = self.anno_and_ref_to_df_input_clusters(large_clusters, csv_filepath, img_height)
+			cluster_correctness = self.get_cluster_correctness(anno_and_ref_df, correctness_threshold)
+
+			# Get total number of spots
+			ref_kdt = self.csv_to_kdt(csv_filepath, img_height)
+			ref_array = np.asarray(ref_kdt.data)
+			num_spots_total = len(ref_array)
+
+			# Get number of clusters which are spots and number of clusters which are not spots
+			num_true_positives = 0
+			num_false_positives = 0
+			num_clusters_total = 0
+			for i in range(len(anno_and_ref_df.index)):		# sort clusters
+				row = anno_and_ref_df.iloc[[i]]
+				if (cluster_correctness[i][1]):		
+					num_true_positives += 1
+				else:
+					num_false_positives += 1
+				num_clusters_total += 1
+
+			tpr = num_true_positives/num_spots_total
+			if (tpr > 1):		# no double counting
+				tpr = 1
+			if (num_clusters_total == 0):
+				fpr = 0
+			else:
+				fpr = num_false_positives/num_clusters_total
+			
+			tpr_list.append(tpr)
+			fpr_list.append(fpr)
+
+		return tpr_list, fpr_list
+
+
+	"""
 	Input "clusters" is a df: centroid_x | centroid_y | members.
 	"""
-	def sort_clusters_by_size(self, clusters):
-
-		# Find threshold (k-means).
-		total_list = []
-		for i in range(len(clusters.index)):
-			row = clusters.iloc[[i]]
-			members = row.iloc[0]['members']
-			worker_list = []
-			for member in members:
-				worker_list.append(member[3])
-			num_members = len(np.unique(worker_list))
-			total_list.append(num_members)
-		total_array = np.asarray(total_list)
-		km = KMeans(n_clusters = 2).fit(total_array.reshape(-1,1))
-		cluster_centers = km.cluster_centers_
-		threshold_kmeans = (cluster_centers[0][0]+cluster_centers[1][0])/2
+	def sort_clusters_by_size_input_threshold(self, clusters, threshold):
 
 		# Given threshold, sort.
 		small_clusters_list = []
@@ -108,7 +161,7 @@ class SpotAnnotationAnalysis():
 				worker_list.append(member[3])
 			num_members = len(np.unique(worker_list))
 
-			if (num_members < threshold_kmeans):
+			if (num_members < threshold):
 				small_clusters_list.append([centroid_x, centroid_y, members])
 				small_counter += 1
 			else:
@@ -700,6 +753,64 @@ class SpotAnnotationAnalysis():
 		plt.xlabel("Fraction of the worker's annotations that were in a good cluster [%]")
 		plt.ylabel("Quantity of workers")
 		plt.show()
+
+	"""
+	Input "clusters" is a df: centroid_x | centroid_y | members.
+	"""
+	def sort_clusters_by_size(self, clusters):
+
+		# Find threshold (k-means).
+		total_list = []
+		for i in range(len(clusters.index)):
+			row = clusters.iloc[[i]]
+			members = row.iloc[0]['members']
+			worker_list = []
+			for member in members:
+				worker_list.append(member[3])
+			num_members = len(np.unique(worker_list))
+			total_list.append(num_members)
+		total_array = np.asarray(total_list)
+		km = KMeans(n_clusters = 2).fit(total_array.reshape(-1,1))
+		cluster_centers = km.cluster_centers_
+		threshold_kmeans = (cluster_centers[0][0]+cluster_centers[1][0])/2
+
+		# Given threshold, sort.
+		small_clusters_list = []
+		large_clusters_list = []
+		small_counter = 0
+		large_counter = 0
+		for j in range(len(clusters.index)):
+			row = clusters.iloc[[j]]
+			members = row.iloc[0]['members']
+			centroid_x = row.iloc[0]['centroid_x']
+			centroid_y = row.iloc[0]['centroid_y']
+
+			worker_list = []
+			for member in members:
+				worker_list.append(member[3])
+			num_members = len(np.unique(worker_list))
+
+			if (num_members < threshold_kmeans):
+				small_clusters_list.append([centroid_x, centroid_y, members])
+				small_counter += 1
+			else:
+				large_clusters_list.append([centroid_x, centroid_y, members])
+				large_counter += 1
+
+		small_clusters = pd.DataFrame(index = range(small_counter), columns = ['centroid_x','centroid_y','members'])
+		large_clusters = pd.DataFrame(index = range(large_counter), columns = ['centroid_x','centroid_y','members'])
+
+		for k in range(small_counter):
+			small_clusters['centroid_x'][k] = small_clusters_list[k][0]
+			small_clusters['centroid_y'][k] = small_clusters_list[k][1]
+			small_clusters['members'][k] = small_clusters_list[k][2]
+
+		for m in range(large_counter):
+			large_clusters['centroid_x'][m] = large_clusters_list[m][0]
+			large_clusters['centroid_y'][m] = large_clusters_list[m][1]
+			large_clusters['members'][m] = large_clusters_list[m][2]
+
+		return small_clusters, large_clusters
 
 
 	"""
