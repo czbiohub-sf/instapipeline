@@ -43,9 +43,10 @@ show_correctness = True
 correctness_threshold = 4
 
 
-sa.plot_cluster_membership_threshold_roc(anno_one_snr, clustering_params, csv_filepath, img_height, correctness_threshold, plot_title, bigger_window_size)
+#sa.plot_cluster_membership_threshold_roc(anno_one_snr, clustering_params, csv_filepath, img_height, correctness_threshold, plot_title, bigger_window_size)
 
 
+sa.plot_worker_pairwise_scores(anno_one_snr)
 
 
 

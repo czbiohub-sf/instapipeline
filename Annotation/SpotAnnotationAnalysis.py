@@ -595,6 +595,31 @@ class SpotAnnotationAnalysis():
 		plt.title(plot_title)
 		plt.show()
 
+	def plot_worker_pairwise_scores(self, df):
+		worker_scores = self.get_worker_pairwise_scores(df)
+		worker_scores = worker_scores["score"].values
+		worker_scores_list = []
+		for score in worker_scores:
+			worker_scores_list.append(score)
+
+		worker_list = self.ba.get_workers(df)
+
+		fig = plt.figure(figsize = (10,7))
+
+		handle_list = []
+		for i in range(len(worker_list)):
+			score = worker_scores_list[i]
+			handle = plt.bar(i, score, color = self.colors[i], label = (str(i) + ". " + worker_list[i]))
+			handle_list.append(handle)
+
+		plt.legend(handles = handle_list, loc = 9, bbox_to_anchor = (1.15, 1.015))
+		plt.subplots_adjust(left=0.1, right=0.8)
+		plt.title('Pairwise Score [s] vs. Worker Index')
+		plt.xlabel('Worker Index')
+		plt.ylabel('Pairwise Score')
+		plt.xticks(np.arange(0, len(worker_list), step=1))
+		plt.show()
+
 	def plot_worker_pairwise_scores_hist(self, df, plot_title, bigger_window_size):
 
 		# get worker scores as list
@@ -628,12 +653,12 @@ class SpotAnnotationAnalysis():
 
 		plt.axvline(x=threshold_otsu, color='r')
 		plt.axvline(x=threshold_kmeans, color='b')
-		plt.axvline(x=threshold_q3, color='g')
+#		plt.axvline(x=threshold_q3, color='g')
 
 		otsu_line = Line2D([0],[0], color='r', label='otsu threshold')
 		kmeans_line = Line2D([0],[0], color='b', label='k-means threshold')
-		q3_line = Line2D([0],[0], color='g', label='q3 threshold')
-		plt.legend(handles=[otsu_line, kmeans_line, q3_line])
+#		q3_line = Line2D([0],[0], color='g', label='q3 threshold')
+		plt.legend(handles=[otsu_line, kmeans_line])
 
 		plt.title(plot_title)
 		plt.xlabel('Sum of pairwise NND averages')
@@ -1296,9 +1321,14 @@ class SpotAnnotationAnalysis():
 
 		anno_one_crop = self.ba.slice_by_image(df, img_filename)	# Remove data from other croppings.
 		worker_list = self.ba.get_workers(anno_one_crop)
-
+###heeere
 		if show_clusters or show_correctness_workers:
-			clusters = self.anno_and_ref_to_df(df, clustering_params, csv_filepath, img_filename)
+
+			if csv_filepath is None:
+				clusters = self.get_clusters(df, clustering_params)
+			else:
+				clusters = self.anno_and_ref_to_df(df, clustering_params, csv_filepath, img_filename)
+			
 			member_lists = clusters['members'].values	# list of lists
 
 			if correctness_threshold is not None:
@@ -1431,7 +1461,7 @@ class SpotAnnotationAnalysis():
 		none
 	"""
 	def plot_nnd_vs_time_spent(self, df, img_filename, csv_filepath, show_correctness, correctness_threshold, clustering_params):
-
+# heeeere
 		anno_one_crop = self.ba.slice_by_image(df, img_filename)	# Remove data from other croppings.
 		fig = plt.figure(figsize = (10,7))
 		img_height = anno_one_crop['height'].values[0]
@@ -1700,6 +1730,11 @@ class SpotAnnotationAnalysis():
 		plt.title('Total Time Spent by Workers [s]')
 		plt.xlabel('Time Spent [s]')
 		plt.ylabel('Quantity of Workers')
+		x_step = 10
+		if ((max(total_time_list)) > 100):
+			x_step = 20
+		if ((max(total_time_list)) > 250):
+			x_step = 50
 		plt.xticks(np.arange(0, max(total_time_list)+20, step=10))
 		plt.show()
 
