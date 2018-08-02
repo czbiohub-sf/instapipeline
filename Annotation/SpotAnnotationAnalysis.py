@@ -1122,6 +1122,49 @@ class SpotAnnotationAnalysis():
 
 		return to_return
 
+	# def get_clusters_cropped(self, df, clustering_params, x_min, x_max, y_min, y_max):
+
+	# 	clustering_alg = clustering_params[0]
+
+	# 	if (clustering_alg not in self.clustering_algs):
+	# 		raise ValueError('Invalid clustering algorithm name entered.')
+
+	# 	if (clustering_alg == 'AffinityPropagation'):											# If AffinityPropagation is selected:
+	# 		cluster_centroids_list = []																# Initialize a list of cluster centroids
+
+	# 		if(len(clustering_params) != 2):														# Check that there's only one clustering parameter
+	# 			raise ValueError('Please enter a list containing the preference parameter.')
+
+	# 		click_properties = self.ba.get_click_properties(df)
+	# 		coords = click_properties[:,:2]
+	# 		coords_cropped = []															# Get all the coordinates from the annotation dataframe (dissociated from timestamps)
+	# 		for coord in coords:
+	# 			if (coord[0] > x_min):
+	# 				if (coord[0] < x_max):
+	# 					if (coord[1] > y_min):
+	# 						if (coord[1] < y_max):
+	# 							coords_cropped.append([coord[0], coord[1]])
+
+	# 		af = self.get_cluster_object(coords_cropped, clustering_params)
+
+	# 		cluster_centers_indices = af.cluster_centers_indices_									# Get the indices of the cluster centers (list)
+	# 		num_clusters = len(cluster_centers_indices)
+
+	# 		labels = af.labels_																		# Each point that was in coords now has a label saying which cluster it belongs to.
+
+	# 		cluster_members_lists = [None]*num_clusters
+	# 		for i in range(len(cluster_members_lists)):
+	# 			cluster_members_lists[i] = []
+
+	# 		# for j in range(len(click_properties)):
+	# 		# 	index = labels[j]
+	# 		# 	cluster_members_lists[index].append(click_properties[j])
+
+	# 		for k in range(num_clusters):
+	# 			cluster_centers = coords[cluster_centers_indices[k]]	# np array
+	# 			cluster_centroids_list.append(cluster_centers)
+
+	# 	return cluster_centroids_list
 	"""
 	Checks to see whether the cluster object has already been generated
 	for the given df and clustering parameters and returns or calculates
@@ -1291,6 +1334,90 @@ class SpotAnnotationAnalysis():
 
 		return to_return
 
+	def plot_cluster_membership_in_region(self, clusters, img_height, x_min, x_max, y_min_on_plot, y_max_on_plot, img_name, density):
+		y_min = img_height - y_max_on_plot
+		y_max = img_height - y_min_on_plot
+
+		# Keep only the clusters in the region of interest
+		clusters = clusters[clusters.centroid_x > x_min]
+		clusters = clusters[clusters.centroid_x < x_max]
+		clusters = clusters[clusters.centroid_y > y_min]
+		clusters = clusters[clusters.centroid_y < y_max]
+
+		# Get number of members per cluster in region of interest
+		num_members_list = []
+		for i in range(len(clusters.index)):
+		    row = clusters.iloc[[i]]
+		    members = row.iloc[0]['members']
+		    worker_list = []
+		    for member in members:
+		        worker_list.append(member[3])
+		    num_members = len(np.unique(worker_list))
+		    num_members_list.append(num_members)
+		    
+		# Plotting
+		fig = plt.figure(figsize = (7.5,4))
+		plt.hist(num_members_list, bins = np.arange(0,max(num_members_list)+2,step=2)-1)
+		plt.xticks(np.arange(0,max(num_members_list),step=2))
+
+		plt.xlabel("Number of unique annotators per cluster")
+		plt.ylabel("Number of clusters")
+		plt.title(density + " Region: "+ str(len(clusters.index))+ " Clusters")
+		plt.show()
+
+		avg_str = "Average number of unique workers in a cluster = " + str(math.floor(np.mean(num_members_list)))
+		print(avg_str)
+		std_str = "Standard deviation = " + str(math.floor(np.std(num_members_list)))
+		print(std_str)
+
+		img = mpimg.imread(img_name)
+		fig = plt.figure(figsize = (6,6))
+		plt.imshow(img)
+		plt.xticks([])
+		plt.yticks([])
+		plt.show()
+
+	# plot annotations in a certain area
+	def plot_annotations_zoom(self, df, x_min, x_max, y_min, y_max, img_height, clustering_params, img_filepath, show_clusters, show_workers, cluster_marker_size, worker_marker_size):
+		img = mpimg.imread(img_filepath)
+
+		plt.imshow(img, cmap = 'gray')
+
+		click_properties = self.ba.get_click_properties(df)
+		coords = click_properties[:,:2]
+		coords_cropped = []															# Get all the coordinates from the annotation dataframe (dissociated from timestamps)
+		for coord in coords:
+			if (coord[0] > x_min):
+				if (coord[0] < x_max):
+					if (coord[1] > y_min):
+						if (coord[1] < y_max):
+							coords_cropped.append([coord[0], coord[1]])
+		
+		coord_list = []
+		for coord in coords_cropped:
+			x = coord[0]-x_min
+			y = img_height-coord[1]-y_min-130
+			coord_list.append([x,y])
+			plt.scatter([x], [y], s=4, facecolors='b')
+
+		af = self.get_cluster_object(coord_list, clustering_params)
+
+		cluster_centers_indices = af.cluster_centers_indices_									# Get the indices of the cluster centers (list)
+		num_clusters = len(cluster_centers_indices)
+
+		labels = af.labels_																		# Each point that was in coords now has a label saying which cluster it belongs to.
+
+		cluster_centroids_list = []
+		for k in range(num_clusters):
+			cluster_center = coord_list[cluster_centers_indices[k]]	# np array
+			plt.scatter([cluster_center[0]], [cluster_center[1]], s = 20, facecolors = 'none', edgecolors = 'y')
+
+		plt.title('Worker Annotations and Cluster Centroids')
+		plt.xticks(np.arange(0,x_max-x_min, step=20))
+		plt.yticks(np.arange(0,y_max-y_min, step=20))
+		plt.show()
+
+
 	"""
 	Quick visualization of worker annotations, clusters, and/or annotation and cluster "correctness." 
 
@@ -1321,7 +1448,6 @@ class SpotAnnotationAnalysis():
 
 		anno_one_crop = self.ba.slice_by_image(df, img_filename)	# Remove data from other croppings.
 		worker_list = self.ba.get_workers(anno_one_crop)
-###heeere
 		if show_clusters or show_correctness_workers:
 
 			if csv_filepath is None:
@@ -1405,7 +1531,15 @@ class SpotAnnotationAnalysis():
 				legend_list += handle_list
 			plt.legend(handles = legend_list, loc = 9, bbox_to_anchor = (1.2, 1.015))
 		img = mpimg.imread(img_filepath)
+		plt.tick_params(
+			axis='both',
+			which='both',
+			bottom=False,
+			top=False,
+			left=False,
+			right=False)
 		plt.imshow(img, cmap = 'gray')
+
 		plt.show()
 
 	"""
