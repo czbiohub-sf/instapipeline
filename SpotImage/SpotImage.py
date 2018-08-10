@@ -41,6 +41,7 @@ class SpotImage():
 
 	spot_shapes = ['2D_Gauss']	# list of spot shapes handled
 	snr_distrs = ['Gauss']		# list of SNR distributions handled
+	increment = 500				# quantity by which to increment the total coordinate list
 
 	"""
 	Constructor
@@ -71,20 +72,22 @@ class SpotImage():
 		self.valid_coords = self.get_valid_coords()				# set of coordinates where beads may be placed
 
 		self.spot_counter = 0
-		self.total_coord_list = [self.get_spot_coord() for i in range(500)]
+		self.total_coord_list = [self.get_spot_coord() for i in range(self.increment)]
 
 	"""
 	Generate a spot image.
 	The spot_array and spot_img are saved as attributes of the SpotImage object
 	for later access.
 	"""
-	def generate_spot_image(self, num_spots, snr_distr_params, snr_threshold, plot_spots, plot_img, save_spots, spots_filename, save_img, spot_img_filename):
+	def generate_spot_image(self, num_spots, snr_distr_params, snr_threshold, plot_spots, plot_img, save_spots, spots_filename, save_img, spot_img_filename, density):
 		
 		if (snr_distr_params[0] not in self.snr_distrs):
 			raise ValueError('Invalid SNR distribution name entered.')
 
 		# assign class attributes that determine what goes in self.coord_list
 		self.num_spots = num_spots
+		if (density != None):
+			self.num_spots = math.floor(density * len(self.valid_coords))
 
 		# assign class attributes that determine what goes in self.snr_list
 		self.snr_distr_params = snr_distr_params
@@ -162,8 +165,10 @@ class SpotImage():
 	Each spot has a random location and a patch of intensity values.
 	"""
 	def generate_spot_list(self):
-		self.coord_list = [self.total_coord_list[i] for i in range(500)] 
-		self.snr_list = [self.get_snr() for i in range(500)]
+		self.coord_list = self.total_coord_list
+		while (self.num_spots > len(self.total_coord_list)):
+			self.total_coord_list += [self.get_spot_coord() for i in range(self.increment)]
+		self.snr_list = [self.get_snr() for i in range(len(self.total_coord_list))]
 		spot_list = [[self.coord_list[i], self.get_patch(self.coord_list[i][0], self.coord_list[i][1], self.snr_list[i])] for i in range(self.num_spots)]
 		return spot_list
 
