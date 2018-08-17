@@ -9,6 +9,9 @@ import random
 from skimage import filters
 from skimage.restoration import estimate_sigma
 from PIL import ImageEnhance, Image
+from sklearn.neighbors import KDTree
+from matplotlib.lines import Line2D
+
 
 # ------- #
 
@@ -88,6 +91,7 @@ class SpotImage():
 		self.num_spots = num_spots
 		if (density != None):
 			self.num_spots = math.floor(density * len(self.valid_coords))
+			self.density = density
 
 		# assign class attributes that determine what goes in self.snr_list
 		self.snr_distr_params = snr_distr_params
@@ -153,7 +157,7 @@ class SpotImage():
 		# valid_array = np.zeros([self.img_sz, self.img_sz])		# for visualizing the valid coordinates
 		for row_ind in range(self.margin, self.img_sz - self.margin):
 			for col_ind in range(self.margin, self.img_sz - self.margin):
-				if (self.bg_array[row_ind][col_ind] >= self.threshold):
+				if (self.bg_array[row_ind][col_ind] >= self.threshold + self.global_intensity_dial):
 					valid_coords.append([col_ind,row_ind])
 		# 			valid_array[row_ind][col_ind] = 1				
 		# plt.imshow(valid_array, cmap = self.cmap)
@@ -321,3 +325,35 @@ class SpotImage():
 				spot_array_val = spot_array[array_origin_y + row_ind][array_origin_x + col_ind]		# the pre-existing value at that location in spot_array
 				spot_array[array_origin_y + row_ind][array_origin_x + col_ind] = spot_array_val + patch[row_ind][col_ind]
 		return spot_array
+
+	def plot_spot_nnd(self):
+		coord_list = []
+		for i in range(self.num_spots):
+			coord_list.append(self.coord_list[i])
+
+		spots_kdt = KDTree(coord_list, leaf_size=2, metric='euclidean')
+
+		NND_list = []
+		for coord in coord_list:
+			coord = [coord]
+			dist, ind = spots_kdt.query(coord, k=2)
+			NND_list.append(dist[0][1])
+
+		step_size = 2
+		if(max(NND_list) > 30):
+			step_size = 5
+
+		plt.hist(NND_list, bins = np.arange(0,max(NND_list)+step_size,step=step_size)-step_size/2)
+		plt.title("NND between spots with density = " + str(self.density) + ", " + str(self.num_spots) + " spots")
+		plt.xlabel("Nearest Neighbor Distance (NND)")
+		plt.ylabel("Number of Points")
+		plt.xticks(np.arange(0,max(NND_list)+step_size,step=step_size))
+
+		mean = math.floor(np.mean(NND_list))
+
+		plt.axvline(x=mean, color='orange')
+		label = "mean NND = " + str(mean)
+		mean_line = Line2D([0],[0], color='orange', label=label)
+		plt.legend(handles=[mean_line])
+
+		plt.show()
