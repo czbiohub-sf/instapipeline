@@ -182,7 +182,7 @@ class SpotAnnotationAnalysis():
 		threshold_kmeans = (cluster_centers[0][0]+cluster_centers[1][0])/2
 
 		return threshold_kmeans
-		
+
 	"""
 	Input "clusters" is a df: centroid_x | centroid_y | members.
 	"""
@@ -555,8 +555,7 @@ class SpotAnnotationAnalysis():
 		plt.show()
 
 	def plot_annotations_per_cluster(self, df, clustering_params, show_correctness, correctness_threshold, csv_filepath, img_filename, plot_title, bigger_window_size):
-		clusters = self.get_clusters(df, clustering_params)			# this dataframe: centroid_x | centroid_y | members
-		
+		clusters = self.get_clusters(df, clustering_params)
 		if not show_correctness:
 			hist_list = []
 			for i in range(len(clusters.index)):
@@ -608,8 +607,8 @@ class SpotAnnotationAnalysis():
 			plt.axvline(x=threshold_otsu, color='r')
 			plt.axvline(x=threshold_kmeans, color='b')
 
-			g_patch = mpatches.Patch(color='g', label='correct clusters')
-			m_patch = mpatches.Patch(color='m', label='incorrect clusters')
+			g_patch = mpatches.Patch(color='g', label='clusters near ref spot')
+			m_patch = mpatches.Patch(color='m', label='clusters far from any ref spot')
 			otsu_line = Line2D([0],[0], color='r', label='otsu threshold')
 			kmeans_line = Line2D([0],[0], color='b', label='k-means threshold')
 			plt.legend(handles=[g_patch, m_patch, otsu_line, kmeans_line])
@@ -617,6 +616,9 @@ class SpotAnnotationAnalysis():
 		plt.xlabel("Number of unique workers annotating")
 		plt.xticks(np.arange(0,width+2,step=2))
 		plt.ylabel("Number of clusters")
+		ymin, ymax = plt.ylim()
+		if(ymax < 30):
+			plt.yticks(np.arange(0,ymax+1,step=3))
 		plt.title(plot_title)
 		plt.show()
 
