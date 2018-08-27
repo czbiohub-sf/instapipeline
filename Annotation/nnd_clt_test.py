@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import random
 from sklearn.neighbors import KDTree
 
+
 img_sz = 40000
 valid_array = np.zeros([img_sz, img_sz])
 

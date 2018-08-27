@@ -18,6 +18,7 @@ from sklearn.neighbors import KDTree
 from QuantiusAnnotation import QuantiusAnnotation
 from BaseAnnotation import BaseAnnotation
 
+
 # ------- #
 
 class SpotAnnotationAnalysis():
@@ -48,29 +49,6 @@ class SpotAnnotationAnalysis():
 		self.ba = ba_obj
 		self.clusters_done = []
 		self.cluster_objects = []
-
-	"""
-	Drops all workers with average pairwise score greater than Otsu threshold.
-	"""
-	def slice_workers_by_pairwise_scores(self, df):
-
-		# score workers based on pairwise matching (this step does not use clusters)		
-		worker_pairwise_scores = self.get_worker_pairwise_scores(df)		# df with all workers. index = worker_ids, values = scores
-
-		# get IDs of all workers
-		worker_scores_list = worker_pairwise_scores['score'].tolist()		# list of scores
-
-		# threshold otsu
-		threshold = filters.threshold_otsu(np.asarray(worker_scores_list))
-
-		high_worker_pairwise_scores = worker_pairwise_scores[worker_pairwise_scores.score > threshold]	# df with only bad workers
-		high_scoring_workers_list = high_worker_pairwise_scores.index.values
-
-		# drop bad workers
-		for worker in high_scoring_workers_list:
-			df = df[df.worker_id != worker]
-
-		return df
 
 	"""
 	Build curve by varying number of unique workers required for valid cluster.
@@ -140,6 +118,71 @@ class SpotAnnotationAnalysis():
 		return tpr_list, fpr_list
 
 
+
+	def test_alg(self, df, clustering_params):
+
+		# 1. Cluster workers with good pairwise scores.
+		df_good_workers_pairwise = self.slice_workers_by_pairwise_scores(df)
+		clusters_good_workers_pairwise = self.get_clusters(df_good_workers_pairwise, clustering_params)
+
+		# 2. Look at clusters from Step 1. Sort clusters with few/many workers annotating (“putatively incorrect/correct”).
+		small_clusters, large_clusters = self.sort_clusters_by_size(clusters_good_workers_pairwise)
+
+		# 3. Look at all workers. Sort workers who are in few/many "putatively correct" clusters.
+		other_crowd, good_crowd = self.sort_workers_by_membership_in_large_clusters(df, large_clusters)
+
+		# 4. Keep "putatively incorrect" clusters which are mostly comprised of workers who are in many "putatively correct" clusters.
+		self.plot_fraction_from_crowd_per_cluster(small_clusters, good_crowd)
+
+		# 5. Keep "putatively correct" clusters which are mostly comprised of workers who are in many "putatively correct" clusters.
+		self.plot_fraction_from_crowd_per_cluster(large_clusters, good_crowd)
+
+	"""
+	Drops all workers with average pairwise score greater than Otsu threshold.
+	"""
+	def slice_workers_by_pairwise_scores(self, df):
+
+		# score workers based on pairwise matching (this step does not use clusters)		
+		worker_pairwise_scores = self.get_worker_pairwise_scores(df)		# df with all workers. index = worker_ids, values = scores
+
+		# get IDs of all workers
+		worker_scores_list = worker_pairwise_scores['score'].tolist()		# list of scores
+
+		# threshold otsu
+		threshold = filters.threshold_otsu(np.asarray(worker_scores_list))
+
+		high_worker_pairwise_scores = worker_pairwise_scores[worker_pairwise_scores.score > threshold]	# df with only bad workers
+		high_scoring_workers_list = high_worker_pairwise_scores.index.values
+
+		# drop bad workers
+		for worker in high_scoring_workers_list:
+			df = df[df.worker_id != worker]
+
+		return df
+
+
+	def get_cluster_size_threshold(self, clusters):
+		total_list = []
+		for i in range(len(clusters.index)):
+			row = clusters.iloc[[i]]
+			members = row.iloc[0]['members']
+			worker_list = []
+			for member in members:
+				worker_list.append(member[3])
+			num_members = len(np.unique(worker_list))
+			total_list.append(num_members)
+
+		# # threshold otsu
+		# threshold_otsu = filters.threshold_otsu(np.asarray(total_list))
+
+		# treshold kmeans
+		total_array = np.asarray(total_list)
+		km = KMeans(n_clusters = 2).fit(total_array.reshape(-1,1))
+		cluster_centers = km.cluster_centers_
+		threshold_kmeans = (cluster_centers[0][0]+cluster_centers[1][0])/2
+
+		return threshold_kmeans
+		
 	"""
 	Input "clusters" is a df: centroid_x | centroid_y | members.
 	"""
@@ -182,24 +225,6 @@ class SpotAnnotationAnalysis():
 			large_clusters['members'][m] = large_clusters_list[m][2]
 
 		return small_clusters, large_clusters
-
-	def test_alg(self, df, clustering_params):
-
-		# 1. Cluster workers with good pairwise scores.
-		df_good_workers_pairwise = self.slice_workers_by_pairwise_scores(df)
-		clusters_good_workers_pairwise = self.get_clusters(df_good_workers_pairwise, clustering_params)
-
-		# 2. Look at clusters from Step 1. Sort clusters with few/many workers annotating (“putatively incorrect/correct”).
-		small_clusters, large_clusters = self.sort_clusters_by_size(clusters_good_workers_pairwise)
-
-		# 3. Look at all workers. Sort workers who are in few/many "putatively correct" clusters.
-		other_crowd, good_crowd = self.sort_workers_by_membership_in_large_clusters(df, large_clusters)
-
-		# 4. Keep "putatively incorrect" clusters which are mostly comprised of workers who are in many "putatively correct" clusters.
-		self.plot_fraction_from_crowd_per_cluster(small_clusters, good_crowd)
-
-		# 5. Keep "putatively correct" clusters which are mostly comprised of workers who are in many "putatively correct" clusters.
-		self.plot_fraction_from_crowd_per_cluster(large_clusters, good_crowd)
 
 	"""
 	The list should contain, for each “putatively incorrect” cluster, 
@@ -1539,6 +1564,118 @@ class SpotAnnotationAnalysis():
 			left=False,
 			right=False)
 		plt.imshow(img, cmap = 'gray')
+
+		plt.show()
+		if show_clusters or show_correctness_workers:
+			return clusters
+
+	def get_clumped_list(self, clusters):
+		clumped_list = []
+		for i in range(len(clusters.index)):
+			row = clusters.iloc[[i]]
+			members = row.iloc[0]['members']
+			workers = []
+			for member in members:
+				workers.append(member[3])
+			unique_workers = np.unique(workers)
+
+			num_instances_list = []
+			for unique_worker in unique_workers:
+				num_instances_list.append(workers.count(unique_worker))
+
+			singles = num_instances_list.count(1)
+			single_fraction = singles/len(unique_workers)
+			if (single_fraction < 0.6):
+				clumped_list.append(i)
+		return clumped_list
+
+	def get_cluster_means(self, clusters):
+		mean_coords = []
+		for i in range(len(clusters.index)):
+			row = clusters.iloc[[i]]
+			members = row.iloc[0]['members']
+			x_coords = []
+			y_coords = []
+			for member in members:
+				x_coords.append(member[0])
+				y_coords.append(member[1])
+			mean_coord = [np.mean(x_coords), np.mean(y_coords)]
+			mean_coords.append(mean_coord)
+		return np.asarray(mean_coords)
+
+	def plot_clusters(self, clusters, img_filename, img_filepath, img_height, csv_filepath, worker_marker_size, cluster_marker_size, correctness_threshold, show_possible_clumps, bigger_window_size, plot_title):
+		if bigger_window_size:
+			fig = plt.figure(figsize=(14,12))
+		else:
+			fig = plt.figure(figsize = (12,7))
+		
+		member_lists = clusters['members'].values	# list of lists
+
+		ref_kdt = self.csv_to_kdt(csv_filepath, img_height)
+
+		cluster_correctness = []
+		for i in range(len(clusters.index)):
+			row = clusters.iloc[[i]]
+			centroid_x = row.iloc[0]['centroid_x']
+			centroid_y = row.iloc[0]['centroid_y']
+			coord = np.asarray([centroid_x, centroid_y]).reshape(1,-1)
+			dist, ind = ref_kdt.query(coord, k=1)
+			distance = dist[0][0]
+			if (distance <= correctness_threshold):
+				cluster_correctness.append([i,True])
+			else:
+				cluster_correctness.append([i,False])
+
+		for i in range(len(member_lists)):			# for every cluster
+			members = member_lists[i]					# get the list of annotations (w/ click properties) in that cluster
+			if (cluster_correctness[i][1]):
+				color = 'g'						
+			else:								
+				color = 'm'
+
+			if show_possible_clumps:
+				workers = []
+				for member in members:
+					workers.append(member[3])
+				unique_workers = np.unique(workers)
+				num_instances_list = []
+				for unique_worker in unique_workers:
+					num_instances_list.append(workers.count(unique_worker))
+				singles = num_instances_list.count(1)
+				single_fraction = singles/len(unique_workers)
+				if (single_fraction < 0.8):
+					color = 'orange'
+
+			for member in members:						# plot each annotation in that cluster
+				coords = member[:2]
+				plt.scatter([coords[0]], self.ba.flip([coords[1]], img_height), s = worker_marker_size, facecolors = color, alpha = 0.5)
+
+		# plot cluster centroids
+		x_coords = clusters['centroid_x'].values
+		y_coords = clusters['centroid_y'].values
+		y_coords_flipped = self.ba.flip(y_coords, img_height)
+		plt.scatter(x_coords, y_coords_flipped, s = cluster_marker_size, facecolors = 'none', edgecolors = '#ffffff')
+
+		# plot ref points
+		ref_df = pd.read_csv(csv_filepath)							# plot reference points			
+		ref_points = ref_df.loc[:, ['col', 'row']].as_matrix()
+		for point in ref_points:													
+			plt.scatter([point[0]], [point[1]], s = 20, facecolors = 'y')
+		legend_elements = [Line2D([0],[0], marker='o', color='w', markerfacecolor='y', label='Reference points')]
+		plt.legend(handles = legend_elements, loc = 9, bbox_to_anchor = (1.2, 1.015))
+
+		# plot image
+		img = mpimg.imread(img_filepath)
+		plt.tick_params(
+			axis='both',
+			which='both',
+			bottom=False,
+			top=False,
+			left=False,
+			right=False)
+		plt.imshow(img, cmap = 'gray')
+
+		plt.title(plot_title)
 
 		plt.show()
 
