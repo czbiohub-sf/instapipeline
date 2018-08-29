@@ -17,7 +17,12 @@ from BaseAnnotation import BaseAnnotation
 # ----- #
 
 class QuantiusAnnotation(BaseAnnotation):
-
+	"""
+	If polygon annotation_type, returns same dataframe as for crosshairs 
+	annotation_type except timestamp, x, and y columns are removed and 
+	at column index 0, each row is a dataframe containing all x, y, and 
+	timestamp data for one set of vertices i.e. one annotation."
+	"""
 	def _import_annotations(self, json_filepath):
 		
 		to_return = pd.DataFrame()
