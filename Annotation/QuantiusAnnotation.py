@@ -32,7 +32,16 @@ class QuantiusAnnotation(BaseAnnotation):
 				continue
 
 			# Make a data frame of the coordinates of each annotation
-			coords = pd.DataFrame(worker['raw_data'][0])
+			if (worker['annotation_type'] == 'crosshairs'):
+				coords = pd.DataFrame(worker['raw_data'][0])
+			elif (worker['annotation_type'] == 'polygon'):
+				num_annotations = len(worker['raw_data'])
+				annotations = []
+				for i in range(num_annotations):
+					annotation = worker['raw_data'][i]
+					annotation = pd.DataFrame(annotation)
+					annotations.append(annotation)
+				coords = pd.DataFrame(annotations)
 
 			# Add the worker metadata to all entries in the data frame
 			coords['annotation_type'] = worker['annotation_type']

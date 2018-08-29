@@ -97,7 +97,6 @@ class SpotAnnotationAnalysis():
 			num_false_positives = 0
 			num_clusters_total = 0
 			for i in range(len(anno_and_ref_df.index)):		# sort clusters
-				row = anno_and_ref_df.iloc[[i]]
 				if (cluster_correctness[i][1]):		
 					num_true_positives += 1
 				else:
