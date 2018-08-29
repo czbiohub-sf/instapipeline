@@ -46,7 +46,7 @@ class BaseAnnotation:
 	# Returns the list of unique image filenames
 	def get_images(self, df):
 		img_list = df.loc[:, ['image_filename']]
-		return img_list.unique()
+		return np.unique(img_list)
 
 	# Inputs: df, worker ID
 	# Returns: list with that worker's timestamps 
