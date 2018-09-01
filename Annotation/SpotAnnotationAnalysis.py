@@ -1551,8 +1551,7 @@ class SpotAnnotationAnalysis():
 			ref_points = ref_df.loc[:, ['col', 'row']].as_matrix()
 			for point in ref_points:													
 				plt.scatter([point[0]], [point[1]], s = 20, facecolors = 'y')
-			legend_elements = [Line2D([0],[0], marker='o', color='w', markerfacecolor='y', label='Reference points')]
-			legend_list = legend_elements
+			legend_list = [Line2D([0],[0], marker='o', color='w', markerfacecolor='y', label='Reference points')]
 			if show_workers and not show_correctness_workers:
 				legend_list += handle_list
 			plt.legend(handles = legend_list, loc = 9, bbox_to_anchor = (1.2, 1.015))
@@ -1634,18 +1633,19 @@ class SpotAnnotationAnalysis():
 			else:								
 				color = 'm'
 
-			if show_possible_clumps:
-				workers = []
-				for member in members:
-					workers.append(member[3])
-				unique_workers = np.unique(workers)
-				num_instances_list = []
-				for unique_worker in unique_workers:
-					num_instances_list.append(workers.count(unique_worker))
-				singles = num_instances_list.count(1)
-				single_fraction = singles/len(unique_workers)
-				if (single_fraction < 0.8):
-					color = 'orange'
+
+			# if show_possible_clumps:
+			# 	workers = []
+			# 	for member in members:
+			# 		workers.append(member[3])
+			# 	unique_workers = np.unique(workers)
+			# 	num_instances_list = []
+			# 	for unique_worker in unique_workers:
+			# 		num_instances_list.append(workers.count(unique_worker))
+			# 	singles = num_instances_list.count(1)
+			# 	single_fraction = singles/len(unique_workers)
+			# 	if (single_fraction < 0.8):
+			# 		color = 'orange'
 
 			for member in members:						# plot each annotation in that cluster
 				coords = member[:2]
@@ -1658,9 +1658,9 @@ class SpotAnnotationAnalysis():
 		plt.scatter(x_coords, y_coords_flipped, s = cluster_marker_size, facecolors = 'none', edgecolors = '#ffffff')
 
 		# plot ref points
-		ref_df = pd.read_csv(csv_filepath)							# plot reference points			
+		ref_df = pd.read_csv(csv_filepath)
 		ref_points = ref_df.loc[:, ['col', 'row']].as_matrix()
-		for point in ref_points:													
+		for point in ref_points:
 			plt.scatter([point[0]], [point[1]], s = 20, facecolors = 'y')
 		legend_elements = [Line2D([0],[0], marker='o', color='w', markerfacecolor='y', label='Reference points')]
 		plt.legend(handles = legend_elements, loc = 9, bbox_to_anchor = (1.2, 1.015))
