@@ -225,6 +225,56 @@ class SpotAnnotationAnalysis():
 
 		return small_clusters, large_clusters
 
+		"""
+	Input "clusters" is a df: centroid_x | centroid_y | members.
+	Sorts a dataframe of clusters into two dataframes of clusters predicted to be clumpy and not clumpy.
+	"""
+	def sort_clusters_by_clumpiness_input_threshold(self, clusters, threshold):
+
+		# Given threshold, sort.
+		clumpy_clusters_list = []
+		nonclumpy_clusters_list = []
+		clumpy_counter = 0
+		nonclumpy_counter = 0
+		for j in range(len(clusters.index)):
+			row = clusters.iloc[[j]]
+			members = row.iloc[0]['members']
+			centroid_x = row.iloc[0]['centroid_x']
+			centroid_y = row.iloc[0]['centroid_y']
+
+			workers = []
+			for member in members:
+				workers.append(member[3])
+			unique_workers = np.unique(workers)
+
+			num_instances_list = []
+			for unique_worker in unique_workers:
+				num_instances_list.append(workers.count(unique_worker))
+			singles = num_instances_list.count(1)
+			single_fraction = singles/len(unique_workers)
+
+			if (single_fraction < threshold):
+				clumpy_clusters_list.append([centroid_x, centroid_y, members])
+				clumpy_counter += 1
+			else:
+				nonclumpy_clusters_list.append([centroid_x, centroid_y, members])
+				nonclumpy_counter += 1
+
+		clumpy_clusters = pd.DataFrame(index = range(clumpy_counter), columns = ['centroid_x','centroid_y','members'])
+		nonclumpy_clusters = pd.DataFrame(index = range(nonclumpy_counter), columns = ['centroid_x','centroid_y','members'])
+
+		for k in range(clumpy_counter):
+			clumpy_clusters['centroid_x'][k] = clumpy_clusters_list[k][0]
+			clumpy_clusters['centroid_y'][k] = clumpy_clusters_list[k][1]
+			clumpy_clusters['members'][k] = clumpy_clusters_list[k][2]
+
+		for m in range(nonclumpy_counter):
+			nonclumpy_clusters['centroid_x'][m] = nonclumpy_clusters_list[m][0]
+			nonclumpy_clusters['centroid_y'][m] = nonclumpy_clusters_list[m][1]
+			nonclumpy_clusters['members'][m] = nonclumpy_clusters_list[m][2]
+
+		return clumpy_clusters, nonclumpy_clusters
+
 	"""
 	The list should contain, for each “putatively incorrect” cluster, 
 	the fraction of the cluster’s annotations which are from workers 
