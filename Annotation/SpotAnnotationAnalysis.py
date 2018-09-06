@@ -1653,7 +1653,7 @@ class SpotAnnotationAnalysis():
 			mean_coords.append(mean_coord)
 		return np.asarray(mean_coords)
 
-	def plot_clusters(self, clusters, img_filename, img_filepath, img_height, csv_filepath, worker_marker_size, cluster_marker_size, correctness_threshold, show_possible_clumps, bigger_window_size, plot_title):
+	def plot_clusters(self, clusters, img_filename, img_filepath, img_height, csv_filepath, worker_marker_size, cluster_marker_size, show_correctness, correctness_threshold, show_possible_clumps, bigger_window_size, plot_title):
 		if bigger_window_size:
 			fig = plt.figure(figsize=(14,12))
 		else:
@@ -1678,11 +1678,13 @@ class SpotAnnotationAnalysis():
 
 		for i in range(len(member_lists)):			# for every cluster
 			members = member_lists[i]					# get the list of annotations (w/ click properties) in that cluster
-			if (cluster_correctness[i][1]):
-				color = 'g'						
-			else:								
-				color = 'm'
-
+			if show_correctness:
+				if (cluster_correctness[i][1]):
+					color = 'g'						
+				else:								
+					color = 'm'
+			else:
+				color = 'orange'
 
 			# if show_possible_clumps:
 			# 	workers = []
@@ -1711,8 +1713,11 @@ class SpotAnnotationAnalysis():
 		ref_df = pd.read_csv(csv_filepath)
 		ref_points = ref_df.loc[:, ['col', 'row']].as_matrix()
 		for point in ref_points:
-			plt.scatter([point[0]], [point[1]], s = 20, facecolors = 'y')
-		legend_elements = [Line2D([0],[0], marker='o', color='w', markerfacecolor='y', label='Reference points')]
+			plt.scatter([point[0]], [point[1]], s = 20, facecolors = 'c')
+
+		leg_elem_1 = Line2D([0],[0], marker='o', color='w', markerfacecolor='c', label='reference spots')
+		leg_elem_2 = Line2D([0],[0], marker='o', color='w', markerfacecolor='orange', label='annotations for clusters detected as clumpy')
+		legend_elements = [leg_elem_1, leg_elem_2]
 		plt.legend(handles = legend_elements, loc = 9, bbox_to_anchor = (1.2, 1.015))
 
 		# plot image
