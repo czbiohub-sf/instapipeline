@@ -1653,51 +1653,41 @@ class SpotAnnotationAnalysis():
 			mean_coords.append(mean_coord)
 		return np.asarray(mean_coords)
 
-	def plot_clusters(self, clusters, img_filename, img_filepath, img_height, csv_filepath, worker_marker_size, cluster_marker_size, show_correctness, correctness_threshold, show_possible_clumps, bigger_window_size, plot_title):
+	def plot_clusters(self, clusters, img_filename, img_filepath, img_height, show_ref_points, csv_filepath, worker_marker_size, cluster_marker_size, show_correctness, correctness_threshold, show_possible_clumps, bigger_window_size, plot_title):
 		if bigger_window_size:
 			fig = plt.figure(figsize=(14,12))
 		else:
 			fig = plt.figure(figsize = (12,7))
 		
 		member_lists = clusters['members'].values	# list of lists
+		color = 'orange'
 
-		ref_kdt = self.csv_to_kdt(csv_filepath, img_height)
+		if show_ref_points:
+			ref_kdt = self.csv_to_kdt(csv_filepath, img_height)
 
-		cluster_correctness = []
-		for i in range(len(clusters.index)):
-			row = clusters.iloc[[i]]
-			centroid_x = row.iloc[0]['centroid_x']
-			centroid_y = row.iloc[0]['centroid_y']
-			coord = np.asarray([centroid_x, centroid_y]).reshape(1,-1)
-			dist, ind = ref_kdt.query(coord, k=1)
-			distance = dist[0][0]
-			if (distance <= correctness_threshold):
-				cluster_correctness.append([i,True])
-			else:
-				cluster_correctness.append([i,False])
+		if show_correctness:
+			cluster_correctness = []
+			for i in range(len(clusters.index)):
+				row = clusters.iloc[[i]]
+				centroid_x = row.iloc[0]['centroid_x']
+				centroid_y = row.iloc[0]['centroid_y']
+				coord = np.asarray([centroid_x, centroid_y]).reshape(1,-1)
+				dist, ind = ref_kdt.query(coord, k=1)
+				distance = dist[0][0]
+				if (distance <= correctness_threshold):
+					cluster_correctness.append([i,True])
+				else:
+					cluster_correctness.append([i,False])
 
-		for i in range(len(member_lists)):			# for every cluster
-			members = member_lists[i]					# get the list of annotations (w/ click properties) in that cluster
-			if show_correctness:
-				if (cluster_correctness[i][1]):
-					color = 'g'						
-				else:								
-					color = 'm'
-			else:
-				color = 'orange'
-
-			# if show_possible_clumps:
-			# 	workers = []
-			# 	for member in members:
-			# 		workers.append(member[3])
-			# 	unique_workers = np.unique(workers)
-			# 	num_instances_list = []
-			# 	for unique_worker in unique_workers:
-			# 		num_instances_list.append(workers.count(unique_worker))
-			# 	singles = num_instances_list.count(1)
-			# 	single_fraction = singles/len(unique_workers)
-			# 	if (single_fraction < 0.8):
-			# 		color = 'orange'
+			for i in range(len(member_lists)):			# for every cluster
+				members = member_lists[i]					# get the list of annotations (w/ click properties) in that cluster
+				if show_correctness:
+					if (cluster_correctness[i][1]):
+						color = 'g'						
+					else:								
+						color = 'm'
+				else:
+					color = 'orange'
 
 			for member in members:						# plot each annotation in that cluster
 				coords = member[:2]
@@ -1709,19 +1699,21 @@ class SpotAnnotationAnalysis():
 		y_coords_flipped = self.ba.flip(y_coords, img_height)
 		plt.scatter(x_coords, y_coords_flipped, s = cluster_marker_size, facecolors = 'none', edgecolors = '#ffffff')
 
-		# plot ref points
-		ref_df = pd.read_csv(csv_filepath)
-		ref_points = ref_df.loc[:, ['col', 'row']].as_matrix()
-		for point in ref_points:
-			plt.scatter([point[0]], [point[1]], s = 20, facecolors = 'c')
+		legend_elements = []
+		if show_ref_points:
+			ref_df = pd.read_csv(csv_filepath)
+			ref_points = ref_df.loc[:, ['col', 'row']].as_matrix()
+			for point in ref_points:
+				plt.scatter([point[0]], [point[1]], s = 20, facecolors = 'c')
+			legend_elements.append(Line2D([0],[0], marker='o', color='w', markerfacecolor='c', label='reference spots'))
 
-		leg_elem_1 = Line2D([0],[0], marker='o', color='w', markerfacecolor='c', label='reference spots')
-		leg_elem_2 = Line2D([0],[0], marker='o', color='w', markerfacecolor='orange', label='annotations for clusters detected as clumpy')
-		legend_elements = [leg_elem_1, leg_elem_2]
+		legend_elements.append(Line2D([0],[0], marker='o', color='w', markerfacecolor='orange', label='annotations for clusters detected as clumpy'))
 		plt.legend(handles = legend_elements, loc = 9, bbox_to_anchor = (1.2, 1.015))
 
 		# plot image
 		img = mpimg.imread(img_filepath)
+		plt.imshow(img, cmap = 'gray')
+
 		plt.tick_params(
 			axis='both',
 			which='both',
@@ -1729,7 +1721,6 @@ class SpotAnnotationAnalysis():
 			top=False,
 			left=False,
 			right=False)
-		plt.imshow(img, cmap = 'gray')
 
 		plt.title(plot_title)
 
