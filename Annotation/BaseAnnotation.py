@@ -1,21 +1,24 @@
-""" This module contains the QuantiusAnnotation class.
+""" 
+This module contains the BaseAnnotation class.
 """
 
 import json
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 import numpy as np
-from numpy import genfromtxt
 import pandas as pd
 import scipy
 import sklearn as skl
+
+from numpy import genfromtxt
 from sklearn.cluster import AffinityPropagation
 from sklearn import metrics
 
 # ----- #
 
 class BaseAnnotation:
-	""" The BaseAnnotation class provides tools for
+	""" 
+	The BaseAnnotation class provides tools for
 	annotation injestion.
 	"""
 

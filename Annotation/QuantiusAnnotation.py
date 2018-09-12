@@ -1,27 +1,26 @@
-""" This module contains the QuantiusAnnotation class.
+""" 
+This module contains the Annotation class.
 """
+
+from BaseAnnotation import BaseAnnotation
 
 import json
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 import numpy as np
-from numpy import genfromtxt
 import pandas as pd
 import scipy
 import sklearn as skl
+
+from numpy import genfromtxt
 from sklearn.cluster import AffinityPropagation
 from sklearn import metrics
-
-from BaseAnnotation import BaseAnnotation
 
 # ----- #
 
 class QuantiusAnnotation(BaseAnnotation):
 	"""
-	If polygon annotation_type, returns same dataframe as for crosshairs 
-	annotation_type except timestamp, x, and y columns are removed and 
-	at column index 0, each row is a dataframe containing all x, y, and 
-	timestamp data for one set of vertices i.e. one annotation."
+	
 	"""
 	def _import_annotations(self, json_filepath):
 		

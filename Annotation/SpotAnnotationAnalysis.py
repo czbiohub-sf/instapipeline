@@ -1,31 +1,34 @@
-""" This module contains the SpotAnnotationAnalysis class.
+""" 
+This module contains the SpotAnnotationAnalysis class.
 """
+
+from QuantiusAnnotation import QuantiusAnnotation
+from BaseAnnotation import BaseAnnotation
 
 import math
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 import matplotlib.patches as mpatches
-from matplotlib.lines import Line2D
 import numpy as np
-from numpy import genfromtxt
 import pandas as pd
 import scipy
+
+from numpy import genfromtxt
+from matplotlib.lines import Line2D
 from skimage import filters
 from sklearn.cluster import AffinityPropagation
 from sklearn.cluster import KMeans
 from sklearn import metrics
 from sklearn.neighbors import KDTree
-from QuantiusAnnotation import QuantiusAnnotation
-from BaseAnnotation import BaseAnnotation
-
 
 # ------- #
 
 class SpotAnnotationAnalysis():
-	""" The SpotAnnotationAnalysis class provides tools for
-	annotation analysis.
-	SpotAnnotationAnalysis takes in a BaseAnnotation object as an 
-	input and saves it as a property of the class.
+	""" 
+	The SpotAnnotationAnalysis class provides tools for
+	annotation analysis. SpotAnnotationAnalysis takes in a 
+	BaseAnnotation object as an input and saves it as a 
+	property of the class.
 	"""
 
 	# list of clustering algs handled
