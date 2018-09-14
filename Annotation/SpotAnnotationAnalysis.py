@@ -24,11 +24,11 @@ from sklearn.neighbors import KDTree
 # ------- #
 
 class SpotAnnotationAnalysis():
-	""" 
-	The SpotAnnotationAnalysis class provides tools for
-	annotation analysis. SpotAnnotationAnalysis takes in a 
-	BaseAnnotation object as an input and saves it as a 
-	property of the class.
+	""" Tools for annotation analysis
+
+	SpotAnnotationAnalysis takes in a BaseAnnotation 
+	object as input and saves it as a property of
+	the class.
 	"""
 
 	# list of clustering algs handled
@@ -44,14 +44,133 @@ class SpotAnnotationAnalysis():
     '#9999FF', '#99FFCC', '#FF9999', '#91FFFF',
     '#8A00B8', '#91BBFF', '#FFB71C', '#FF1C76']
 
-	"""
-	Constructor takes in a BaseAnnotation object and saves it as 
-	a property of the SpotAnnotationAnalysis class
-	"""
+
 	def __init__(self, ba_obj):
+		"""
+		Take in a BaseAnnotation object and save it as 
+		a property of the SpotAnnotationAnalysis class
+		"""
 		self.ba = ba_obj
 		self.clusters_done = []
 		self.cluster_objects = []
+
+	def csv_to_kdt(self, csv_filepath, img_height):
+		""" Fit reference spot coordinates to a k-d tree
+
+		Parameters
+		----------
+		csv_filepath : string filepath to csv file containing reference points
+		img_height : height of image
+
+		Returns
+		-------
+		ref_kdt : sklearn.neighbors.kd_tree.KDTree object containing reference points 
+					y-coordinates are flipped about img_height 
+		"""
+		ref_df = pd.read_csv(csv_filepath)
+		ref_points = ref_df.loc[:, ['col', 'row']].as_matrix()
+
+		for i in range(len(ref_points)):
+			point = ref_points[i]
+			first_elem = point[0]
+			second_elem = img_height - point[1]
+			point = np.array([first_elem, second_elem])
+			ref_points[i] = point
+
+		ref_kdt = KDTree(ref_points, leaf_size=2, metric='euclidean')	# kdt is a kd tree with all the reference points
+		return ref_kdt
+
+	def get_clusters(self, df, clustering_params):
+		""" Cluster all annotations in df and arrange result as a dataframe. 
+		Verifies clustering parameters and calls self.get_cluster_object()
+		to check whether identical clustering has already been accomplished.
+
+		Parameters
+		----------
+		df : pandas dataframe
+		clustering_params : list of clustering parameters
+			first element is string name of clustering algorithm
+			subsequent elements are additional parameters
+
+		Returns
+		-------
+		to_return : pandas dataframe (centroid_x | centroid_y | members)
+			centroid_x = x coord of cluster centroid
+			centroid_y = y coord of cluster centroid
+			members = list of annotations belonging to the cluster
+				each member is a list of properties of the annotation 
+				i.e. [x coord, y coord, time spent, worker ID]
+		"""
+
+		clustering_alg = clustering_params[0]
+		if (clustering_alg not in self.clustering_algs):
+			raise ValueError('Invalid clustering algorithm name entered.')
+
+		if (clustering_alg == 'AffinityPropagation'):											# If AffinityPropagation is selected:
+			cluster_centroids_list = []																# Initialize a list of cluster centroids
+
+			if(len(clustering_params) != 2):														# Check that there's only one clustering parameter
+				raise ValueError('Please enter a list containing the preference parameter.')
+
+			click_properties = self.ba.get_click_properties(df)
+			coords = click_properties[:,:2]															# Get all the coordinates from the annotation dataframe (dissociated from timestamps)
+
+			af = self.get_cluster_object(coords, clustering_params)
+
+			cluster_centers_indices = af.cluster_centers_indices_									# Get the indices of the cluster centers (list)
+			num_clusters = len(cluster_centers_indices)
+			
+			cluster_members_lists = [None]*num_clusters
+			for i in range(len(cluster_members_lists)):
+				cluster_members_lists[i] = []
+
+			labels = af.labels_																		# Each point that was in coords now has a label saying which cluster it belongs to.
+			for label_index, click_property in zip(labels, click_properties):
+				cluster_members_lists[label_index].append(click_property)
+
+			for cluster_centers_index in cluster_centers_indices:
+				cluster_centers = coords[cluster_centers_index]
+				cluster_centroids_list.append(cluster_centers)
+
+		centroid_IDs = range(num_clusters)
+		column_names = ['centroid_x', 'centroid_y', 'members']
+		to_return = pd.DataFrame(index = centroid_IDs, columns = column_names)
+
+		for i in range(num_clusters):
+			to_return['centroid_x'][i] = cluster_centroids_list[i][0]
+			to_return['centroid_y'][i] = cluster_centroids_list[i][1]
+			to_return['members'][i] = cluster_members_lists[i]
+
+		return to_return
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 	"""
 	Build curve by varying number of unique workers required for valid cluster.
@@ -1142,65 +1261,6 @@ class SpotAnnotationAnalysis():
 
 		return pair_scores
 
-	"""
-	Inputs:
-		string name of clustering alg to use
-		pandas dataframe with annotation data (should already be cropped)
-		list of clustering params for clustering alg
-	Returns:
-		this dataframe: centroid_x | centroid_y | members (x | y | time_spent | worker_id)
-			* (the index is the Cluster ID)
-			centroid_x = x coord of cluster centroid
-			centroid_y = y coord of cluster centroid
-			members = list of annotations belonging to the cluster
-				each annotation comes with properties of that annotation (x coord, y coord, time spent, and worker ID)
-	"""
-	def get_clusters(self, df, clustering_params):
-
-		clustering_alg = clustering_params[0]
-
-		if (clustering_alg not in self.clustering_algs):
-			raise ValueError('Invalid clustering algorithm name entered.')
-
-		if (clustering_alg == 'AffinityPropagation'):											# If AffinityPropagation is selected:
-			cluster_centroids_list = []																# Initialize a list of cluster centroids
-
-			if(len(clustering_params) != 2):														# Check that there's only one clustering parameter
-				raise ValueError('Please enter a list containing the preference parameter.')
-
-			click_properties = self.ba.get_click_properties(df)
-			coords = click_properties[:,:2]															# Get all the coordinates from the annotation dataframe (dissociated from timestamps)
-
-			af = self.get_cluster_object(coords, clustering_params)
-
-			cluster_centers_indices = af.cluster_centers_indices_									# Get the indices of the cluster centers (list)
-			num_clusters = len(cluster_centers_indices)
-
-			labels = af.labels_																		# Each point that was in coords now has a label saying which cluster it belongs to.
-
-			cluster_members_lists = [None]*num_clusters
-			for i in range(len(cluster_members_lists)):
-				cluster_members_lists[i] = []
-
-			for j in range(len(click_properties)):
-				index = labels[j]
-				cluster_members_lists[index].append(click_properties[j])
-
-			for k in range(num_clusters):
-				cluster_centers = coords[cluster_centers_indices[k]]	# np array
-				cluster_centroids_list.append(cluster_centers)
-
-		centroid_IDs = range(num_clusters)
-		column_names = ['centroid_x', 'centroid_y', 'members']
-		to_return = pd.DataFrame(index = centroid_IDs, columns = column_names)
-
-		for i in range(num_clusters):
-			to_return['centroid_x'][i] = cluster_centroids_list[i][0]
-			to_return['centroid_y'][i] = cluster_centroids_list[i][1]
-			to_return['members'][i] = cluster_members_lists[i]
-
-		return to_return
-
 	# def get_clusters_cropped(self, df, clustering_params, x_min, x_max, y_min, y_max):
 
 	# 	clustering_alg = clustering_params[0]
@@ -1336,26 +1396,7 @@ class SpotAnnotationAnalysis():
 				to_return[i][1] = False
 		return to_return
 
-	""" 
-	Input:
-		string name of csv file containing reference points, aka "ground truth" values
-	Returns:
-		k-d tree containing the same reference points flipped vertically
-	"""
-	def csv_to_kdt(self, csv_filepath, img_height):
 
-		ref_df = pd.read_csv(csv_filepath)
-		ref_points = ref_df.loc[:, ['col', 'row']].as_matrix()
-
-		for i in range(len(ref_points)):
-			point = ref_points[i]
-			first_elem = point[0]
-			second_elem = img_height - point[1]
-			point = np.array([first_elem, second_elem])
-			ref_points[i] = point
-
-		ref_kdt = KDTree(ref_points, leaf_size=2, metric='euclidean')	# kdt is a kd tree with all the reference points
-		return ref_kdt
 
 	"""
 	Inputs:
@@ -2128,5 +2169,39 @@ class SpotAnnotationAnalysis():
 		plt.xticks(np.arange(0, num_clicks, step=10))
 		plt.show()
 
+	"""
+	!!! all below were moved over from BA class !!!
+	"""
+	# Returns dataframe with all fast clicks screened
+	# Clicks of which time_spent < time_threshold are "fast"
+	def screen_clicks_time_spent(self, df, time_threshold):
+		to_return = pd.DataFrame()
+		occasions = np.unique(df.loc[:, ['time_when_completed']].as_matrix())			# get the list of occasions
+		for occasion in occasions:
+			one_occasion_df = df[df.time_when_completed == occasion]
+			one_occasion_timestamps = one_occasion_df.loc[:, ['timestamp']].as_matrix()
+			for i in range(len(one_occasion_timestamps)-1, -1, -1):
+				if(i==0):
+					one_occasion_df = one_occasion_df.drop([i])
+				else:
+					time_spent = one_occasion_timestamps[i][0] - one_occasion_timestamps[i-1][0]
+					if(time_spent<time_threshold):
+						one_occasion_df = one_occasion_df.drop([i])
+			to_return = to_return.append(one_occasion_df)
+		return to_return
 
+	# Inputs: df, worker ID
+	# Returns: float avg time that the worker spent per click 
+	def get_avg_time_per_click(self, df, uid):
+
+		worker_timestamps = self.get_timestamps(df, uid)
+		time_spent = max(worker_timestamps) - min(worker_timestamps)
+		num_clicks = len(worker_timestamps)
+		return time_spent[0]/num_clicks
+
+	# Inputs: df, worker ID
+	# Returns: time that the worker spent 		
+	def get_total_time(self, df, uid):
+		worker_timestamps = self.get_timestamps(df, uid)
+		return max(worker_timestamps) - min(worker_timestamps)
 

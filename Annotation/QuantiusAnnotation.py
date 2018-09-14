@@ -19,13 +19,13 @@ from sklearn import metrics
 # ----- #
 
 class QuantiusAnnotation(BaseAnnotation):
+	""" Implementation of _import_annotations
+	for annotations from Quantius
 	"""
-	
-	"""
+
 	def _import_annotations(self, json_filepath):
 		
 		to_return = pd.DataFrame()
-
 		json_string = open(json_filepath).read()
 		results = json.loads(json_string)
 
