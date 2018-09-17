@@ -13,7 +13,22 @@ sa = SpotAnnotationAnalysis(ba)
 
 anno_one_image = ba.slice_by_image(anno_all, img_filename)
 clusters = sa.get_clusters(anno_one_image, clustering_params)
-print(clusters.head())
+
+bin_size = 0.1
+cutoff_fraction = 3
+threshold = sa.get_clumpiness_threshold(clusters, bin_size, cutoff_fraction)
+print(threshold)
+
+clumpy_clusters, nonclumpy_clusters = sa.sort_clusters_by_clumpiness(clusters, threshold)
+print(clumpy_clusters)
+ba.print_head(nonclumpy_clusters)
+
+# threshold = sa.get_cluster_size_threshold(clusters)
+# small_clusters, large_clusters = sa.sort_clusters_by_size(clusters, threshold)
+# ba.print_head(small_clusters)
+# ba.print_head(large_clusters)
+
+
 
 
 # worker_marker_size = 8
