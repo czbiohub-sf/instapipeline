@@ -137,6 +137,43 @@ class SpotAnnotationAnalysis():
 
 		return to_return
 
+	"""
+	Checks to see whether the cluster object has already been generated
+	for the given df and clustering parameters, and returns or calculates
+	appropriately.
+	""" 
+	def get_cluster_object(self, coords, clustering_params):
+		""" Checks whether the cluster object has already been generated
+		for the given df and clustering parameters, and returns or calculates
+		appropriately.
+
+		Parameters
+		----------
+		coords : np_array
+			each row is an annotation [x_coord, y_coord]
+		clustering_params : list of clustering parameters
+			first element is string name of clustering algorithm
+			subsequent elements are additional parameters
+
+		Returns
+		-------
+		af : sklearn.cluster.AffinityPropagation object
+		"""
+
+		if (clustering_params[0] == 'AffinityPropagation'):
+
+			for i in range(len(self.clusters_done)):
+				coords_done = self.clusters_done[i][0]
+				clustering_params_done = self.clusters_done[i][1]
+				if ((np.array_equal(coords, coords_done)) and clustering_params == clustering_params_done):
+					return self.cluster_objects[i]
+
+			af = AffinityPropagation(preference = clustering_params[1]).fit(coords)				
+			self.clusters_done.append([coords, clustering_params])
+			self.cluster_objects.append(af)
+
+			return af
+
 	def get_pair_scores(self, df):
 		""" Calculate pair scores for each pair of workers in df.
 
@@ -454,7 +491,6 @@ class SpotAnnotationAnalysis():
 
 
 
-# start here
 
 
 
@@ -462,6 +498,7 @@ class SpotAnnotationAnalysis():
 
 
 
+# gap
 
 
 
@@ -1057,64 +1094,6 @@ class SpotAnnotationAnalysis():
 		plt.ylabel("Quantity of workers")
 		plt.show()
 
-	# """
-	# Input "clusters" is a df: centroid_x | centroid_y | members.
-	# """
-	# def sort_clusters_by_size(self, clusters):
-
-	# 	# Find threshold (k-means).
-	# 	total_list = []
-	# 	for i in range(len(clusters.index)):
-	# 		row = clusters.iloc[[i]]
-	# 		members = row.iloc[0]['members']
-	# 		worker_list = []
-	# 		for member in members:
-	# 			worker_list.append(member[3])
-	# 		num_members = len(np.unique(worker_list))
-	# 		total_list.append(num_members)
-	# 	total_array = np.asarray(total_list)
-	# 	km = KMeans(n_clusters = 2).fit(total_array.reshape(-1,1))
-	# 	cluster_centers = km.cluster_centers_
-	# 	threshold_kmeans = (cluster_centers[0][0]+cluster_centers[1][0])/2
-
-	# 	# Given threshold, sort.
-	# 	small_clusters_list = []
-	# 	large_clusters_list = []
-	# 	small_counter = 0
-	# 	large_counter = 0
-	# 	for j in range(len(clusters.index)):
-	# 		row = clusters.iloc[[j]]
-	# 		members = row.iloc[0]['members']
-	# 		centroid_x = row.iloc[0]['centroid_x']
-	# 		centroid_y = row.iloc[0]['centroid_y']
-
-	# 		worker_list = []
-	# 		for member in members:
-	# 			worker_list.append(member[3])
-	# 		num_members = len(np.unique(worker_list))
-
-	# 		if (num_members < threshold_kmeans):
-	# 			small_clusters_list.append([centroid_x, centroid_y, members])
-	# 			small_counter += 1
-	# 		else:
-	# 			large_clusters_list.append([centroid_x, centroid_y, members])
-	# 			large_counter += 1
-
-	# 	small_clusters = pd.DataFrame(index = range(small_counter), columns = ['centroid_x','centroid_y','members'])
-	# 	large_clusters = pd.DataFrame(index = range(large_counter), columns = ['centroid_x','centroid_y','members'])
-
-	# 	for k in range(small_counter):
-	# 		small_clusters['centroid_x'][k] = small_clusters_list[k][0]
-	# 		small_clusters['centroid_y'][k] = small_clusters_list[k][1]
-	# 		small_clusters['members'][k] = small_clusters_list[k][2]
-
-	# 	for m in range(large_counter):
-	# 		large_clusters['centroid_x'][m] = large_clusters_list[m][0]
-	# 		large_clusters['centroid_y'][m] = large_clusters_list[m][1]
-	# 		large_clusters['members'][m] = large_clusters_list[m][2]
-
-	# 	return small_clusters, large_clusters
-
 
 	"""
 	For a given dataset, take the subset of reference spots with an SNR > n 
@@ -1174,7 +1153,6 @@ class SpotAnnotationAnalysis():
 		plt.xlabel("Minimum SNR of spots in subset")
 		plt.ylabel("Fraction of subset of spots detected by workers [%]")
 		plt.show()
-
 
 	"""
 	For each spot, plot SNR vs. number of annotations in the corresponding cluster.
@@ -1282,69 +1260,7 @@ class SpotAnnotationAnalysis():
 		plt.show()
 
 
-	# def get_clusters_cropped(self, df, clustering_params, x_min, x_max, y_min, y_max):
-
-	# 	clustering_alg = clustering_params[0]
-
-	# 	if (clustering_alg not in self.clustering_algs):
-	# 		raise ValueError('Invalid clustering algorithm name entered.')
-
-	# 	if (clustering_alg == 'AffinityPropagation'):											# If AffinityPropagation is selected:
-	# 		cluster_centroids_list = []																# Initialize a list of cluster centroids
-
-	# 		if(len(clustering_params) != 2):														# Check that there's only one clustering parameter
-	# 			raise ValueError('Please enter a list containing the preference parameter.')
-
-	# 		click_properties = self.ba.get_click_properties(df)
-	# 		coords = click_properties[:,:2]
-	# 		coords_cropped = []															# Get all the coordinates from the annotation dataframe (dissociated from timestamps)
-	# 		for coord in coords:
-	# 			if (coord[0] > x_min):
-	# 				if (coord[0] < x_max):
-	# 					if (coord[1] > y_min):
-	# 						if (coord[1] < y_max):
-	# 							coords_cropped.append([coord[0], coord[1]])
-
-	# 		af = self.get_cluster_object(coords_cropped, clustering_params)
-
-	# 		cluster_centers_indices = af.cluster_centers_indices_									# Get the indices of the cluster centers (list)
-	# 		num_clusters = len(cluster_centers_indices)
-
-	# 		labels = af.labels_																		# Each point that was in coords now has a label saying which cluster it belongs to.
-
-	# 		cluster_members_lists = [None]*num_clusters
-	# 		for i in range(len(cluster_members_lists)):
-	# 			cluster_members_lists[i] = []
-
-	# 		# for j in range(len(click_properties)):
-	# 		# 	index = labels[j]
-	# 		# 	cluster_members_lists[index].append(click_properties[j])
-
-	# 		for k in range(num_clusters):
-	# 			cluster_centers = coords[cluster_centers_indices[k]]	# np array
-	# 			cluster_centroids_list.append(cluster_centers)
-
-	# 	return cluster_centroids_list
-	"""
-	Checks to see whether the cluster object has already been generated
-	for the given df and clustering parameters and returns or calculates
-	appropriately.
-	""" 
-	def get_cluster_object(self, coords, clustering_params):
-
-		if (clustering_params[0] == 'AffinityPropagation'):
-
-			for i in range(len(self.clusters_done)):
-				coords_done = self.clusters_done[i][0]
-				clustering_params_done = self.clusters_done[i][1]
-				if ((np.array_equal(coords, coords_done)) and clustering_params == clustering_params_done):
-					return self.cluster_objects[i]
-
-			af = AffinityPropagation(preference = clustering_params[1]).fit(coords)				
-			self.clusters_done.append([coords, clustering_params])
-			self.cluster_objects.append(af)
-
-			return af
+# [][][]start search here
 
 	"""
 	Inputs:
