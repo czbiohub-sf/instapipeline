@@ -6,6 +6,7 @@ json_filepath = '/Users/jenny.vo-phamhi/Documents/FISH-annotation/Annotation/den
 csv_filepath = '/Users/jenny.vo-phamhi/Documents/FISH-annotation/Annotation/density_test/spot_data/snr_5_0_density_0.002_coord_snr_list.csv'
 clustering_params = ['AffinityPropagation', -350]
 img_filename = 'snr_10_0_density_0.002_spot_img.png'
+img_height = 300
 
 ba = QuantiusAnnotation(json_filepath)
 anno_all = ba.df()
@@ -13,10 +14,18 @@ sa = SpotAnnotationAnalysis(ba)
 
 anno_one_image = ba.slice_by_image(anno_all, img_filename)
 
-properties = ba.get_click_properties(anno_one_image)
-coords = properties[:,:2]
-#af = sa.get_cluster_object(coords, clustering_params)
-print(coords)
+ref_kdt = sa.csv_to_kdt(csv_filepath, img_height)
+
+nnd_list = sa.get_nnd_per_click(anno_one_image, ref_kdt)
+
+print(nnd_list[1])
+
+
+
+# properties = ba.get_click_properties(anno_one_image)
+# coords = properties[:,:2]
+# #af = sa.get_cluster_object(coords, clustering_params)
+# print(coords)
 
 
 #clusters = sa.get_clusters(anno_one_image, clustering_params)

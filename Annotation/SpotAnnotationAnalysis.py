@@ -478,12 +478,93 @@ class SpotAnnotationAnalysis():
 
 		return clumpy_clusters, nonclumpy_clusters
 
+	def get_time_per_click(self, df):
+		""" Get time spent on each annotation.
 
+		Parameters
+		----------
+		df : pandas dataframe 
+			(timestamp | x | y | annotation_type | height | width image_filename | time_when_completed | worker_id)
 
+		Returns
+		-------
+		time_spent_list : list of the amount of time spent on all clicks in df
+			except the first click (fencepost)
+			len(time_spent_list) = num rows in df
+			time_spent_list[0] = None
+			units are miliseconds
+		"""
+		timestamps = self.ba.get_timestamps(df)
+		time_spent_list = [None]*len(timestamps)
+		for i in range (1,len(timestamps)):
+			x = timestamps[i] - timestamps[i-1]
+			time_spent_list[i] = x[0]
+		return time_spent_list
 
+	def get_nnd_per_click(self, df, ref_kdt):
+		""" Get the distance to the nearest neighbor (found in
+			the k-d tree of reference points).
 
+		Parameters
+		----------
+		df : pandas dataframe 
+			(timestamp | x | y | annotation_type | height | width image_filename | time_when_completed | worker_id)
 
+		Returns
+		-------
+		list of distances to the nearest neighbor (found in
+			the k-d tree of reference points)
+		"""
+		coords = self.ba.get_click_properties(df)[:,:2]
+		dist, ind = ref_kdt.query(coords, k=1)
+		dist_list = dist.tolist()
+		return [dist[0] for dist in dist_list]
 
+	def get_avg_time_per_click(self, df, uid):
+		""" Get the average amount of time that a worker spent on one click.
+
+		Parameters
+		----------
+		df : pandas dataframe 
+			(timestamp | x | y | annotation_type | height | width image_filename | time_when_completed | worker_id)
+		uid : string worker ID
+
+		Returns
+		-------
+		the average time that the worker spent per click
+		"""		
+
+		worker_timestamps = self.get_timestamps(df, uid)
+		time_spent = max(worker_timestamps) - min(worker_timestamps)
+		num_clicks = len(worker_timestamps)
+		return time_spent[0]/num_clicks
+
+	def get_cluster_means(self, clusters):
+		""" Get the mean x and y of each cluster.
+		(Different from cluster centroids, which are the exemplar
+		annotation for each cluster.)
+
+		Parameters
+		----------
+		clusters : pandas dataframe 
+			(centroid_x | centroid_y | members)
+
+		Returns
+		-------
+		numpy array of coords
+		"""
+		mean_coords = []
+		for i in range(len(clusters.index)):
+			row = clusters.iloc[[i]]
+			members = row.iloc[0]['members']
+			x_coords = []
+			y_coords = []
+			for member in members:
+				x_coords.append(member[0])
+				y_coords.append(member[1])
+			mean_coord = [np.mean(x_coords), np.mean(y_coords)]
+			mean_coords.append(mean_coord)
+		return np.asarray(mean_coords)
 
 
 
@@ -500,6 +581,285 @@ class SpotAnnotationAnalysis():
 
 # gap
 
+	def plot_clusters(self, clusters, img_filename, img_filepath, img_height, show_ref_points, csv_filepath, worker_marker_size, cluster_marker_size, show_correctness, correctness_threshold, show_possible_clumps, bigger_window_size, plot_title):
+		if bigger_window_size:
+			fig = plt.figure(figsize=(14,12))
+		else:
+			fig = plt.figure(figsize = (12,7))
+		
+		member_lists = clusters['members'].values	# list of lists
+		color = 'orange'
+
+		if show_ref_points:
+			ref_kdt = self.csv_to_kdt(csv_filepath, img_height)
+
+		if show_correctness:
+			cluster_correctness = []
+			for i in range(len(clusters.index)):
+				row = clusters.iloc[[i]]
+				centroid_x = row.iloc[0]['centroid_x']
+				centroid_y = row.iloc[0]['centroid_y']
+				coord = np.asarray([centroid_x, centroid_y]).reshape(1,-1)
+				dist, ind = ref_kdt.query(coord, k=1)
+				distance = dist[0][0]
+				if (distance <= correctness_threshold):
+					cluster_correctness.append([i,True])
+				else:
+					cluster_correctness.append([i,False])
+
+			for i in range(len(member_lists)):			# for every cluster
+				members = member_lists[i]					# get the list of annotations (w/ click properties) in that cluster
+				if show_correctness:
+					if (cluster_correctness[i][1]):
+						color = 'g'						
+					else:								
+						color = 'm'
+				else:
+					color = 'orange'
+
+			for member in members:						# plot each annotation in that cluster
+				coords = member[:2]
+				plt.scatter([coords[0]], self.ba.flip([coords[1]], img_height), s = worker_marker_size, facecolors = color, alpha = 0.5)
+
+		# plot cluster centroids
+		x_coords = clusters['centroid_x'].values
+		y_coords = clusters['centroid_y'].values
+		y_coords_flipped = self.ba.flip(y_coords, img_height)
+		plt.scatter(x_coords, y_coords_flipped, s = cluster_marker_size, facecolors = 'none', edgecolors = '#ffffff')
+
+		legend_elements = []
+		if show_ref_points:
+			ref_df = pd.read_csv(csv_filepath)
+			ref_points = ref_df.loc[:, ['col', 'row']].as_matrix()
+			for point in ref_points:
+				plt.scatter([point[0]], [point[1]], s = 20, facecolors = 'c')
+			legend_elements.append(Line2D([0],[0], marker='o', color='w', markerfacecolor='c', label='reference spots'))
+
+		legend_elements.append(Line2D([0],[0], marker='o', color='w', markerfacecolor='orange', label='annotations for clusters detected as clumpy'))
+		plt.legend(handles = legend_elements, loc = 9, bbox_to_anchor = (1.2, 1.015))
+
+		# plot image
+		img = mpimg.imread(img_filepath)
+		plt.imshow(img, cmap = 'gray')
+
+		plt.tick_params(
+			axis='both',
+			which='both',
+			bottom=False,
+			top=False,
+			left=False,
+			right=False)
+
+		plt.title(plot_title)
+
+		plt.show()
+
+
+
+
+
+
+	"""
+	Inputs:
+		string name of clustering alg to use
+		df with annotation data (should already be cropped)
+		list of clustering params for clustering alg
+		csv_filepath (contains reference data)
+		img_filename (the cropping)
+	Returns:
+		this dataframe: centroid_x | centroid_y | x of nearest ref | y of nearest ref | NN_dist | members
+			* (the index is the Cluster ID)
+			centroid_x = x coord of cluster centroid
+			centroid_y = y coord of cluster centroid
+			NN_x = x coord of nearest neighbor reference
+			NN_y = y coord of nearest neighbor reference
+			NN_dist = distance from centroid to nearest neighbor reference
+			members = list of annotations belonging to cluster
+				each annotation is a list of click properties: x_coord | y_coord | time_spent | worker_ID
+	"""
+	def anno_and_ref_to_df(self, df, clustering_params, csv_filepath, img_filename):
+
+		anno_one_crop = self.ba.slice_by_image(df, img_filename)	# Remove data from other croppings.
+		clusters = self.get_clusters(anno_one_crop, clustering_params)
+		img_height = anno_one_crop['height'].values[0]
+		ref_kdt = self.csv_to_kdt(csv_filepath, img_height)
+		ref_array = np.asarray(ref_kdt.data)
+
+		centroid_IDs = range(clusters.shape[0])
+		column_names = ['centroid_x', 'centroid_y', 'NN_x', 'NN_y', 'NN_dist', 'members']
+		to_return = pd.DataFrame(index = centroid_IDs, columns = column_names)
+
+		for i in centroid_IDs:
+
+			to_return['centroid_x'][i] = clusters['centroid_x'][i]
+			to_return['centroid_y'][i] = clusters['centroid_y'][i]
+
+			coords = [[to_return['centroid_x'][i], to_return['centroid_y'][i]]]
+
+			dist, ind = ref_kdt.query(coords, k=1)
+			index = ind[0][0]
+			nearest_neighbor = ref_array[index]
+
+			to_return['NN_x'][i] = nearest_neighbor[0]
+			to_return['NN_y'][i] = nearest_neighbor[1]
+			to_return['NN_dist'][i] = dist[0][0]
+			to_return['members'][i] = clusters['members'][i]		
+
+		return to_return
+
+	"""
+	Inputs:
+		df in this form: centroid_x | centroid_y | x of nearest ref | y of nearest ref | NN_dist | members (x | y | time_spent | worker_id)
+			* the index is the Centroid ID
+		int threshold
+			for each centroid, if NN_dist <= threshold, centroid is "correct"
+	Returns:
+		2-column array with a row for each centroid
+			column 0 = Centroid ID
+			column 1 = True if centroid is "correct", False if centroid is "incorrect"
+	"""
+	def get_cluster_correctness(self, df, threshold):
+		num_centroids = df.shape[0]
+		to_return = np.empty([num_centroids, 2])
+		for i in range(num_centroids):
+			to_return[i] = i
+			NN_dist = df['NN_dist'][i]
+			if (NN_dist <= threshold):
+				to_return[i][1] = True
+			else:
+				to_return[i][1] = False
+		return to_return
+
+	"""
+	Quick visualization of worker annotations, clusters, and/or annotation and cluster "correctness." 
+
+	Inputs:
+		pandas df with annotation data
+		string img_filename to crop to
+		string csv_filepath with reference data
+		int size of worker marker
+		int size of cluster centroid marker
+		bool whether to plot reference annotations
+		bool whether to plot workers
+		bool whether to plot cluster centroids
+		bool whether to color worker markers green/magenta to indicate "correctness"
+		bool whether to color centroid markers green/magenta to indicate "correctness"
+		bool whether to color an incorrect cluster's nearest neighbor the same color as the incorrect cluster
+		int threshold distance from centroid to the nearest reference annotation beyond which the entire cluster is "incorrect"
+		string name of clustering algorithm
+		list of clustering parameters
+		bool whether to use bigger window size (for jupyter notebook)
+	Returns:
+		none
+	"""
+	def plot_annotations(self, df, img_filename, img_filepath, csv_filepath, worker_marker_size, cluster_marker_size, show_ref_points, show_workers, show_clusters, show_correctness_workers, show_correctness_clusters, show_NN_inc, correctness_threshold, clustering_params, bigger_window_size):
+		if bigger_window_size:
+			fig = plt.figure(figsize=(14,12))
+		else:
+			fig = plt.figure(figsize = (12,7))
+
+		anno_one_crop = self.ba.slice_by_image(df, img_filename)	# Remove data from other croppings.
+		worker_list = self.ba.get_workers(anno_one_crop)
+		if show_clusters or show_correctness_workers:
+
+			if csv_filepath is None:
+				clusters = self.get_clusters(df, clustering_params)
+			else:
+				clusters = self.anno_and_ref_to_df(df, clustering_params, csv_filepath, img_filename)
+			
+			member_lists = clusters['members'].values	# list of lists
+
+			if correctness_threshold is not None:
+				cluster_correctness = self.get_cluster_correctness(clusters, correctness_threshold)
+
+		img_height = anno_one_crop['height'].values[0]
+
+		if show_workers:
+
+			if show_correctness_workers:
+				for i in range(len(member_lists)):			# for every cluster
+					members = member_lists[i]					# get the list of annotations (w/ click properties) in that cluster
+					if (cluster_correctness[i][1]):
+						color = 'g'						
+					else:								
+						color = 'm'
+					for member in members:						# plot each annotation in that cluster
+						coords = member[:2]
+						plt.scatter([coords[0]], self.ba.flip([coords[1]], img_height), s = worker_marker_size, facecolors = color, alpha = 0.5)
+
+			else:
+				handle_list = []
+				for worker, color in zip(worker_list, self.colors):			# For each worker, use a different color.
+				    anno = self.ba.slice_by_worker(anno_one_crop, worker)		
+				    coords = self.ba.get_click_properties(anno)[:,:2]
+				    x_coords = coords[:,0]
+				    y_coords = coords[:,1]
+				    y_coords_flipped = self.ba.flip(y_coords, img_height)
+				    handle = plt.scatter(x_coords, y_coords_flipped, s = worker_marker_size, facecolors = color, alpha = 0.5, label = worker)
+				    handle_list.append(handle)
+				plt.legend(handles = handle_list, loc = 9, bbox_to_anchor = (1.2, 1.015))
+
+			if not show_clusters:
+				plt.title('Worker Annotations')
+
+		if show_clusters:
+
+			x_coords = clusters['centroid_x'].values
+			y_coords = clusters['centroid_y'].values
+			y_coords_flipped = self.ba.flip(y_coords, img_height)
+
+			color_index = 0		
+
+			if show_correctness_clusters:
+				for i in range(len(member_lists)):			# for every cluster
+					if (cluster_correctness[i][1]):
+						color = 'g'								
+					else:
+						if show_NN_inc:
+							color = self.colors[color_index]							
+							color_index = (color_index+1)%len(self.colors)
+							plt.scatter([clusters['NN_x'].values[i]], [img_height-clusters['NN_y'].values[i]], s = worker_marker_size*2, facecolors = color, edgecolors = color)
+						else:
+							color = 'm'
+					plt.scatter(x_coords[i], y_coords_flipped[i], s = cluster_marker_size, facecolors = 'none', edgecolors = color)					
+
+			else:
+				plt.scatter(x_coords, y_coords_flipped, s = cluster_marker_size, facecolors = 'none', edgecolors = 'cyan')
+
+			if not show_workers:
+				plt.title('Cluster Centroids')
+
+		if show_workers and show_clusters:
+			plt.title('Worker Annotations and Cluster Centroids')
+
+		if show_ref_points:
+			ref_df = pd.read_csv(csv_filepath)							# plot reference points			
+			ref_points = ref_df.loc[:, ['col', 'row']].as_matrix()
+			for point in ref_points:													
+				plt.scatter([point[0]], [point[1]], s = 20, facecolors = 'y')
+			legend_list = [Line2D([0],[0], marker='o', color='w', markerfacecolor='y', label='Reference points')]
+			if show_workers and not show_correctness_workers:
+				legend_list += handle_list
+			plt.legend(handles = legend_list, loc = 9, bbox_to_anchor = (1.2, 1.015))
+		img = mpimg.imread(img_filepath)
+		plt.tick_params(
+			axis='both',
+			which='both',
+			bottom=False,
+			top=False,
+			left=False,
+			right=False)
+		plt.imshow(img, cmap = 'gray')
+
+		plt.show()
+		if show_clusters or show_correctness_workers:
+			return clusters
+
+
+
+
+
+		# gap 2
 
 
 
@@ -513,6 +873,74 @@ class SpotAnnotationAnalysis():
 
 
 
+
+	def plot_annotations_per_cluster(self, df, clustering_params, show_correctness, correctness_threshold, csv_filepath, img_filename, plot_title, bigger_window_size):
+		clusters = self.get_clusters(df, clustering_params)
+		if not show_correctness:
+			hist_list = []
+			for i in range(len(clusters.index)):
+				row = clusters.iloc[[i]]
+				members = row.iloc[0]['members']
+				worker_list = []
+				for member in members:
+					worker_list.append(member[3])
+				num_members = len(np.unique(worker_list))
+				hist_list.append(num_members)
+			plt.title(plot_title)
+			y,x,_ = plt.hist(hist_list, bins=np.arange(0,max(hist_list)+4,2)-1)
+			width = max(hist_list)
+		else:
+			correct_list = []
+			incorrect_list = []
+			total_list = []
+			anno_and_ref_df = self.anno_and_ref_to_df(df, clustering_params, csv_filepath, img_filename)
+			cluster_correctness = self.get_cluster_correctness(anno_and_ref_df, correctness_threshold)
+			for i in range(len(clusters.index)):
+				row = clusters.iloc[[i]]
+				members = row.iloc[0]['members']
+				worker_list = []
+				for member in members:
+					worker_list.append(member[3])
+				num_members = len(np.unique(worker_list))
+				if (cluster_correctness[i][1]):		# if cluster is correct
+					correct_list.append(num_members)
+				else:
+					incorrect_list.append(num_members)
+				total_list.append(num_members)
+			width = max(correct_list)
+			if (max(incorrect_list) > width):
+				width = max(incorrect_list)
+
+			fig = plt.figure()
+			
+			y,x,_ = plt.hist([correct_list, incorrect_list], bins = np.arange(0,width+4,2)-1, stacked = True, color = ['g','m'])
+
+			# threshold otsu
+			threshold_otsu = filters.threshold_otsu(np.asarray(total_list))
+
+			# treshold kmeans
+			total_array = np.asarray(total_list)
+			km = KMeans(n_clusters = 2).fit(total_array.reshape(-1,1))
+			cluster_centers = km.cluster_centers_
+			threshold_kmeans = (cluster_centers[0][0]+cluster_centers[1][0])/2
+
+			plt.axvline(x=threshold_otsu, color='r')
+			plt.axvline(x=threshold_kmeans, color='b')
+
+			g_patch = mpatches.Patch(color='g', label='clusters near ref spot')
+			m_patch = mpatches.Patch(color='m', label='clusters far from any ref spot')
+			otsu_line = Line2D([0],[0], color='r', label='otsu threshold')
+			kmeans_line = Line2D([0],[0], color='b', label='k-means threshold')
+			plt.legend(handles=[g_patch, m_patch, otsu_line, kmeans_line])
+
+		plt.xlabel("Number of unique workers annotating")
+		plt.xticks(np.arange(0,width+2,step=2))
+		plt.ylabel("Number of clusters")
+		ymin, ymax = plt.ylim()
+		if(ymax < 30):
+			plt.yticks(np.arange(0,ymax+1,step=3))
+		plt.title(plot_title)
+		plt.show()
 
 	"""
 	The list should contain, for each “putatively incorrect” cluster, 
@@ -842,73 +1270,6 @@ class SpotAnnotationAnalysis():
 		fig.tight_layout()
 		plt.show()
 
-	def plot_annotations_per_cluster(self, df, clustering_params, show_correctness, correctness_threshold, csv_filepath, img_filename, plot_title, bigger_window_size):
-		clusters = self.get_clusters(df, clustering_params)
-		if not show_correctness:
-			hist_list = []
-			for i in range(len(clusters.index)):
-				row = clusters.iloc[[i]]
-				members = row.iloc[0]['members']
-				worker_list = []
-				for member in members:
-					worker_list.append(member[3])
-				num_members = len(np.unique(worker_list))
-				hist_list.append(num_members)
-			plt.title(plot_title)
-			y,x,_ = plt.hist(hist_list, bins=np.arange(0,max(hist_list)+4,2)-1)
-			width = max(hist_list)
-		else:
-			correct_list = []
-			incorrect_list = []
-			total_list = []
-			anno_and_ref_df = self.anno_and_ref_to_df(df, clustering_params, csv_filepath, img_filename)
-			cluster_correctness = self.get_cluster_correctness(anno_and_ref_df, correctness_threshold)
-			for i in range(len(clusters.index)):
-				row = clusters.iloc[[i]]
-				members = row.iloc[0]['members']
-				worker_list = []
-				for member in members:
-					worker_list.append(member[3])
-				num_members = len(np.unique(worker_list))
-				if (cluster_correctness[i][1]):		# if cluster is correct
-					correct_list.append(num_members)
-				else:
-					incorrect_list.append(num_members)
-				total_list.append(num_members)
-			width = max(correct_list)
-			if (max(incorrect_list) > width):
-				width = max(incorrect_list)
-
-			fig = plt.figure()
-			
-			y,x,_ = plt.hist([correct_list, incorrect_list], bins = np.arange(0,width+4,2)-1, stacked = True, color = ['g','m'])
-
-			# threshold otsu
-			threshold_otsu = filters.threshold_otsu(np.asarray(total_list))
-
-			# treshold kmeans
-			total_array = np.asarray(total_list)
-			km = KMeans(n_clusters = 2).fit(total_array.reshape(-1,1))
-			cluster_centers = km.cluster_centers_
-			threshold_kmeans = (cluster_centers[0][0]+cluster_centers[1][0])/2
-
-			plt.axvline(x=threshold_otsu, color='r')
-			plt.axvline(x=threshold_kmeans, color='b')
-
-			g_patch = mpatches.Patch(color='g', label='clusters near ref spot')
-			m_patch = mpatches.Patch(color='m', label='clusters far from any ref spot')
-			otsu_line = Line2D([0],[0], color='r', label='otsu threshold')
-			kmeans_line = Line2D([0],[0], color='b', label='k-means threshold')
-			plt.legend(handles=[g_patch, m_patch, otsu_line, kmeans_line])
-
-		plt.xlabel("Number of unique workers annotating")
-		plt.xticks(np.arange(0,width+2,step=2))
-		plt.ylabel("Number of clusters")
-		ymin, ymax = plt.ylim()
-		if(ymax < 30):
-			plt.yticks(np.arange(0,ymax+1,step=3))
-		plt.title(plot_title)
-		plt.show()
 
 	def plot_worker_pairwise_scores(self, df):
 		worker_scores = self.get_worker_pairwise_scores(df)
@@ -1026,7 +1387,6 @@ class SpotAnnotationAnalysis():
 			y_step = 2
 		else:
 			y_step = 5
-#		plt.yticks(np.arange(0,max(error_rate_list)+1,step=y_step))
 		plt.yticks(np.arange(0,101,step=y_step))
 
 		plt.show()
@@ -1260,452 +1620,13 @@ class SpotAnnotationAnalysis():
 		plt.show()
 
 
-# [][][]start search here
 
-	"""
-	Inputs:
-		string name of clustering alg to use
-		df with annotation data (should already be cropped)
-		list of clustering params for clustering alg
-		csv_filepath (contains reference data)
-		img_filename (the cropping)
-	Returns:
-		this dataframe: centroid_x | centroid_y | x of nearest ref | y of nearest ref | NN_dist | members
-			* (the index is the Cluster ID)
-			centroid_x = x coord of cluster centroid
-			centroid_y = y coord of cluster centroid
-			NN_x = x coord of nearest neighbor reference
-			NN_y = y coord of nearest neighbor reference
-			NN_dist = distance from centroid to nearest neighbor reference
-			members = list of annotations belonging to cluster
-				each annotation is a list of click properties: x_coord | y_coord | time_spent | worker_ID
-	"""
-	def anno_and_ref_to_df(self, df, clustering_params, csv_filepath, img_filename):
 
-		anno_one_crop = self.ba.slice_by_image(df, img_filename)	# Remove data from other croppings.
-		clusters = self.get_clusters(anno_one_crop, clustering_params)
-		img_height = anno_one_crop['height'].values[0]
-		ref_kdt = self.csv_to_kdt(csv_filepath, img_height)
-		ref_array = np.asarray(ref_kdt.data)
 
-		centroid_IDs = range(clusters.shape[0])
-		column_names = ['centroid_x', 'centroid_y', 'NN_x', 'NN_y', 'NN_dist', 'members']
-		to_return = pd.DataFrame(index = centroid_IDs, columns = column_names)
 
-		for i in centroid_IDs:
 
-			to_return['centroid_x'][i] = clusters['centroid_x'][i]
-			to_return['centroid_y'][i] = clusters['centroid_y'][i]
 
-			coords = [[to_return['centroid_x'][i], to_return['centroid_y'][i]]]
 
-			dist, ind = ref_kdt.query(coords, k=1)
-			index = ind[0][0]
-			nearest_neighbor = ref_array[index]
-
-			to_return['NN_x'][i] = nearest_neighbor[0]
-			to_return['NN_y'][i] = nearest_neighbor[1]
-			to_return['NN_dist'][i] = dist[0][0]
-			to_return['members'][i] = clusters['members'][i]		
-
-		return to_return
-
-	"""
-	Inputs:
-		df in this form: centroid_x | centroid_y | x of nearest ref | y of nearest ref | NN_dist | members (x | y | time_spent | worker_id)
-			* the index is the Centroid ID
-		int threshold
-			for each centroid, if NN_dist <= threshold, centroid is "correct"
-	Returns:
-		2-column array with a row for each centroid
-			column 0 = Centroid ID
-			column 1 = True if centroid is "correct", False if centroid is "incorrect"
-	"""
-	def get_cluster_correctness(self, df, threshold):
-		num_centroids = df.shape[0]
-		to_return = np.empty([num_centroids, 2])
-		for i in range(num_centroids):
-			to_return[i] = i
-			NN_dist = df['NN_dist'][i]
-			if (NN_dist <= threshold):
-				to_return[i][1] = True
-			else:
-				to_return[i][1] = False
-		return to_return
-
-
-
-	"""
-	Inputs:
-		df with annotation data
-		k-d tree with reference points, aka "ground truth" values
-		img_filename to crop to
-	Returns:
-		List containing one list for each worker.
-			Each list is comprised of, for each of the worker's
-			points, the distance to the nearest neighbor (found in
-			the k-d tree of references).
-	"""
-	def calc_distances(self, df, ref_kdt, img_filename):
-
-		anno_one_crop = self.ba.slice_by_image(df, img_filename)	# Remove data from other croppings.
-		worker_list = self.ba.get_workers(anno_one_crop)
-
-		to_return = []
-
-		for worker in worker_list:			
-			anno = self.ba.slice_by_worker(anno_one_crop, worker)	
-			coords = self.ba.get_click_properties(anno)[:,:2]
-			dist, ind = ref_kdt.query(coords, k=1)
-			dist_list = dist.tolist()
-			values = []
-			for i in range(len(dist_list)):
-				values.append(dist_list[i][0])
-			to_return.append(values)
-		return to_return
-
-	"""
-	Inputs:
-		df with annotation data
-		img_filename to crop to
-	Returns:
-		list containing one list for each worker with time spent on each click
-	Notes:
-		Time spent on click_k = timestamp_k - timestamp_(k-1)
-		Starts at index 1 of returned list. (Length of times_spent is same as length of timestamps.)
-		Will not get a time spent on the first click
-	"""
-	def calc_time_per_click(self, df, img_filename):
-
-		anno_one_crop = self.ba.slice_by_image(df, img_filename)	# Remove data from other croppings.
-		worker_list = self.ba.get_workers(anno_one_crop)
-
-		to_return = []
-
-		for worker in worker_list:
-			timestamps = self.ba.get_timestamps(anno_one_crop, worker)
-			times_spent = [None]*len(timestamps)
-			for i in range (1,len(timestamps)):
-				times_spent[i] = timestamps[i] - timestamps[i-1]
-			to_return.append(times_spent)
-
-		return to_return
-
-	def plot_cluster_membership_in_region(self, clusters, img_height, x_min, x_max, y_min_on_plot, y_max_on_plot, img_name, density):
-		y_min = img_height - y_max_on_plot
-		y_max = img_height - y_min_on_plot
-
-		# Keep only the clusters in the region of interest
-		clusters = clusters[clusters.centroid_x > x_min]
-		clusters = clusters[clusters.centroid_x < x_max]
-		clusters = clusters[clusters.centroid_y > y_min]
-		clusters = clusters[clusters.centroid_y < y_max]
-
-		# Get number of members per cluster in region of interest
-		num_members_list = []
-		for i in range(len(clusters.index)):
-		    row = clusters.iloc[[i]]
-		    members = row.iloc[0]['members']
-		    worker_list = []
-		    for member in members:
-		        worker_list.append(member[3])
-		    num_members = len(np.unique(worker_list))
-		    num_members_list.append(num_members)
-		    
-		# Plotting
-		fig = plt.figure(figsize = (7.5,4))
-		plt.hist(num_members_list, bins = np.arange(0,max(num_members_list)+2,step=2)-1)
-		plt.xticks(np.arange(0,max(num_members_list),step=2))
-
-		plt.xlabel("Number of unique annotators per cluster")
-		plt.ylabel("Number of clusters")
-		plt.title(density + " Region: "+ str(len(clusters.index))+ " Clusters")
-		plt.show()
-
-		avg_str = "Average number of unique workers in a cluster = " + str(math.floor(np.mean(num_members_list)))
-		print(avg_str)
-		std_str = "Standard deviation = " + str(math.floor(np.std(num_members_list)))
-		print(std_str)
-
-		img = mpimg.imread(img_name)
-		fig = plt.figure(figsize = (6,6))
-		plt.imshow(img)
-		plt.xticks([])
-		plt.yticks([])
-		plt.show()
-
-	# plot annotations in a certain area
-	def plot_annotations_zoom(self, df, x_min, x_max, y_min, y_max, img_height, clustering_params, img_filepath, show_clusters, show_workers, cluster_marker_size, worker_marker_size):
-		img = mpimg.imread(img_filepath)
-
-		plt.imshow(img, cmap = 'gray')
-
-		click_properties = self.ba.get_click_properties(df)
-		coords = click_properties[:,:2]
-		coords_cropped = []															# Get all the coordinates from the annotation dataframe (dissociated from timestamps)
-		for coord in coords:
-			if (coord[0] > x_min):
-				if (coord[0] < x_max):
-					if (coord[1] > y_min):
-						if (coord[1] < y_max):
-							coords_cropped.append([coord[0], coord[1]])
-		
-		coord_list = []
-		for coord in coords_cropped:
-			x = coord[0]-x_min
-			y = img_height-coord[1]-y_min-130
-			coord_list.append([x,y])
-			plt.scatter([x], [y], s=4, facecolors='b')
-
-		af = self.get_cluster_object(coord_list, clustering_params)
-
-		cluster_centers_indices = af.cluster_centers_indices_									# Get the indices of the cluster centers (list)
-		num_clusters = len(cluster_centers_indices)
-
-		labels = af.labels_																		# Each point that was in coords now has a label saying which cluster it belongs to.
-
-		cluster_centroids_list = []
-		for k in range(num_clusters):
-			cluster_center = coord_list[cluster_centers_indices[k]]	# np array
-			plt.scatter([cluster_center[0]], [cluster_center[1]], s = 20, facecolors = 'none', edgecolors = 'y')
-
-		plt.title('Worker Annotations and Cluster Centroids')
-		plt.xticks(np.arange(0,x_max-x_min, step=20))
-		plt.yticks(np.arange(0,y_max-y_min, step=20))
-		plt.show()
-
-
-	"""
-	Quick visualization of worker annotations, clusters, and/or annotation and cluster "correctness." 
-
-	Inputs:
-		pandas df with annotation data
-		string img_filename to crop to
-		string csv_filepath with reference data
-		int size of worker marker
-		int size of cluster centroid marker
-		bool whether to plot reference annotations
-		bool whether to plot workers
-		bool whether to plot cluster centroids
-		bool whether to color worker markers green/magenta to indicate "correctness"
-		bool whether to color centroid markers green/magenta to indicate "correctness"
-		bool whether to color an incorrect cluster's nearest neighbor the same color as the incorrect cluster
-		int threshold distance from centroid to the nearest reference annotation beyond which the entire cluster is "incorrect"
-		string name of clustering algorithm
-		list of clustering parameters
-		bool whether to use bigger window size (for jupyter notebook)
-	Returns:
-		none
-	"""
-	def plot_annotations(self, df, img_filename, img_filepath, csv_filepath, worker_marker_size, cluster_marker_size, show_ref_points, show_workers, show_clusters, show_correctness_workers, show_correctness_clusters, show_NN_inc, correctness_threshold, clustering_params, bigger_window_size):
-		if bigger_window_size:
-			fig = plt.figure(figsize=(14,12))
-		else:
-			fig = plt.figure(figsize = (12,7))
-
-		anno_one_crop = self.ba.slice_by_image(df, img_filename)	# Remove data from other croppings.
-		worker_list = self.ba.get_workers(anno_one_crop)
-		if show_clusters or show_correctness_workers:
-
-			if csv_filepath is None:
-				clusters = self.get_clusters(df, clustering_params)
-			else:
-				clusters = self.anno_and_ref_to_df(df, clustering_params, csv_filepath, img_filename)
-			
-			member_lists = clusters['members'].values	# list of lists
-
-			if correctness_threshold is not None:
-				cluster_correctness = self.get_cluster_correctness(clusters, correctness_threshold)
-
-		img_height = anno_one_crop['height'].values[0]
-
-		if show_workers:
-
-			if show_correctness_workers:
-				for i in range(len(member_lists)):			# for every cluster
-					members = member_lists[i]					# get the list of annotations (w/ click properties) in that cluster
-					if (cluster_correctness[i][1]):
-						color = 'g'						
-					else:								
-						color = 'm'
-					for member in members:						# plot each annotation in that cluster
-						coords = member[:2]
-						plt.scatter([coords[0]], self.ba.flip([coords[1]], img_height), s = worker_marker_size, facecolors = color, alpha = 0.5)
-
-			else:
-				handle_list = []
-				for worker, color in zip(worker_list, self.colors):			# For each worker, use a different color.
-				    anno = self.ba.slice_by_worker(anno_one_crop, worker)		
-				    coords = self.ba.get_click_properties(anno)[:,:2]
-				    x_coords = coords[:,0]
-				    y_coords = coords[:,1]
-				    y_coords_flipped = self.ba.flip(y_coords, img_height)
-				    handle = plt.scatter(x_coords, y_coords_flipped, s = worker_marker_size, facecolors = color, alpha = 0.5, label = worker)
-				    handle_list.append(handle)
-				plt.legend(handles = handle_list, loc = 9, bbox_to_anchor = (1.2, 1.015))
-
-			if not show_clusters:
-				plt.title('Worker Annotations')
-
-		if show_clusters:
-
-			x_coords = clusters['centroid_x'].values
-			y_coords = clusters['centroid_y'].values
-			y_coords_flipped = self.ba.flip(y_coords, img_height)
-
-			color_index = 0		
-
-			if show_correctness_clusters:
-				for i in range(len(member_lists)):			# for every cluster
-					if (cluster_correctness[i][1]):
-						color = 'g'								
-					else:
-						if show_NN_inc:
-							color = self.colors[color_index]							
-							color_index = (color_index+1)%len(self.colors)
-							plt.scatter([clusters['NN_x'].values[i]], [img_height-clusters['NN_y'].values[i]], s = worker_marker_size*2, facecolors = color, edgecolors = color)
-						else:
-							color = 'm'
-					plt.scatter(x_coords[i], y_coords_flipped[i], s = cluster_marker_size, facecolors = 'none', edgecolors = color)					
-
-			else:
-				plt.scatter(x_coords, y_coords_flipped, s = cluster_marker_size, facecolors = 'none', edgecolors = '#ffffff')
-
-			if not show_workers:
-				plt.title('Cluster Centroids')
-
-		if show_workers and show_clusters:
-			plt.title('Worker Annotations and Cluster Centroids')
-
-		if show_ref_points:
-			ref_df = pd.read_csv(csv_filepath)							# plot reference points			
-			ref_points = ref_df.loc[:, ['col', 'row']].as_matrix()
-			for point in ref_points:													
-				plt.scatter([point[0]], [point[1]], s = 20, facecolors = 'y')
-			legend_list = [Line2D([0],[0], marker='o', color='w', markerfacecolor='y', label='Reference points')]
-			if show_workers and not show_correctness_workers:
-				legend_list += handle_list
-			plt.legend(handles = legend_list, loc = 9, bbox_to_anchor = (1.2, 1.015))
-		img = mpimg.imread(img_filepath)
-		plt.tick_params(
-			axis='both',
-			which='both',
-			bottom=False,
-			top=False,
-			left=False,
-			right=False)
-		plt.imshow(img, cmap = 'gray')
-
-		plt.show()
-		if show_clusters or show_correctness_workers:
-			return clusters
-
-	def get_clumped_list(self, clusters):
-		clumped_list = []
-		for i in range(len(clusters.index)):
-			row = clusters.iloc[[i]]
-			members = row.iloc[0]['members']
-			workers = []
-			for member in members:
-				workers.append(member[3])
-			unique_workers = np.unique(workers)
-
-			num_instances_list = []
-			for unique_worker in unique_workers:
-				num_instances_list.append(workers.count(unique_worker))
-
-			singles = num_instances_list.count(1)
-			single_fraction = singles/len(unique_workers)
-			if (single_fraction < 0.6):
-				clumped_list.append(i)
-		return clumped_list
-
-	def get_cluster_means(self, clusters):
-		mean_coords = []
-		for i in range(len(clusters.index)):
-			row = clusters.iloc[[i]]
-			members = row.iloc[0]['members']
-			x_coords = []
-			y_coords = []
-			for member in members:
-				x_coords.append(member[0])
-				y_coords.append(member[1])
-			mean_coord = [np.mean(x_coords), np.mean(y_coords)]
-			mean_coords.append(mean_coord)
-		return np.asarray(mean_coords)
-
-	def plot_clusters(self, clusters, img_filename, img_filepath, img_height, show_ref_points, csv_filepath, worker_marker_size, cluster_marker_size, show_correctness, correctness_threshold, show_possible_clumps, bigger_window_size, plot_title):
-		if bigger_window_size:
-			fig = plt.figure(figsize=(14,12))
-		else:
-			fig = plt.figure(figsize = (12,7))
-		
-		member_lists = clusters['members'].values	# list of lists
-		color = 'orange'
-
-		if show_ref_points:
-			ref_kdt = self.csv_to_kdt(csv_filepath, img_height)
-
-		if show_correctness:
-			cluster_correctness = []
-			for i in range(len(clusters.index)):
-				row = clusters.iloc[[i]]
-				centroid_x = row.iloc[0]['centroid_x']
-				centroid_y = row.iloc[0]['centroid_y']
-				coord = np.asarray([centroid_x, centroid_y]).reshape(1,-1)
-				dist, ind = ref_kdt.query(coord, k=1)
-				distance = dist[0][0]
-				if (distance <= correctness_threshold):
-					cluster_correctness.append([i,True])
-				else:
-					cluster_correctness.append([i,False])
-
-			for i in range(len(member_lists)):			# for every cluster
-				members = member_lists[i]					# get the list of annotations (w/ click properties) in that cluster
-				if show_correctness:
-					if (cluster_correctness[i][1]):
-						color = 'g'						
-					else:								
-						color = 'm'
-				else:
-					color = 'orange'
-
-			for member in members:						# plot each annotation in that cluster
-				coords = member[:2]
-				plt.scatter([coords[0]], self.ba.flip([coords[1]], img_height), s = worker_marker_size, facecolors = color, alpha = 0.5)
-
-		# plot cluster centroids
-		x_coords = clusters['centroid_x'].values
-		y_coords = clusters['centroid_y'].values
-		y_coords_flipped = self.ba.flip(y_coords, img_height)
-		plt.scatter(x_coords, y_coords_flipped, s = cluster_marker_size, facecolors = 'none', edgecolors = '#ffffff')
-
-		legend_elements = []
-		if show_ref_points:
-			ref_df = pd.read_csv(csv_filepath)
-			ref_points = ref_df.loc[:, ['col', 'row']].as_matrix()
-			for point in ref_points:
-				plt.scatter([point[0]], [point[1]], s = 20, facecolors = 'c')
-			legend_elements.append(Line2D([0],[0], marker='o', color='w', markerfacecolor='c', label='reference spots'))
-
-		legend_elements.append(Line2D([0],[0], marker='o', color='w', markerfacecolor='orange', label='annotations for clusters detected as clumpy'))
-		plt.legend(handles = legend_elements, loc = 9, bbox_to_anchor = (1.2, 1.015))
-
-		# plot image
-		img = mpimg.imread(img_filepath)
-		plt.imshow(img, cmap = 'gray')
-
-		plt.tick_params(
-			axis='both',
-			which='both',
-			bottom=False,
-			top=False,
-			left=False,
-			right=False)
-
-		plt.title(plot_title)
-
-		plt.show()
 
 	"""
 	Plots the average time spent per click for all workers 
@@ -2211,20 +2132,10 @@ class SpotAnnotationAnalysis():
 			to_return = to_return.append(one_occasion_df)
 		return to_return
 
-	# Inputs: df, worker ID
-	# Returns: float avg time that the worker spent per click 
-	def get_avg_time_per_click(self, df, uid):
 
-		worker_timestamps = self.get_timestamps(df, uid)
-		time_spent = max(worker_timestamps) - min(worker_timestamps)
-		num_clicks = len(worker_timestamps)
-		return time_spent[0]/num_clicks
 
-	# Inputs: df, worker ID
-	# Returns: time that the worker spent 		
-	def get_total_time(self, df, uid):
-		worker_timestamps = self.get_timestamps(df, uid)
-		return max(worker_timestamps) - min(worker_timestamps)
+
+
 
 
 
@@ -2233,8 +2144,108 @@ class SpotAnnotationAnalysis():
 	"""
 
 
+	def plot_cluster_membership_in_region(self, clusters, img_height, x_min, x_max, y_min_on_plot, y_max_on_plot, img_name, density):
+		y_min = img_height - y_max_on_plot
+		y_max = img_height - y_min_on_plot
 
+		# Keep only the clusters in the region of interest
+		clusters = clusters[clusters.centroid_x > x_min]
+		clusters = clusters[clusters.centroid_x < x_max]
+		clusters = clusters[clusters.centroid_y > y_min]
+		clusters = clusters[clusters.centroid_y < y_max]
 
+		# Get number of members per cluster in region of interest
+		num_members_list = []
+		for i in range(len(clusters.index)):
+		    row = clusters.iloc[[i]]
+		    members = row.iloc[0]['members']
+		    worker_list = []
+		    for member in members:
+		        worker_list.append(member[3])
+		    num_members = len(np.unique(worker_list))
+		    num_members_list.append(num_members)
+		    
+		# Plotting
+		fig = plt.figure(figsize = (7.5,4))
+		plt.hist(num_members_list, bins = np.arange(0,max(num_members_list)+2,step=2)-1)
+		plt.xticks(np.arange(0,max(num_members_list),step=2))
+
+		plt.xlabel("Number of unique annotators per cluster")
+		plt.ylabel("Number of clusters")
+		plt.title(density + " Region: "+ str(len(clusters.index))+ " Clusters")
+		plt.show()
+
+		avg_str = "Average number of unique workers in a cluster = " + str(math.floor(np.mean(num_members_list)))
+		print(avg_str)
+		std_str = "Standard deviation = " + str(math.floor(np.std(num_members_list)))
+		print(std_str)
+
+		img = mpimg.imread(img_name)
+		fig = plt.figure(figsize = (6,6))
+		plt.imshow(img)
+		plt.xticks([])
+		plt.yticks([])
+		plt.show()
+
+	# plot annotations in a certain area
+	def plot_annotations_zoom(self, df, x_min, x_max, y_min, y_max, img_height, clustering_params, img_filepath, show_clusters, show_workers, cluster_marker_size, worker_marker_size):
+		img = mpimg.imread(img_filepath)
+
+		plt.imshow(img, cmap = 'gray')
+
+		click_properties = self.ba.get_click_properties(df)
+		coords = click_properties[:,:2]
+		coords_cropped = []															# Get all the coordinates from the annotation dataframe (dissociated from timestamps)
+		for coord in coords:
+			if (coord[0] > x_min):
+				if (coord[0] < x_max):
+					if (coord[1] > y_min):
+						if (coord[1] < y_max):
+							coords_cropped.append([coord[0], coord[1]])
+		
+		coord_list = []
+		for coord in coords_cropped:
+			x = coord[0]-x_min
+			y = img_height-coord[1]-y_min-130
+			coord_list.append([x,y])
+			plt.scatter([x], [y], s=4, facecolors='b')
+
+		af = self.get_cluster_object(coord_list, clustering_params)
+
+		cluster_centers_indices = af.cluster_centers_indices_									# Get the indices of the cluster centers (list)
+		num_clusters = len(cluster_centers_indices)
+
+		labels = af.labels_																		# Each point that was in coords now has a label saying which cluster it belongs to.
+
+		cluster_centroids_list = []
+		for k in range(num_clusters):
+			cluster_center = coord_list[cluster_centers_indices[k]]	# np array
+			plt.scatter([cluster_center[0]], [cluster_center[1]], s = 20, facecolors = 'none', edgecolors = 'y')
+
+		plt.title('Worker Annotations and Cluster Centroids')
+		plt.xticks(np.arange(0,x_max-x_min, step=20))
+		plt.yticks(np.arange(0,y_max-y_min, step=20))
+		plt.show()
+
+	def get_clumped_list(self, clusters):
+		clumped_list = []
+		for i in range(len(clusters.index)):
+			row = clusters.iloc[[i]]
+			members = row.iloc[0]['members']
+			workers = []
+			for member in members:
+				workers.append(member[3])
+			unique_workers = np.unique(workers)
+
+			num_instances_list = []
+			for unique_worker in unique_workers:
+				num_instances_list.append(workers.count(unique_worker))
+
+			singles = num_instances_list.count(1)
+			single_fraction = singles/len(unique_workers)
+			if (single_fraction < 0.6):
+				clumped_list.append(i)
+		return clumped_list
 
 	def test_alg(self, df, clustering_params):
 
@@ -2253,4 +2264,10 @@ class SpotAnnotationAnalysis():
 
 		# 5. Keep "putatively correct" clusters which are mostly comprised of workers who are in many "putatively correct" clusters.
 		self.plot_fraction_from_crowd_per_cluster(large_clusters, good_crowd)
+
+	# Inputs: df, worker ID
+	# Returns: time that the worker spent 		
+	def get_total_time(self, df, uid):
+		worker_timestamps = self.get_timestamps(df, uid)
+		return max(worker_timestamps) - min(worker_timestamps)
 
