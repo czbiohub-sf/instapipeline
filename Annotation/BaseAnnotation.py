@@ -51,7 +51,7 @@ class BaseAnnotation:
 		return np.unique(uid_list)
 
 	def get_images(self, df):
-		""" Return a list of unique image filenames in df 
+		""" Return a numpy array of unique image filenames in df 
 		"""
 		img_list = df.loc[:, ['image_filename']]
 		return np.unique(img_list)
@@ -59,7 +59,8 @@ class BaseAnnotation:
 	def get_timestamps(self, df):
 		""" Return a list of timestamps in df 
 		"""
-		return df.loc[:, ['timestamp']].as_matrix()
+		matrix = df.loc[:, ['timestamp']].as_matrix()
+		return [x[0] for x in matrix]
 
 	def slice_by_worker(self, df, uid):
 		""" Return a dataframe with annotations for only one worker
@@ -122,7 +123,7 @@ class BaseAnnotation:
 
 	def flip(self, vec, height):
 		""" Flip the values of a list about a height
-		Useful for flipping y axis for plotting over an image
+		Useful for flipping y axis to plotting over an image with a flipped coordinate system.
 
 		Parameters
 		----------
