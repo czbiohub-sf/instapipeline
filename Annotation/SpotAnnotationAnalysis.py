@@ -36,13 +36,13 @@ class SpotAnnotationAnalysis():
 
 	# list of colors used for plotting different turkers
 	colors = ['#3399FF', '#CC33FF', '#FFFF00', '#FF33CC', 
-    '#9966FF', '#009999', '#99E3FF', '#B88A00', 
-    '#33FFCC', '#FF3366', '#F5B800', '#FF6633',
-    '#FF9966', '#FF9ECE', '#CCFF33', '#FF667F',
-    '#EB4E00', '#FFCC33', '#FF66CC', '#33CCFF', 
-    '#ACFF07', '#667FFF', '#FF99FF', '#FF1F8F',
-    '#9999FF', '#99FFCC', '#FF9999', '#91FFFF',
-    '#8A00B8', '#91BBFF', '#FFB71C', '#FF1C76']
+	'#9966FF', '#009999', '#99E3FF', '#B88A00', 
+	'#33FFCC', '#FF3366', '#F5B800', '#FF6633',
+	'#FF9966', '#FF9ECE', '#CCFF33', '#FF667F',
+	'#EB4E00', '#FFCC33', '#FF66CC', '#33CCFF', 
+	'#ACFF07', '#667FFF', '#FF99FF', '#FF1F8F',
+	'#9999FF', '#99FFCC', '#FF9999', '#91FFFF',
+	'#8A00B8', '#91BBFF', '#FFB71C', '#FF1C76']
 
 
 	def __init__(self, ba_obj):
@@ -670,17 +670,15 @@ class SpotAnnotationAnalysis():
 		"""
 
 		handle_list = []
+		fig = plt.figure(figsize = (12,7))
 		if bigger_window_size:
 			fig = plt.figure(figsize=(14,12))
-		else:
-			fig = plt.figure(figsize = (12,7))
 
 		img_height = df['height'].values[0]
 		if correctness_threshold is not None:
 			cluster_correctness = self.get_cluster_correctness(centroid_and_ref_df, correctness_threshold)
 
 		if show_workers:
-
 			if show_correctness_workers:
 				member_lists = centroid_and_ref_df['members'].values
 				for member_list, correctness in zip(member_lists, cluster_correctness):
@@ -696,23 +694,20 @@ class SpotAnnotationAnalysis():
 			else:
 				worker_list = self.ba.get_workers(df)
 				for worker, color in zip(worker_list, self.colors):			# For each worker, use a different color.
-				    anno_one_worker = self.ba.slice_by_worker(df, worker)		
-				    coords = self.ba.get_click_properties(anno_one_worker)[:,:2]
-				    x_coords = coords[:,0]
-				    y_coords = coords[:,1]
-				    y_coords_flipped = self.ba.flip(y_coords, img_height)
-				    handle = plt.scatter(x_coords, y_coords_flipped, s = worker_marker_size, facecolors = color, alpha = 0.5, label = worker)
-				    handle_list.append(handle)
-
+					anno_one_worker = self.ba.slice_by_worker(df, worker)		
+					coords = self.ba.get_click_properties(anno_one_worker)[:,:2]
+					x_coords = coords[:,0]
+					y_coords = coords[:,1]
+					y_coords_flipped = self.ba.flip(y_coords, img_height)
+					handle = plt.scatter(x_coords, y_coords_flipped, s = worker_marker_size, facecolors = color, alpha = 0.5, label = worker)
+					handle_list.append(handle)
 			if not show_centroids:
 				plt.title('Worker Annotations')	
 
 		if show_centroids:
-
 			x_coords = centroid_and_ref_df['centroid_x'].values
 			y_coords = centroid_and_ref_df['centroid_y'].values
 			y_coords_flipped = self.ba.flip(y_coords, img_height)
-
 			color_index = 0		
 			if show_correctness_centroids:
 				for i in range(len(centroid_and_ref_df.index)):		
@@ -731,7 +726,6 @@ class SpotAnnotationAnalysis():
 			else:
 				plt.scatter(x_coords, y_coords_flipped, s = cluster_marker_size, facecolors = 'none', edgecolors = 'cyan')
 				handle_list.append(Line2D([0],[0], marker='o', color='w', markerfacecolor=None, markeredgecolor='cyan', label='cluster centroid'))
-
 			if not show_workers:
 				plt.title('Cluster Centroids')
 
@@ -746,17 +740,138 @@ class SpotAnnotationAnalysis():
 			handle_list.append(Line2D([0],[0], marker='o', color='w', markerfacecolor='y', label='reference points'))
 		
 		img = mpimg.imread(img_filepath)
-
-		plt.tick_params(
-			axis='both',
-			which='both',
-			bottom=False,
-			top=False,
-			left=False,
-			right=False)
 		plt.imshow(img, cmap = 'gray')
 		plt.legend(handles = handle_list, loc = 9, bbox_to_anchor = (1.2, 1.015))	
 		plt.show()
+
+	def plot_cluster_size_threshold(self, clusters, threshold):
+		""" Visualize cluster sizes in a histogram with threshold demarcated.
+		
+		Parameters
+		----------
+		clusters : pandas dataframe (centroid_x | centroid_y | members) ~ output of get_clusters()
+			centroid_x = x coord of cluster centroid
+			centroid_y = y coord of cluster centroid
+			members = list of annotations belonging to the cluster
+				each member is a list of properties of the annotation 
+				i.e. [x coord, y coord, time spent, worker ID]
+		threshold : value to show threshold demarcation on histogram
+		
+		Returns
+		-------
+		none
+		"""
+		fig = plt.figure()
+		hist_list = []
+		for i in range(len(clusters.index)):
+			row = clusters.iloc[[i]]
+			members = row.iloc[0]['members']
+			worker_list = [member[3] for member in members]
+			hist_list.append(len(np.unique(worker_list)))
+		width = max(hist_list)
+		plt.hist(hist_list, bins=np.arange(0,width+4,2)-1)
+		plt.axvline(x=threshold, color='b')
+		plt.legend(handles=[Line2D([0],[0], color='b', label='cluster size threshold')])
+		plt.title('Find Cluster Size Threshold')
+		plt.xlabel('Number of unique annotators for cluster')
+		plt.ylabel('Number of clusters')
+		plt.show()
+
+	def visualize_clusters(self, clusters, show_workers, show_centroids, worker_marker_size, cluster_marker_size, img_filepath, img_height, plot_title, bigger_window_size):
+		""" Visualize clusters, each with a different color.
+		
+		Parameters
+		----------
+		clusters : pandas dataframe (centroid_x | centroid_y | members) ~ output of get_clusters()
+			centroid_x = x coord of cluster centroid
+			centroid_y = y coord of cluster centroid
+			members = list of annotations belonging to the cluster
+				each member is a list of properties of the annotation 
+				i.e. [x coord, y coord, time spent, worker ID]
+		show_workers : bool whether to plot workers
+		show_centroids : bool whether to plot cluster centroids
+		worker_marker_size, cluster_marker_size : plot parameters
+		img_filepath : path to image file
+		img_height : height of image in pixels
+		plot_title : title of plot
+		bigger_window_size : bool whether to use bigger window size (for jupyter notebook)
+
+		Returns
+		-------
+		none
+		"""
+		fig = plt.figure(figsize = (12,7))
+		if bigger_window_size:
+			fig = plt.figure(figsize=(14,12))
+		img = mpimg.imread(img_filepath)
+		plt.imshow(img, cmap = 'gray')
+		if show_workers:
+			for color, member_list in zip(self.colors*10, clusters['members'].values):
+				for member in member_list:
+					plt.scatter([member[0]], [img_height-member[1]], s = worker_marker_size, facecolors = color, edgecolors = 'None')
+		if show_centroids:
+			plt.scatter(clusters['centroid_x'].values, self.ba.flip(clusters['centroid_y'].values, img_height), s = cluster_marker_size, facecolors = 'none', edgecolors = '#ffffff')
+		plt.title(plot_title)
+		plt.show()
+
+	def plot_clumpiness_threshold(self, clusters):
+		""" Get cluster clumpiness threshold, visualize cluster clumpiness in a histogram with threshold demarcated.
+		
+		Parameters
+		----------
+		clusters : pandas dataframe (centroid_x | centroid_y | members) ~ output of get_clusters()
+			centroid_x = x coord of cluster centroid
+			centroid_y = y coord of cluster centroid
+			members = list of annotations belonging to the cluster
+				each member is a list of properties of the annotation 
+				i.e. [x coord, y coord, time spent, worker ID]
+		
+		Returns
+		-------
+		threshold : the fraction of workers who contribute to the threshold cluster value only once
+		"""
+		single_fraction_list = []
+		for i in range(len(clusters.index)):
+			row = clusters.iloc[[i]]
+			unique_workers = np.unique([member[3] for member in row.iloc[0]['members']])
+			num_instances_list = [workers.count(unique_worker) for unique_worker in unique_workers]
+			single_fraction_list.append(num_instances_list.count(1)/len(unique_workers))
+
+		fig = plt.figure()
+		(n, bins, patches) = plt.hist(single_fraction_list, bins = np.arange(0,1.2,0.1)-0.05)
+
+		# calculate threshold
+		total_counts_rev = list(reversed(n))
+		threshold, prev_count, bin_width = 0, 0, 0.1
+		for i in range(len(total_counts_rev)):
+			count = total_counts_rev[i]
+			if (count != 0):
+				if((count < prev_count/3) and (count != 0) and (prev_count != 0)):
+					threshold = bin_width*10-i*bin_width-bin_width/2
+			prev_count = count
+
+		threshold_line = Line2D([0],[0], color='orange', label='clumpiness threshold')
+		plt.legend(handles=[threshold_line])
+		plt.axvline(x=threshold, color='orange')
+		plt.xticks(np.arange(0,bin_width*11, bin_width))
+		plt.xlabel('Fraction of contributing workers who contribute only once')
+		plt.ylabel('Number of clusters')
+		plt.title('Finding the Clumpiness Threshold')
+		plt.show()
+		return threshold
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
