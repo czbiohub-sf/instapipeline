@@ -853,13 +853,14 @@ class SpotAnnotationAnalysis():
 		threshold_line = Line2D([0],[0], color='orange', label='clumpiness threshold')
 		plt.legend(handles=[threshold_line])
 		plt.axvline(x=threshold, color='orange')
-		plt.xticks(np.arange(0,bin_width*11, bin_width))
+		plt.xticks(np.arange(0, bin_width*11, bin_width))
 		plt.xlabel('Fraction of contributing workers who contribute only once')
 		plt.ylabel('Number of clusters')
 		plt.title('Finding the Clumpiness Threshold')
 		plt.show()
 		return threshold
 
+		
 
 
 
