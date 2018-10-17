@@ -16,7 +16,6 @@ from matplotlib.lines import Line2D
 # ------- #
 
 class SpotImage():
-
 	"""
 	The SpotImage tool generates synthetic spot images. 
 	The user can parameterize the following features of the image:
