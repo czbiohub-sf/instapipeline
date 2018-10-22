@@ -33,6 +33,7 @@ class SpotAnnotationAnalysis():
 
 	# list of clustering algs handled
 	clustering_algs = ['AffinityPropagation']
+	declumping_algs = ['KMeans']
 
 	# list of colors used for plotting different turkers
 	colors = ['#3399FF', '#CC33FF', '#FFFF00', '#FF33CC', 
@@ -191,9 +192,7 @@ class SpotAnnotationAnalysis():
 
 		worker_list = self.ba.get_workers(df)
 		pair_scores = pd.DataFrame(index = worker_list, columns = worker_list)
-		counter = 0
 		for worker in worker_list:
-			counter += 1
 			worker_df = self.ba.slice_by_worker(df, worker)
 			worker_coords = self.ba.get_click_properties(worker_df)[:,:2]
 			worker_kdt = KDTree(worker_coords, leaf_size=2, metric='euclidean')
@@ -669,12 +668,14 @@ class SpotAnnotationAnalysis():
 		none
 		"""
 
-		handle_list = []
+
 		fig = plt.figure(figsize = (12,7))
 		if bigger_window_size:
 			fig = plt.figure(figsize=(14,12))
 
+		handle_list = []
 		img_height = df['height'].values[0]
+
 		if correctness_threshold is not None:
 			cluster_correctness = self.get_cluster_correctness(centroid_and_ref_df, correctness_threshold)
 
@@ -777,7 +778,7 @@ class SpotAnnotationAnalysis():
 		plt.ylabel('Number of clusters')
 		plt.show()
 
-	def visualize_clusters(self, clusters, show_workers, show_centroids, worker_marker_size, cluster_marker_size, img_filepath, img_height, plot_title, bigger_window_size):
+	def visualize_clusters(self, clusters, show_workers, show_centroids, show_ref_points, worker_marker_size, cluster_marker_size, ref_marker_size, csv_filepath, img_filepath, img_height, x_bounds, y_bounds, plot_title, bigger_window_size):
 		""" Visualize clusters, each with a different color.
 		
 		Parameters
@@ -803,12 +804,24 @@ class SpotAnnotationAnalysis():
 		fig = plt.figure(figsize = (12,7))
 		if bigger_window_size:
 			fig = plt.figure(figsize=(14,12))
+		if x_bounds:
+			plt.xlim(x_bounds[0], x_bounds[1])
+		if y_bounds:
+			plt.ylim(y_bounds[0], y_bounds[1])
 		img = mpimg.imread(img_filepath)
 		plt.imshow(img, cmap = 'gray')
 		if show_workers:
 			for color, member_list in zip(self.colors*10, clusters['members'].values):
 				for member in member_list:
 					plt.scatter([member[0]], [img_height-member[1]], s = worker_marker_size, facecolors = color, edgecolors = 'None')
+
+		if show_ref_points:
+			ref_df = pd.read_csv(csv_filepath)								
+			ref_points = ref_df.loc[:, ['col', 'row']].as_matrix()
+			for point in ref_points:													
+				plt.scatter([point[0]], [point[1]], s = ref_marker_size, facecolors = 'y')
+			plt.legend(handles = [Line2D([0],[0], marker='o', color='w', markerfacecolor='y', label='reference points')], loc = 9, bbox_to_anchor = (1.2, 1.015))	
+		
 		if show_centroids:
 			plt.scatter(clusters['centroid_x'].values, self.ba.flip(clusters['centroid_y'].values, img_height), s = cluster_marker_size, facecolors = 'none', edgecolors = '#ffffff')
 		plt.title(plot_title)
@@ -833,7 +846,8 @@ class SpotAnnotationAnalysis():
 		single_fraction_list = []
 		for i in range(len(clusters.index)):
 			row = clusters.iloc[[i]]
-			unique_workers = np.unique([member[3] for member in row.iloc[0]['members']])
+			workers = [member[3] for member in row.iloc[0]['members']]
+			unique_workers = np.unique(workers)
 			num_instances_list = [workers.count(unique_worker) for unique_worker in unique_workers]
 			single_fraction_list.append(num_instances_list.count(1)/len(unique_workers))
 
@@ -860,20 +874,147 @@ class SpotAnnotationAnalysis():
 		plt.show()
 		return threshold
 
+	def declump(self, clusters, i, declumping_params):
+		""" Declump the cluster at the ith index of clusters, a df only containing clumpy clusters.
 		
+		Parameters
+		----------
+		clusters : pandas dataframe (centroid_x | centroid_y | members) ~ output of sort_clusters_by_clumpiness()
+			centroid_x = x coord of cluster centroid
+			centroid_y = y coord of cluster centroid
+			members = list of annotations belonging to the cluster
+				each member is a list of properties of the annotation 
+				i.e. [x coord, y coord, time spent, worker ID]
+		i : index of cluster in clusters to declump
+		declumping_params : list of clustering parameters
+			first element is string name of declumping algorithm
+			subsequent elements are additional parameters
+		
+		Returns
+		-------
+		declumped_clusters : pandas df containing resulting declumped clusters
 
+		"""
+		if (declumping_params[0] not in self.declumping_algs):
+			raise ValueError('Invalid declumping algorithm name entered.')
 
+		row = clusters.iloc[[i]]
+		members = row.iloc[0]['members']
+		workers = [member[3] for member in members]
+		x_coords = [member[0] for member in members]
+		y_coords = [member[1] for member in members]
+		unique_workers = np.unique(workers)
+		coords = np.stack((x_coords, y_coords), axis = -1)
 
+		if (declumping_params[0] == 'KMeans'):
+			k = declumping_params[1]
+			km = KMeans(n_clusters=k).fit(coords)
+			centers = km.cluster_centers_
+			labels = km.labels_
+			num_subclusters = k
+		
+		subclusters_list = [[center[0], center[1], []] for center in centers]
+		for coord, label in zip(coords, labels):
+			subclusters_list[label][2].append(coord)
 
+		subclusters = pd.DataFrame(index = range(num_subclusters), columns = ['centroid_x','centroid_y','members'])
 
+		for ind in range(num_subclusters):
+			subclusters['centroid_x'][ind] = subclusters_list[ind][0]
+			subclusters['centroid_y'][ind] = subclusters_list[ind][1]
+			subclusters['members'][ind] = subclusters_list[ind][2]			
 
+		return subclusters
 
+	def calc_fpr_tpr(self, clusters, csv_filepath, correctness_threshold, plot_tpr, plot_fpr, img_filepath, img_height, cluster_marker_size, bigger_window_size):
+		""" Compare the centroids in the clusters dataframe with the reference
+		values to calculate the false positive and true positive rates.
+		
+		Parameters
+		----------
+		clusters : pandas dataframe (centroid_x | centroid_y | members) ~ output of sort_clusters_by_clumpiness()
+			centroid_x = x coord of cluster centroid
+			centroid_y = y coord of cluster centroid
+			members = list of annotations belonging to the cluster
+				each member is a list of properties of the annotation 
+				i.e. [x coord, y coord, time spent, worker ID]
+		csv_filepath : string filepath to csv file containing reference points
+		correctness_threshold : tolerance for correctness in pixels
+		plot_tpr : boolean whether to visualize tpr
+		plot_fpr : boolean whether to visualize fpr
+		img_filepath : string filepath to image file
+		img_heit : height of image in pixels
+		cluster_marker_size : plotting parameter
+		bigger_window_size : bool whether to use bigger window size (for jupyter notebook)
+		
+		Returns
+		-------
+		tpr : num spots detected / num spots total
+		fpr : num clusters don’t correspond with a spot / num clusters total
+		"""
 
+		if plot_tpr or plot_fpr:
+			fig = plt.figure(figsize = (12,7))
+			if bigger_window_size:
+				fig = plt.figure(figsize=(14,12))
 
+		ref_df = pd.read_csv(csv_filepath)
+		ref_coords = ref_df.loc[:, ['col', 'row']].as_matrix()
+		for i in range(len(ref_coords)):
+			point = ref_coords[i]
+			first_elem = point[0]
+			second_elem = img_height - point[1]
+			point = np.array([first_elem, second_elem])
+			ref_coords[i] = point
+		centroid_coords = clusters.loc[:, ['centroid_x', 'centroid_y']].as_matrix()
+		centroid_kdt = KDTree(centroid_coords, leaf_size=2, metric='euclidean')	# kdt is a kd tree with all the reference points
 
+		# calc tpr
+		num_spots_detected = 0
+		for ref_coord in ref_coords:
+			dist, ind = centroid_kdt.query([ref_coord], k=1)
+			if dist[0] <= correctness_threshold:
+				num_spots_detected += 1
+				if plot_tpr:
+					plt.scatter([ref_coord[0]], self.ba.flip([ref_coord[1]], img_height), s = cluster_marker_size, facecolors = 'g')
+			else:
+				if plot_tpr:
+					plt.scatter([ref_coord[0]], self.ba.flip([ref_coord[1]], img_height), s = cluster_marker_size, facecolors = 'm')
+		num_spots_total = len(ref_coords)
+		tpr = num_spots_detected/num_spots_total
 
+		# calc fpr
+		ref_kdt = self.csv_to_kdt(csv_filepath, img_height)
+		num_centroids_wout_spot = 0
+		for centroid_coord in centroid_coords:
+			dist, ind = ref_kdt.query([centroid_coord], k=1)
+			if dist[0] > correctness_threshold:
+				num_centroids_wout_spot += 1
+				if plot_fpr:
+					plt.scatter([centroid_coord[0]], self.ba.flip([centroid_coord[1]], img_height), s = cluster_marker_size, edgecolors = 'm', facecolors = 'none')
+			else:
+				if plot_fpr:
+					plt.scatter([centroid_coord[0]], self.ba.flip([centroid_coord[1]], img_height), s = cluster_marker_size, edgecolors = 'g', facecolors = 'none')
+		num_centroids_total = len(centroid_coords)
+		fpr = num_centroids_wout_spot/num_centroids_total
 
+		handle_list = []
 
+		if plot_tpr:
+			plt.title("TPR = " + str(round(tpr, 2)))
+			handle_list.append(Line2D([0],[0], marker='o', color='w', markerfacecolor='g', label='detected spot'))
+			handle_list.append(Line2D([0],[0], marker='o', color='w', markerfacecolor='m', label='undetected spot'))
 
+		if plot_fpr:
+			plt.title("FPR = " + str(round(fpr, 2)))
+			handle_list.append(Line2D([0],[0], marker='o', color='w', markerfacecolor=None, markeredgecolor='g', label='correct centroid'))
+			handle_list.append(Line2D([0],[0], marker='o', color='w', markerfacecolor=None, markeredgecolor='m', label='incorrect centroid'))
 
+		if plot_tpr or plot_fpr:
+			img = mpimg.imread(img_filepath)
+			plt.imshow(img, cmap = 'gray')
+			plt.legend(handles = handle_list, loc = 9, bbox_to_anchor = (1.2, 1.015))
+			plt.show()	
+
+		return tpr, fpr
 
