@@ -20,13 +20,13 @@ class BaseAnnotation:
 	""" Tools for annotation injestion
 	"""
 
-	def __init__(self, filename):
+	def __init__(self, json_filepath, img_filename):
 		""" Import annotations to a dataframe and save the
 		dataframe as a property of the BaseAnnotation class
 		"""
-		self.annotations = self._import_annotations(filename)
+		self.annotations = self._import_annotations(json_filepath, img_filename)
 
-	def _import_annotations(self, filename):
+	def _import_annotations(self, json_filepath, img_filename):
 		""" Import annotations from a file to a dataframe
 
 		Raise an error if the method has not been 
@@ -76,20 +76,6 @@ class BaseAnnotation:
 		"""
 		return df[df.worker_id == uid]
 
-	def slice_by_image(self, df, img_filename):
-		""" Return a dataframe with annotations for one image
-
-		Parameters
-		----------
-		df : pandas dataframe
-		img_filename : string filename of image
-
-		Returns
-		-------
-		Dataframe with annotations for only that image 
-		"""
-		return df[df.image_filename == img_filename]
-
 	def get_click_properties(self, df):
 		""" Return a numpy array containing properties for all clicks in df
 
@@ -138,6 +124,24 @@ class BaseAnnotation:
 		for i in range(len(vec)):
 			to_return[i] = height - vec[i]
 		return to_return
+
+	# def slice_by_image(self, df, img_filename):
+	# 	""" Return a dataframe with annotations for one image
+
+	# 	Parameters
+	# 	----------
+	# 	df : pandas dataframe
+	# 	img_filename : string filename of image
+
+	# 	Returns
+	# 	-------
+	# 	Dataframe with annotations for only that image 
+	#	
+	#	No longer useful because each qa object gets data from only one image
+
+	# 	"""
+	# 	return df[df.image_filename == img_filename]
+
 
 
 

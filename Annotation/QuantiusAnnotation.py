@@ -23,7 +23,7 @@ class QuantiusAnnotation(BaseAnnotation):
 	for annotations from Quantius
 	"""
 
-	def _import_annotations(self, json_filepath):
+	def _import_annotations(self, json_filepath, img_filename):
 		
 		to_return = pd.DataFrame()
 		json_string = open(json_filepath).read()
@@ -32,7 +32,7 @@ class QuantiusAnnotation(BaseAnnotation):
 		for worker in results:
 
 			# Skip the worker if they didn't perform any annotations
-			if not worker['raw_data']:
+			if not worker['raw_data']: 
 				continue
 
 			# Make a data frame of the coordinates of each annotation
@@ -58,4 +58,4 @@ class QuantiusAnnotation(BaseAnnotation):
 			# Append to the total data frame
 			to_return = to_return.append(coords)
 
-		return to_return
+		return to_return[to_return.image_filename == img_filename]
