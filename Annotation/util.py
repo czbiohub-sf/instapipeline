@@ -24,6 +24,16 @@ from sklearn.neighbors import KDTree
 
 # ----- #
 
+# colors used by plotters
+colors = ['#3399FF', '#CC33FF', '#FFFF00', '#FF33CC', 
+'#9966FF', '#009999', '#99E3FF', '#B88A00', 
+'#33FFCC', '#FF3366', '#F5B800', '#FF6633',
+'#FF9966', '#FF9ECE', '#CCFF33', '#FF667F',
+'#EB4E00', '#FFCC33', '#FF66CC', '#33CCFF', 
+'#ACFF07', '#667FFF', '#FF99FF', '#FF1F8F',
+'#9999FF', '#99FFCC', '#FF9999', '#91FFFF',
+'#8A00B8', '#91BBFF', '#FFB71C', '#FF1C76']
+
 """
 Dataframe manipulation
 """
@@ -180,11 +190,11 @@ def get_pair_scores(df):
 		pair score between worker_A and worker_B = ((avg A->B NND) + (avg B->A NND))/2
 	"""
 
-	worker_list = util.get_workers(df)
+	worker_list = get_workers(df)
 	pair_scores = pd.DataFrame(index = worker_list, columns = worker_list)
 	for worker in worker_list:
-		worker_df = util.slice_by_worker(df, worker)
-		worker_coords = util.get_click_properties(worker_df)[:,:2]
+		worker_df = slice_by_worker(df, worker)
+		worker_coords = get_click_properties(worker_df)[:,:2]
 		worker_kdt = KDTree(worker_coords, leaf_size=2, metric='euclidean')
 
 		for other_worker in worker_list:
@@ -192,8 +202,8 @@ def get_pair_scores(df):
 				pair_scores[worker][other_worker] = 0
 				continue
 
-			other_worker_df = util.slice_by_worker(df, other_worker)
-			other_worker_coords = util.get_click_properties(other_worker_df)[:,:2]
+			other_worker_df = slice_by_worker(df, other_worker)
+			other_worker_coords = get_click_properties(other_worker_df)[:,:2]
 			other_worker_kdt = KDTree(other_worker_coords, leaf_size=2, metric='euclidean')
 
 			list_A = [None]*len(worker_coords)
@@ -224,8 +234,8 @@ def get_worker_pair_scores(df):
 		column header of dataframe is "score" 
 		"score" is the sum of the worker's pairwise scores
 	"""
-	worker_list = util.get_workers(df)
-	pair_scores = util.get_pair_scores(df)
+	worker_list = get_workers(df)
+	pair_scores = get_pair_scores(df)
 	worker_scores = pd.DataFrame(index = worker_list, columns = ["score"])
 	for worker in worker_list:
 		worker_scores["score"][worker] = sum(pair_scores[worker].values)
@@ -243,7 +253,7 @@ def get_worker_pair_score_threshold(df):
 	-------
 	pairwise score threshold value
 	"""
-	worker_pairwise_scores = util.get_worker_pair_scores(df)	# score workers based on pairwise matching (this step does not use clusters)
+	worker_pairwise_scores = get_worker_pair_scores(df)	# score workers based on pairwise matching (this step does not use clusters)
 	worker_scores_list = worker_pairwise_scores['score'].tolist()	# get IDs of all workers
 	return filters.threshold_otsu(np.asarray(worker_scores_list))	# threshold otsu
 
@@ -261,7 +271,7 @@ def slice_by_worker_pair_score(df, threshold):
 	df : pandas dataframe
 	"""
 
-	worker_pair_scores = util.get_worker_pair_scores(df)					# df with all workers. index = worker_ids, values = scores
+	worker_pair_scores = get_worker_pair_scores(df)					# df with all workers. index = worker_ids, values = scores
 	high_scores = worker_pair_scores[worker_pair_scores.score > threshold]	# df with only bad workers
 	high_scoring_workers = high_scores.index.values
 	for worker in high_scoring_workers:
@@ -472,7 +482,7 @@ def sort_clusters_by_clumpiness(clusters, threshold):
 	return clumpy_clusters, nonclumpy_clusters
 
 """
-Click Properties
+Getting click properties
 """
 
 def get_time_per_click(df):
@@ -491,7 +501,7 @@ def get_time_per_click(df):
 		time_spent_list[0] = None
 		units are miliseconds
 	"""
-	timestamps = util.get_timestamps(df)
+	timestamps = get_timestamps(df)
 	time_spent_list = [None]*len(timestamps)
 	for i in range (1,len(timestamps)):
 		x = timestamps[i] - timestamps[i-1]
@@ -512,7 +522,7 @@ def get_nnd_per_click(df, ref_kdt):
 	list of distances to the nearest neighbor (found in
 		the k-d tree of reference points)
 	"""
-	coords = util.get_click_properties(df)[:,:2]
+	coords = get_click_properties(df)[:,:2]
 	dist, ind = ref_kdt.query(coords, k=1)
 	dist_list = dist.tolist()
 	return [dist[0] for dist in dist_list]
@@ -531,10 +541,224 @@ def get_avg_time_per_click(df, uid):
 	the average time that the worker spent per click
 	"""		
 
-	worker_timestamps = util.get_timestamps(df, uid)
+	worker_timestamps = get_timestamps(df, uid)
 	time_spent = max(worker_timestamps) - min(worker_timestamps)
 	num_clicks = len(worker_timestamps)
 	return time_spent[0]/num_clicks
 
+"""
+Cluster manipulation and analysis
+"""
+
+def get_cluster_means(clusters):
+	""" Get the mean x and y of each cluster.
+	(Different from cluster centroids, which are the exemplar
+	annotation for each cluster.)
+
+	Parameters
+	----------
+	clusters : pandas dataframe 
+		(centroid_x | centroid_y | members)
+
+	Returns
+	-------
+	numpy array of coords
+	"""
+	mean_coords = []
+	for i in range(len(clusters.index)):
+		row = clusters.iloc[[i]]
+		members = row.iloc[0]['members']
+		x_coords = []
+		y_coords = []
+		for member in members:
+			x_coords.append(member[0])
+			y_coords.append(member[1])
+		mean_coord = [np.mean(x_coords), np.mean(y_coords)]
+		mean_coords.append(mean_coord)
+	return np.asarray(mean_coords)
+
+def centroid_and_ref_df(clusters, csv_filepath, img_height):
+	""" Assemble a dataframe of centroids found with annotation and reference data consolidated.
+	
+	Parameters
+	----------
+	df : Pandas Dataframe with annotation data (should already be cropped)
+	clusters : pandas dataframe (centroid_x | centroid_y | members) ~ output of get_clusters()
+		centroid_x = x coord of cluster centroid
+		centroid_y = y coord of cluster centroid
+		members = list of annotations belonging to the cluster
+			each member is a list of properties of the annotation 
+			i.e. [x coord, y coord, time spent, worker ID]
+	csv_filepath : contains reference data
+
+	Returns
+	-------
+	this dataframe: centroid_x | centroid_y | x of nearest ref | y of nearest ref | NN_dist | members
+		* (the index is the Cluster ID)
+		centroid_x = x coord of cluster centroid
+		centroid_y = y coord of cluster centroid
+		NN_x = x coord of nearest neighbor reference
+		NN_y = y coord of nearest neighbor reference
+		NN_dist = distance from centroid to nearest neighbor reference
+		members = list of annotations belonging to cluster
+			each annotation is a list of click properties: x_coord | y_coord | time_spent | worker_ID
+	"""
+
+	ref_kdt = csv_to_kdt(csv_filepath, img_height)
+	ref_array = np.asarray(ref_kdt.data)
+
+	centroid_IDs = range(clusters.shape[0])
+	column_names = ['centroid_x', 'centroid_y', 'NN_x', 'NN_y', 'NN_dist', 'members']
+	to_return = pd.DataFrame(index = centroid_IDs, columns = column_names)
+
+	for i in centroid_IDs:
+
+		to_return['centroid_x'][i] = clusters['centroid_x'][i]
+		to_return['centroid_y'][i] = clusters['centroid_y'][i]
+
+		coords = [[to_return['centroid_x'][i], to_return['centroid_y'][i]]]
+
+		dist, ind = ref_kdt.query(coords, k=1)
+		index = ind[0][0]
+		nearest_neighbor = ref_array[index]
+
+		to_return['NN_x'][i] = nearest_neighbor[0]
+		to_return['NN_y'][i] = nearest_neighbor[1]
+		to_return['NN_dist'][i] = dist[0][0]
+		to_return['members'][i] = clusters['members'][i]		
+
+	return to_return
+
+def get_cluster_correctness(df, correctness_threshold):
+	""" Assemble a dataframe of centroids found with annotation and reference data consolidated.
+	
+	Parameters
+	----------
+	centroid_and_ref_df : outputted by centroid_and_ref_df()
+		centroid_x | centroid_y | x of nearest ref | y of nearest ref | NN_dist | members (x | y | time_spent | worker_id)
+		* the index is the Centroid ID
+	correctness_threshold : tolerance for correctness in pixels, None if correctness will not be visualized
+		for each centroid, if NN_dist <= threshold, centroid is "correct"
+
+	Returns
+	-------
+	2-column array with a row for each centroid
+		column 0 = Centroid ID
+		column 1 = True if centroid is "correct", False if centroid is "incorrect"
+	"""
+
+	num_centroids = df.shape[0]
+	to_return = np.empty([num_centroids, 2])
+	for i in range(num_centroids):
+		to_return[i] = i
+		NN_dist = df['NN_dist'][i]
+		if (NN_dist <= correctness_threshold):
+			to_return[i][1] = True
+		else:
+			to_return[i][1] = False
+	return to_return
+
+"""
+Big plotters
+"""
+
+def plot_annotations(df, show_workers, show_correctness_workers, show_centroids, show_correctness_centroids, show_ref_points, show_NN_inc, centroid_and_ref_df, correctness_threshold, worker_marker_size, cluster_marker_size, img_filepath, csv_filepath, bigger_window_size):
+	""" Quick visualization of worker annotations, clusters, and/or annotation and cluster "correctness." 
+	
+	Parameters
+	----------
+	df : pandas dataframe with annotation data for one crop only
+	show_workers : bool whether to plot workers
+	show_centroids : bool whether to plot cluster centroids
+	show_ref_points : bool whether to plot reference annotations
+	show_NN_inc : bool whether to show nearest neighbor for all "incorrect" centroids
+	centroid_and_ref_df = pandas dataframe outputted by centroid_and_ref_df()
+		centroid_x | centroid_y | x of nearest ref | y of nearest ref | NN_dist | members
+	correctness_threshold : tolerance for correctness in pixels, None if correctness will not be visualized
+	worker_marker_size, cluster_marker_size : plot parameters
+	img_filepath, csv_filepath : paths to image and reference csv files
+	bigger_window_size : bool whether to use bigger window size (for jupyter notebook)
+
+	Returns
+	-------
+	none
+	"""
+
+
+	fig = plt.figure(figsize = (12,7))
+	if bigger_window_size:
+		fig = plt.figure(figsize=(14,12))
+
+	handle_list = []
+	img_height = df['height'].values[0]
+
+	if correctness_threshold is not None:
+		cluster_correctness = get_cluster_correctness(centroid_and_ref_df, correctness_threshold)
+
+	if show_workers:
+		if show_correctness_workers:
+			member_lists = centroid_and_ref_df['members'].values
+			for member_list, correctness in zip(member_lists, cluster_correctness):
+				if correctness[1]:
+					color = 'g'
+				else:
+					color = 'm'
+				for member in member_list:
+					coords = member[:2]
+					plt.scatter([coords[0]], flip([coords[1]], img_height), s = worker_marker_size, facecolors = color, alpha = 0.5)
+			handle_list.append(Line2D([0],[0], marker='o', color='w', markerfacecolor='g', label='anno of correct cluster'))
+			handle_list.append(Line2D([0],[0], marker='o', color='w', markerfacecolor='m', label='anno of incorrect cluster'))
+		else:
+			worker_list = get_workers(df)
+			for worker, color in zip(worker_list, colors):			# For each worker, use a different color.
+				anno_one_worker = slice_by_worker(df, worker)		
+				coords = get_click_properties(anno_one_worker)[:,:2]
+				x_coords = coords[:,0]
+				y_coords = coords[:,1]
+				y_coords_flipped = flip(y_coords, img_height)
+				handle = plt.scatter(x_coords, y_coords_flipped, s = worker_marker_size, facecolors = color, alpha = 0.5, label = worker)
+				handle_list.append(handle)
+		if not show_centroids:
+			plt.title('Worker Annotations')	
+
+	if show_centroids:
+		x_coords = centroid_and_ref_df['centroid_x'].values
+		y_coords = centroid_and_ref_df['centroid_y'].values
+		y_coords_flipped = flip(y_coords, img_height)
+		color_index = 0		
+		if show_correctness_centroids:
+			for i in range(len(centroid_and_ref_df.index)):		
+				if (cluster_correctness[i][1]):
+					color = 'g'								
+				else:
+					if show_NN_inc:
+						color = colors[color_index]							
+						color_index = (color_index+1)%len(colors)
+						plt.scatter([centroid_and_ref_df['NN_x'].values[i]], [img_height-centroid_and_ref_df['NN_y'].values[i]], s = worker_marker_size*2, facecolors = color, edgecolors = color)
+					else:
+						color = 'm'
+				plt.scatter(x_coords[i], y_coords_flipped[i], s = cluster_marker_size, facecolors = 'none', edgecolors = color)					
+			handle_list.append(Line2D([0],[0], marker='o', color='w', markerfacecolor=None, markeredgecolor='g', label='centroid of correct cluster'))
+			handle_list.append(Line2D([0],[0], marker='o', color='w', markerfacecolor=None, markeredgecolor='m', label='centroid of incorrect cluster'))
+		else:
+			plt.scatter(x_coords, y_coords_flipped, s = cluster_marker_size, facecolors = 'none', edgecolors = 'cyan')
+			handle_list.append(Line2D([0],[0], marker='o', color='w', markerfacecolor=None, markeredgecolor='cyan', label='cluster centroid'))
+		if not show_workers:
+			plt.title('Cluster Centroids')
+
+	if show_workers and show_centroids:
+		plt.title('Worker Annotations and Cluster Centroids')
+
+	if show_ref_points:
+		ref_df = pd.read_csv(csv_filepath)								
+		ref_points = ref_df.loc[:, ['col', 'row']].as_matrix()
+		for point in ref_points:													
+			plt.scatter([point[0]], [point[1]], s = 20, facecolors = 'y')
+		handle_list.append(Line2D([0],[0], marker='o', color='w', markerfacecolor='y', label='reference points'))
+	
+	img = mpimg.imread(img_filepath)
+	plt.imshow(img, cmap = 'gray')
+	plt.legend(handles = handle_list, loc = 9, bbox_to_anchor = (1.2, 1.015))	
+	plt.show()
 
 
