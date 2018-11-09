@@ -148,51 +148,6 @@ class SpotAnnotationAnalysis():
 
 			return af
 
-	def get_pair_scores(self, df):
-		""" Calculate pair scores for each pair of workers in df.
-
-		Parameters
-		----------
-		df : pandas dataframe
-
-		Returns
-		-------
-		pair_scores : pandas dataframe
-			indices and columns of the dataframe are worker IDs
-			contents are pair scores
-			pair score between worker_A and worker_B = ((avg A->B NND) + (avg B->A NND))/2
-		"""
-
-		worker_list = util.get_workers(df)
-		pair_scores = pd.DataFrame(index = worker_list, columns = worker_list)
-		for worker in worker_list:
-			worker_df = util.slice_by_worker(df, worker)
-			worker_coords = util.get_click_properties(worker_df)[:,:2]
-			worker_kdt = KDTree(worker_coords, leaf_size=2, metric='euclidean')
-
-			for other_worker in worker_list:
-				if worker == other_worker:
-					pair_scores[worker][other_worker] = 0
-					continue
-
-				other_worker_df = util.slice_by_worker(df, other_worker)
-				other_worker_coords = util.get_click_properties(other_worker_df)[:,:2]
-				other_worker_kdt = KDTree(other_worker_coords, leaf_size=2, metric='euclidean')
-
-				list_A = [None]*len(worker_coords)
-				for i in range(len(worker_coords)):
-					dist, ind = other_worker_kdt.query([worker_coords[i]], k=1)
-					list_A[i] = dist[0][0]
-
-				list_B = [None]*len(other_worker_coords)
-				for j in range(len(other_worker_coords)):
-					dist, ind = worker_kdt.query([other_worker_coords[j]], k=1)
-					list_B[j] = dist[0][0]
-
-				pair_scores[worker][other_worker] = (np.mean(list_A) + np.mean(list_B))/2
-
-		return pair_scores
-
 	def get_worker_pair_scores(self, df):
 		""" Calculate the total pairwise score for each workers in df.
 
@@ -208,7 +163,7 @@ class SpotAnnotationAnalysis():
 			"score" is the sum of the worker's pairwise scores
 		"""
 		worker_list = util.get_workers(df)
-		pair_scores = self.get_pair_scores(df)
+		pair_scores = util.get_pair_scores(df)
 		worker_scores = pd.DataFrame(index = worker_list, columns = ["score"])
 		for worker in worker_list:
 			worker_scores["score"][worker] = sum(pair_scores[worker].values)
