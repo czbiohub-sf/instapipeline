@@ -148,67 +148,6 @@ class SpotAnnotationAnalysis():
 
 			return af
 
-	def get_time_per_click(self, df):
-		""" Get time spent on each annotation.
-
-		Parameters
-		----------
-		df : pandas dataframe 
-			(timestamp | x | y | annotation_type | height | width image_filename | time_when_completed | worker_id)
-
-		Returns
-		-------
-		time_spent_list : list of the amount of time spent on all clicks in df
-			except the first click (fencepost)
-			len(time_spent_list) = num rows in df
-			time_spent_list[0] = None
-			units are miliseconds
-		"""
-		timestamps = util.get_timestamps(df)
-		time_spent_list = [None]*len(timestamps)
-		for i in range (1,len(timestamps)):
-			x = timestamps[i] - timestamps[i-1]
-			time_spent_list[i] = x[0]
-		return time_spent_list
-
-	def get_nnd_per_click(self, df, ref_kdt):
-		""" Get the distance to the nearest neighbor (found in
-			the k-d tree of reference points).
-
-		Parameters
-		----------
-		df : pandas dataframe 
-			(timestamp | x | y | annotation_type | height | width image_filename | time_when_completed | worker_id)
-
-		Returns
-		-------
-		list of distances to the nearest neighbor (found in
-			the k-d tree of reference points)
-		"""
-		coords = util.get_click_properties(df)[:,:2]
-		dist, ind = ref_kdt.query(coords, k=1)
-		dist_list = dist.tolist()
-		return [dist[0] for dist in dist_list]
-
-	def get_avg_time_per_click(self, df, uid):
-		""" Get the average amount of time that a worker spent on one click.
-
-		Parameters
-		----------
-		df : pandas dataframe 
-			(timestamp | x | y | annotation_type | height | width image_filename | time_when_completed | worker_id)
-		uid : string worker ID
-
-		Returns
-		-------
-		the average time that the worker spent per click
-		"""		
-
-		worker_timestamps = self.get_timestamps(df, uid)
-		time_spent = max(worker_timestamps) - min(worker_timestamps)
-		num_clicks = len(worker_timestamps)
-		return time_spent[0]/num_clicks
-
 	def get_cluster_means(self, clusters):
 		""" Get the mean x and y of each cluster.
 		(Different from cluster centroids, which are the exemplar
