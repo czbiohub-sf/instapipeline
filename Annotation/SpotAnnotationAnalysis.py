@@ -2,8 +2,7 @@
 This module contains the SpotAnnotationAnalysis class.
 """
 
-from QuantiusAnnotation import QuantiusAnnotation
-from BaseAnnotation import BaseAnnotation
+import util
 
 import math
 import matplotlib.pyplot as plt
@@ -55,32 +54,6 @@ class SpotAnnotationAnalysis():
 		self.clusters_done = []
 		self.cluster_objects = []
 
-	def csv_to_kdt(self, csv_filepath, img_height):
-		""" Fit reference spot coordinates to a k-d tree
-
-		Parameters
-		----------
-		csv_filepath : string filepath to csv file containing reference points
-		img_height : height of image
-
-		Returns
-		-------
-		ref_kdt : sklearn.neighbors.kd_tree.KDTree object containing reference points 
-					y-coordinates are flipped about img_height 
-		"""
-		ref_df = pd.read_csv(csv_filepath)
-		ref_points = ref_df.loc[:, ['col', 'row']].as_matrix()
-
-		for i in range(len(ref_points)):
-			point = ref_points[i]
-			first_elem = point[0]
-			second_elem = img_height - point[1]
-			point = np.array([first_elem, second_elem])
-			ref_points[i] = point
-
-		ref_kdt = KDTree(ref_points, leaf_size=2, metric='euclidean')	# kdt is a kd tree with all the reference points
-		return ref_kdt
-
 	def get_clusters(self, df, clustering_params):
 		""" Cluster all annotations in df and arrange result as a dataframe. 
 		Verifies clustering parameters and calls self.get_cluster_object()
@@ -113,7 +86,7 @@ class SpotAnnotationAnalysis():
 			if(len(clustering_params) != 2):														# Check that there's only one clustering parameter
 				raise ValueError('Please enter a list containing the preference parameter.')
 
-			click_properties = self.ba.get_click_properties(df)
+			click_properties = util.get_click_properties(df)
 			coords = click_properties[:,:2]															# Get all the coordinates from the annotation dataframe (dissociated from timestamps)
 
 			af = self.get_cluster_object(coords, clustering_params)
@@ -190,11 +163,11 @@ class SpotAnnotationAnalysis():
 			pair score between worker_A and worker_B = ((avg A->B NND) + (avg B->A NND))/2
 		"""
 
-		worker_list = self.ba.get_workers(df)
+		worker_list = util.get_workers(df)
 		pair_scores = pd.DataFrame(index = worker_list, columns = worker_list)
 		for worker in worker_list:
-			worker_df = self.ba.slice_by_worker(df, worker)
-			worker_coords = self.ba.get_click_properties(worker_df)[:,:2]
+			worker_df = util.slice_by_worker(df, worker)
+			worker_coords = util.get_click_properties(worker_df)[:,:2]
 			worker_kdt = KDTree(worker_coords, leaf_size=2, metric='euclidean')
 
 			for other_worker in worker_list:
@@ -202,8 +175,8 @@ class SpotAnnotationAnalysis():
 					pair_scores[worker][other_worker] = 0
 					continue
 
-				other_worker_df = self.ba.slice_by_worker(df, other_worker)
-				other_worker_coords = self.ba.get_click_properties(other_worker_df)[:,:2]
+				other_worker_df = util.slice_by_worker(df, other_worker)
+				other_worker_coords = util.get_click_properties(other_worker_df)[:,:2]
 				other_worker_kdt = KDTree(other_worker_coords, leaf_size=2, metric='euclidean')
 
 				list_A = [None]*len(worker_coords)
@@ -234,7 +207,7 @@ class SpotAnnotationAnalysis():
 			column header of dataframe is "score" 
 			"score" is the sum of the worker's pairwise scores
 		"""
-		worker_list = self.ba.get_workers(df)
+		worker_list = util.get_workers(df)
 		pair_scores = self.get_pair_scores(df)
 		worker_scores = pd.DataFrame(index = worker_list, columns = ["score"])
 		for worker in worker_list:
@@ -493,7 +466,7 @@ class SpotAnnotationAnalysis():
 			time_spent_list[0] = None
 			units are miliseconds
 		"""
-		timestamps = self.ba.get_timestamps(df)
+		timestamps = util.get_timestamps(df)
 		time_spent_list = [None]*len(timestamps)
 		for i in range (1,len(timestamps)):
 			x = timestamps[i] - timestamps[i-1]
@@ -514,7 +487,7 @@ class SpotAnnotationAnalysis():
 		list of distances to the nearest neighbor (found in
 			the k-d tree of reference points)
 		"""
-		coords = self.ba.get_click_properties(df)[:,:2]
+		coords = util.get_click_properties(df)[:,:2]
 		dist, ind = ref_kdt.query(coords, k=1)
 		dist_list = dist.tolist()
 		return [dist[0] for dist in dist_list]
@@ -592,7 +565,7 @@ class SpotAnnotationAnalysis():
 				each annotation is a list of click properties: x_coord | y_coord | time_spent | worker_ID
 		"""
 
-		ref_kdt = self.csv_to_kdt(csv_filepath, img_height)
+		ref_kdt = util.csv_to_kdt(csv_filepath, img_height)
 		ref_array = np.asarray(ref_kdt.data)
 
 		centroid_IDs = range(clusters.shape[0])
@@ -689,17 +662,17 @@ class SpotAnnotationAnalysis():
 						color = 'm'
 					for member in member_list:
 						coords = member[:2]
-						plt.scatter([coords[0]], self.ba.flip([coords[1]], img_height), s = worker_marker_size, facecolors = color, alpha = 0.5)
+						plt.scatter([coords[0]], util.flip([coords[1]], img_height), s = worker_marker_size, facecolors = color, alpha = 0.5)
 				handle_list.append(Line2D([0],[0], marker='o', color='w', markerfacecolor='g', label='anno of correct cluster'))
 				handle_list.append(Line2D([0],[0], marker='o', color='w', markerfacecolor='m', label='anno of incorrect cluster'))
 			else:
-				worker_list = self.ba.get_workers(df)
+				worker_list = util.get_workers(df)
 				for worker, color in zip(worker_list, self.colors):			# For each worker, use a different color.
-					anno_one_worker = self.ba.slice_by_worker(df, worker)		
-					coords = self.ba.get_click_properties(anno_one_worker)[:,:2]
+					anno_one_worker = util.slice_by_worker(df, worker)		
+					coords = util.get_click_properties(anno_one_worker)[:,:2]
 					x_coords = coords[:,0]
 					y_coords = coords[:,1]
-					y_coords_flipped = self.ba.flip(y_coords, img_height)
+					y_coords_flipped = util.flip(y_coords, img_height)
 					handle = plt.scatter(x_coords, y_coords_flipped, s = worker_marker_size, facecolors = color, alpha = 0.5, label = worker)
 					handle_list.append(handle)
 			if not show_centroids:
@@ -708,7 +681,7 @@ class SpotAnnotationAnalysis():
 		if show_centroids:
 			x_coords = centroid_and_ref_df['centroid_x'].values
 			y_coords = centroid_and_ref_df['centroid_y'].values
-			y_coords_flipped = self.ba.flip(y_coords, img_height)
+			y_coords_flipped = util.flip(y_coords, img_height)
 			color_index = 0		
 			if show_correctness_centroids:
 				for i in range(len(centroid_and_ref_df.index)):		
@@ -823,7 +796,7 @@ class SpotAnnotationAnalysis():
 			plt.legend(handles = [Line2D([0],[0], marker='o', color='w', markerfacecolor='y', label='reference points')], loc = 9, bbox_to_anchor = (1.2, 1.015))	
 		
 		if show_centroids:
-			plt.scatter(clusters['centroid_x'].values, self.ba.flip(clusters['centroid_y'].values, img_height), s = cluster_marker_size, facecolors = 'none', edgecolors = '#ffffff')
+			plt.scatter(clusters['centroid_x'].values, util.flip(clusters['centroid_y'].values, img_height), s = cluster_marker_size, facecolors = 'none', edgecolors = '#ffffff')
 		plt.title(plot_title)
 		plt.show()
 
@@ -976,25 +949,25 @@ class SpotAnnotationAnalysis():
 			if dist[0] <= correctness_threshold:
 				num_spots_detected += 1
 				if plot_tpr:
-					plt.scatter([ref_coord[0]], self.ba.flip([ref_coord[1]], img_height), s = cluster_marker_size, facecolors = 'g')
+					plt.scatter([ref_coord[0]], util.flip([ref_coord[1]], img_height), s = cluster_marker_size, facecolors = 'g')
 			else:
 				if plot_tpr:
-					plt.scatter([ref_coord[0]], self.ba.flip([ref_coord[1]], img_height), s = cluster_marker_size, facecolors = 'm')
+					plt.scatter([ref_coord[0]], util.flip([ref_coord[1]], img_height), s = cluster_marker_size, facecolors = 'm')
 		num_spots_total = len(ref_coords)
 		tpr = num_spots_detected/num_spots_total
 
 		# calc fpr
-		ref_kdt = self.csv_to_kdt(csv_filepath, img_height)
+		ref_kdt = util.csv_to_kdt(csv_filepath, img_height)
 		num_centroids_wout_spot = 0
 		for centroid_coord in centroid_coords:
 			dist, ind = ref_kdt.query([centroid_coord], k=1)
 			if dist[0] > correctness_threshold:
 				num_centroids_wout_spot += 1
 				if plot_fpr:
-					plt.scatter([centroid_coord[0]], self.ba.flip([centroid_coord[1]], img_height), s = cluster_marker_size, edgecolors = 'm', facecolors = 'none')
+					plt.scatter([centroid_coord[0]], util.flip([centroid_coord[1]], img_height), s = cluster_marker_size, edgecolors = 'm', facecolors = 'none')
 			else:
 				if plot_fpr:
-					plt.scatter([centroid_coord[0]], self.ba.flip([centroid_coord[1]], img_height), s = cluster_marker_size, edgecolors = 'g', facecolors = 'none')
+					plt.scatter([centroid_coord[0]], util.flip([centroid_coord[1]], img_height), s = cluster_marker_size, edgecolors = 'g', facecolors = 'none')
 		num_centroids_total = len(centroid_coords)
 		fpr = num_centroids_wout_spot/num_centroids_total
 

@@ -6,6 +6,22 @@ This module contains utilities used by the spot annotation analysis pipeline.
 
 import numpy as np
 
+import math
+import matplotlib.pyplot as plt
+import matplotlib.image as mpimg
+import matplotlib.patches as mpatches
+import numpy as np
+import pandas as pd
+import scipy
+
+from numpy import genfromtxt
+from matplotlib.lines import Line2D
+from skimage import filters
+from sklearn.cluster import AffinityPropagation
+from sklearn.cluster import KMeans
+from sklearn import metrics
+from sklearn.neighbors import KDTree
+
 # ----- #
 
 """
@@ -118,3 +134,29 @@ def flip(vec, height):
 	for i in range(len(vec)):
 		to_return[i] = height - vec[i]
 	return to_return
+
+def csv_to_kdt(csv_filepath, img_height):
+	""" Fit reference spot coordinates to a k-d tree
+
+	Parameters
+	----------
+	csv_filepath : string filepath to csv file containing reference points
+	img_height : height of image
+
+	Returns
+	-------
+	ref_kdt : sklearn.neighbors.kd_tree.KDTree object containing reference points 
+				y-coordinates are flipped about img_height 
+	"""
+	ref_df = pd.read_csv(csv_filepath)
+	ref_points = ref_df.loc[:, ['col', 'row']].as_matrix()
+
+	for i in range(len(ref_points)):
+		point = ref_points[i]
+		first_elem = point[0]
+		second_elem = img_height - point[1]
+		point = np.array([first_elem, second_elem])
+		ref_points[i] = point
+
+	ref_kdt = KDTree(ref_points, leaf_size=2, metric='euclidean')	# kdt is a kd tree with all the reference points
+	return ref_kdt
