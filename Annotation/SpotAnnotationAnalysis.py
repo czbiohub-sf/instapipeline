@@ -148,64 +148,6 @@ class SpotAnnotationAnalysis():
 
 			return af
 
-	def get_worker_pair_scores(self, df):
-		""" Calculate the total pairwise score for each workers in df.
-
-		Parameters
-		----------
-		df : pandas dataframe
-
-		Returns
-		-------
-		worker_scores : pandas dataframe
-			indices of the dataframe are worker IDs
-			column header of dataframe is "score" 
-			"score" is the sum of the worker's pairwise scores
-		"""
-		worker_list = util.get_workers(df)
-		pair_scores = util.get_pair_scores(df)
-		worker_scores = pd.DataFrame(index = worker_list, columns = ["score"])
-		for worker in worker_list:
-			worker_scores["score"][worker] = sum(pair_scores[worker].values)
-		return worker_scores
-
-	def get_worker_pair_score_threshold(self, df):
-		""" Calculate a pairwise score threshold for all workers in
-		df using Otsu's method. Assumes a bimodal distribution.
-
-		Parameters
-		----------
-		df : pandas dataframe
-
-		Returns
-		-------
-		pairwise score threshold value
-		"""
-		worker_pairwise_scores = self.get_worker_pair_scores(df)	# score workers based on pairwise matching (this step does not use clusters)
-		worker_scores_list = worker_pairwise_scores['score'].tolist()	# get IDs of all workers
-		return filters.threshold_otsu(np.asarray(worker_scores_list))	# threshold otsu
-
-	def slice_by_worker_pair_score(self, df, threshold):
-		""" Drop all annotations in df by workers with average pairwise 
-		score greater than threshold
-
-		Parameters
-		----------
-		df : pandas dataframe
-		threshold : pairwise score threshold
-
-		Returns
-		-------
-		df : pandas dataframe
-		"""
-
-		worker_pair_scores = self.get_worker_pair_scores(df)					# df with all workers. index = worker_ids, values = scores
-		high_scores = worker_pair_scores[worker_pair_scores.score > threshold]	# df with only bad workers
-		high_scoring_workers = high_scores.index.values
-		for worker in high_scoring_workers:
-			df = df[df.worker_id != worker]
-		return df
-
 	def get_cluster_size_threshold(self, clusters):
 		""" Calculate a cluster size threshold for all clusters
 		using K-means in 1D. Assumes a bimodal distribution.
