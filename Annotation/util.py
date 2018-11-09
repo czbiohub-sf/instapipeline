@@ -6,6 +6,8 @@ This module contains utilities used by the spot annotation analysis pipeline.
 
 import numpy as np
 
+# ----- #
+
 """
 Dataframe manipulation
 """

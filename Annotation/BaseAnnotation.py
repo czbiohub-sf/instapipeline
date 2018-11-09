@@ -2,8 +2,6 @@
 This module contains the BaseAnnotation class.
 """
 
-# ----- #
-
 class BaseAnnotation:
 	""" Tools for annotation injestion
 	"""
@@ -26,7 +24,3 @@ class BaseAnnotation:
 		""" Return the dataframe 
 		"""
 		return self.annotations
-
-
-
-
