@@ -1,5 +1,5 @@
 """ 
-This module contains the Annotation class.
+This module contains the QuantiusAnnotation class.
 """
 
 from BaseAnnotation import BaseAnnotation
