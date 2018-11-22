@@ -4,6 +4,7 @@ import matplotlib.image as mpimg
 import matplotlib.pyplot as plt
 from sklearn.neighbors import KDTree
 from sklearn.cluster import AffinityPropagation
+from scipy import ndimage
 
 ##############################################################################
 
@@ -59,6 +60,8 @@ def zoom(coords, parent_img_name, crosshair_arm_length):
     img = cv2.imread(parent_img_name+'.png')
     blacked_out = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
 
+    parent_width = blacked_out.shape[1]
+
     for i, bb in enumerate(bb_list):
 
         # black out bb area in parent img
@@ -70,9 +73,12 @@ def zoom(coords, parent_img_name, crosshair_arm_length):
 
         new_img_name = parent_img_name + '_' + str(i)
         img_array = crop(parent_img_name, bb)
-        plt.imsave(new_img_name + '.png', img_array, cmap = 'gray')
+        zoom_factor = float(parent_width)/(bb[1] - bb[0])
+        img_array_scaled = ndimage.zoom(img_array, zoom_factor)
+        plt.imsave(new_img_name + '.png', img_array_scaled, cmap = 'gray')
 
-        np.savetxt(new_img_name + '.csv', bb, delimiter=",", comments='')
+        to_save = [x for x in bb] + [zoom_factor]
+        np.savetxt(new_img_name + '.csv', to_save, delimiter=",", comments='')
 
         new_crosshair_arm_length = (bb[1] - bb[0]) * crosshair_ratio
 
