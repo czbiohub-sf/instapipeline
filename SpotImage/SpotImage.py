@@ -48,7 +48,7 @@ class SpotImage():
 	"""
 	Constructor
 	"""
-	def __init__(self, bg_img_filename, cmap, img_sz, patch_sz, spot_shape_params, brightness_bias, brightness_bias_dial, biasing_method, global_intensity_dial):
+	def __init__(self, bg_img_filename = None, cmap='gray', img_sz=300, patch_sz=11, spot_shape_params=['2D_Gauss', 1.75], brightness_bias = True, brightness_bias_dial = None, biasing_method = None, global_intensity_dial = None):
 
 		if (spot_shape_params[0] not in self.spot_shapes):
 			raise ValueError('Invalid spot shape name entered.')
@@ -81,7 +81,7 @@ class SpotImage():
 	The spot_array and spot_img are saved as attributes of the SpotImage object
 	for later access.
 	"""
-	def generate_spot_image(self, num_spots, snr_distr_params, snr_threshold, plot_spots, plot_img, save_spots, spots_filename, save_img, spot_img_filename, density):
+	def generate_spot_image(self, num_spots = None, snr_distr_params = None, snr_threshold = None, plot_spots=True, plot_img=True, save_spots=True, save_img=True, spots_filename = None, spot_img_filename = None, density = None):
 		
 		if (snr_distr_params[0] not in self.snr_distrs):
 			raise ValueError('Invalid SNR distribution name entered.')
@@ -90,6 +90,11 @@ class SpotImage():
 		self.num_spots = num_spots
 		if (density != None):
 			self.num_spots = math.floor(density * len(self.valid_coords))
+			while(self.num_spots > 175):
+				self.global_intensity_dial += 0.1
+				self.valid_coords = self.get_valid_coords()
+				self.num_spots = math.floor(density * len(self.valid_coords))
+
 			self.density = density
 
 		# assign class attributes that determine what goes in self.snr_list
@@ -356,3 +361,18 @@ class SpotImage():
 		plt.legend(handles=[mean_line])
 
 		plt.show()
+
+	def get_spot_nnd(self):
+		coord_list = []
+		for i in range(self.num_spots):
+			coord_list.append(self.coord_list[i])
+
+		spots_kdt = KDTree(coord_list, leaf_size=2, metric='euclidean')
+
+		NND_list = []
+		for coord in coord_list:
+			coord = [coord]
+			dist, ind = spots_kdt.query(coord, k=2)
+			NND_list.append(dist[0][1])
+
+		return np.mean(NND_list)
