@@ -12,7 +12,6 @@ from PIL import ImageEnhance, Image
 from sklearn.neighbors import KDTree
 from matplotlib.lines import Line2D
 
-
 # ------- #
 
 class SpotImage():
@@ -81,7 +80,7 @@ class SpotImage():
 	The spot_array and spot_img are saved as attributes of the SpotImage object
 	for later access.
 	"""
-	def generate_spot_image(self, num_spots = None, snr_distr_params = None, snr_threshold = None, plot_spots=True, plot_img=True, save_spots=True, save_img=True, spots_filename = None, spot_img_filename = None, density = None):
+	def generate_spot_image(self, num_spots = None, snr_distr_params = None, snr_threshold = None, plot_spots=False, plot_img=False, save_spots=False, save_img=False, spots_filename = None, spot_img_filename = None, density = None):
 		
 		if (snr_distr_params[0] not in self.snr_distrs):
 			raise ValueError('Invalid SNR distribution name entered.')
@@ -91,11 +90,13 @@ class SpotImage():
 		if (density != None):
 			self.num_spots = math.floor(density * len(self.valid_coords))
 			while(self.num_spots > 175):
-				self.global_intensity_dial += 0.1
+				self.global_intensity_dial += 0.05
 				self.valid_coords = self.get_valid_coords()
 				self.num_spots = math.floor(density * len(self.valid_coords))
 
 			self.density = density
+		else:
+			self.density = None
 
 		# assign class attributes that determine what goes in self.snr_list
 		self.snr_distr_params = snr_distr_params
@@ -376,3 +377,4 @@ class SpotImage():
 			NND_list.append(dist[0][1])
 
 		return np.mean(NND_list)
+
