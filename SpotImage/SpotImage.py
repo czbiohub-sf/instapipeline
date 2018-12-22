@@ -37,9 +37,11 @@ class SpotImage():
 
 	"""
 
-	spot_shapes = ['2D_Gauss']	# list of spot shapes handled
-	snr_distrs = ['Gauss']		# list of SNR distributions handled
-	increment = 500				# quantity by which to increment the total coordinate list
+	spot_shapes = ['2D_Gauss']				# list of spot shapes handled
+	snr_distrs = ['Gauss']					# list of SNR distributions handled
+	increment = 500							# quantity by which to increment the total coordinate list when it needs more coordinates
+	ballpark = 75							# tolerance for a good ballpark number of spots when constrict the valid region 
+	global_intensity_dial_increment = 0.05	# used to constrict the valid region to get a good ballpark number of spots
 
 	"""
 	Constructor
@@ -63,7 +65,7 @@ class SpotImage():
 		self.bg_array = self.img_to_array(bg_img_path)
 		self.threshold = filters.threshold_otsu(self.bg_array)
 		self.global_intensity_dial = global_intensity_dial		# adds to self.threshold
-		self.valid_coords = self.get_valid_coords()				# set of coordinates where spots may be placed
+		self.valid_coords = self.get_valid_coords()				# list of coordinates where spots may be placed
 		self.total_coord_list = [self.get_spot_coord() for i in range(self.increment)]
 
 	"""
@@ -95,7 +97,7 @@ class SpotImage():
 	"""
 	Generate a spot image.
 	"""
-	def generate_spot_image(self, num_spots=None, density=None, snr_distr_params=['Gauss', 10, 2], snr_threshold=3, plot_spots=False, plot_img=False, save_spots=False, save_img=False, spots_filename=None, spot_img_filename=None):
+	def generate_spot_image(self, num_spots=None, density=None, snr_distr_params=['Gauss', 10, 2], snr_threshold=3, plot_spots=False, plot_img=False, save_spots=False, save_img=False, spots_filename='Spots', spot_img_filename='Spot Image'):
 		
 		# Step 1: Check that snr distribution params are valid
 
@@ -112,9 +114,9 @@ class SpotImage():
 		elif num_spots is not None and density is not None:
 			self.num_spots = math.floor(density * len(self.valid_coords))
 
-			# constrict valid region to get a good ballpart number of spots
-			while(self.num_spots > num_spots + 75):								# to do: make magic number global variable
-				self.global_intensity_dial += 0.05								# to do: make magic number global variable
+			# constrict valid region to get a good ballpark number of spots
+			while(self.num_spots > num_spots + ballpark):								
+				self.global_intensity_dial += global_intensity_dial_increment
 				self.valid_coords = self.get_valid_coords()
 				self.num_spots = math.floor(density * len(self.valid_coords))
 			self.density = density
@@ -223,10 +225,8 @@ class SpotImage():
 		The spot has an SNR sampled from the SNR distribution.
 	"""
 	def get_patch(self, coord, snr):
-		x = coord[0]
-		y = coord[1]
 		patch = np.zeros([self.patch_sz, self.patch_sz])
-		sigma = self.get_noise(x,y)				# get sigma corresp. to noise at equiv. patch on background
+		sigma = self.get_noise(coord)				# get sigma corresp. to noise at equiv. patch on background
 		max_intensity = snr*sigma
 		x_0 = y_0 = math.floor(self.patch_sz/2)
 		if (self.spot_shape_params[0] == '2D_Gauss'):
@@ -269,9 +269,9 @@ class SpotImage():
 	Get a noise (sigma) value from a square patch on the background 
 	of size patch_sz and centered on (x,y).
 	"""
-	def get_noise(self, x, y):
-		origin_x = x - self.margin - 1
-		origin_y = y - self.margin - 1
+	def get_noise(self, coord):
+		origin_x = coord[0] - self.margin - 1
+		origin_y = coord[1] - self.margin - 1
 		patch = np.zeros([self.patch_sz, self.patch_sz])
 		for row in range(self.patch_sz):
 			for col in range(self.patch_sz):
@@ -282,7 +282,7 @@ class SpotImage():
 	Save csv file of spot image data for later reference
 	as ground truth values.
 	"""
-	def get_coord_snr_list_csv(self, csv_filename):
+	def get_coord_snr_list_csv(self, csv_filename='coords_snr.csv'):
 		np.savetxt(csv_filename, self.get_coord_snr_list(), delimiter=',', comments='', header='col,row,snr')
 
 	"""
@@ -347,7 +347,7 @@ class SpotImage():
 	def plot_coords(self):
 		fig = plt.figure(figsize=(4,4))
 		for i in range(self.num_spots):
-			plt.scatter(coord_list[i][0], coord_list[i][1], facecolors='b', s=10)
+			plt.scatter(self.coord_list[i][0], self.coord_list[i][1], facecolors='b', s=10)
 		plt.axis('equal')
 		plt.xlim(0, self.img_sz)
 		plt.ylim(0, self.img_sz)
