@@ -1,11 +1,9 @@
 """ This module contains the SpotImage class.
 """
 
-import cv2
-import math
+import cv2, math, random
 import matplotlib.pyplot as plt
 import numpy as np
-import random
 from skimage import filters
 from skimage.restoration import estimate_sigma
 from sklearn.neighbors import KDTree
@@ -97,30 +95,79 @@ class SpotImage():
 	"""
 	Generate a spot image.
 	"""
-	def generate_spot_image(self, num_spots=None, snr_distr_params=['Gauss', 10, 2], snr_threshold=3, plot_spots=False, plot_img=False, save_spots=False, save_img=False, spots_filename=None, spot_img_filename=None, density=0.008):
+	def generate_spot_image(self, num_spots=None, density=None, snr_distr_params=['Gauss', 10, 2], snr_threshold=3, plot_spots=False, plot_img=False, save_spots=False, save_img=False, spots_filename=None, spot_img_filename=None):
 		
-		if (snr_distr_params[0] not in self.snr_distrs):
+		# Step 1: Check that snr distribution params are valid
+
+		if snr_distr_params[0] not in self.snr_distrs:
 			raise ValueError('Invalid SNR distribution name entered.')
-
-		# assign variables that determine what goes in self.coord_list
-		if (density != None):
-			self.num_spots = math.floor(density * len(self.valid_coords))
-			while(self.num_spots > 175):
-				self.global_intensity_dial += 0.05
-				self.valid_coords = self.get_valid_coords()
-				self.num_spots = math.floor(density * len(self.valid_coords))
-			self.density = density
-		else:
-			self.density = None
-
-		# assign variables that determine what goes in self.snr_list
 		self.snr_distr_params = snr_distr_params
 		self.snr_threshold = snr_threshold
 
-		# assign variables: spot_list, coord_list, snr_list, spot_array, spot_img
+		# Step 2: Set self.coord_list
+
+		if num_spots is None and density is None:
+			raise ValueError('Specify num_spots and/or density.')
+
+		elif num_spots is not None and density is not None:
+			self.num_spots = math.floor(density * len(self.valid_coords))
+
+			# constrict valid region to get a good ballpart number of spots
+			while(self.num_spots > num_spots + 75):								# to do: make magic number global variable
+				self.global_intensity_dial += 0.05								# to do: make magic number global variable
+				self.valid_coords = self.get_valid_coords()
+				self.num_spots = math.floor(density * len(self.valid_coords))
+			self.density = density
+
+			# get list of all coordinates being held right now
+			coords = [self.total_coord_list[i] for i in range(self.num_spots)]
+
+			# get NNDs of all coordinates being held right now
+			coords_kdt = KDTree(coords, leaf_size=2, metric='euclidean')
+			NND_list = []
+			for coord in coords:
+				coord = [coord]
+				dist, ind = coords_kdt.query(coord, k=2)
+				NND_list.append(dist[0][1])
+
+			# remove the spots with the largest NNDs
+			num_to_remove = self.num_spots - num_spots
+
+				# Source: https://stackoverflow.com/questions/16878715/how-to-find-the-index-of-n-largest-elements-in-a-list-or-np-array-python?lq=1
+			ordered_indices = sorted(range(len(NND_list)), key=lambda x: NND_list[x])
+			indices_to_remove = sorted(range(len(NND_list)), key=lambda x: NND_list[x])[-num_to_remove:]
+
+			coords_keeping = []
+			for i in range(len(coords)):
+				if i not in indices_to_remove:
+					coords_keeping.append(coords[i])
+
+			self.coord_list = coords_keeping
+			self.num_spots = num_spots
+
+		else: # if (num_spots is not None and density is None) or (num_spots is None and density is not None)
+
+			# if num_spots is not None and density is None
+			if num_spots is not None:	
+				self.num_spots = num_spots
+				self.density = round(float(self.num_spots)/(len(self.valid_coords)), 3)
+
+			# if num_spots is None and density is not None
+			else: 						
+				self.num_spots = math.floor(density * len(self.valid_coords))
+				self.density = density
+
+			self.coord_list = self.total_coord_list
+			while (self.num_spots > len(self.total_coord_list)):
+				self.total_coord_list += [self.get_spot_coord() for i in range(self.increment)]
+
+		# Step 3: Set self.spot_list, self.spot_array, and self.spot_img
+
 		self.spot_list = self.generate_spot_list()
 		self.spot_array = self.generate_spot_array()
 		self.spot_img = np.add(self.bg_array, self.spot_array)
+
+		# Step 4: Plot and save spot image and spot array as desired
 
 		if plot_spots:
 			plt.imshow(self.spot_array, cmap=self.cmap)
@@ -135,14 +182,12 @@ class SpotImage():
 			if save_img:
 				plt.imsave(spot_img_filename, self.spot_img, cmap=self.cmap)
 
+
 	"""
 	Generate a list of random spots. 
 	Each spot has a random location and a patch of intensity values.
 	"""
 	def generate_spot_list(self):
-		self.coord_list = self.total_coord_list
-		while (self.num_spots > len(self.total_coord_list)):
-			self.total_coord_list += [self.get_spot_coord() for i in range(self.increment)]
 		self.snr_list = [self.get_snr() for i in range(len(self.total_coord_list))]
 		spot_list = [[self.coord_list[i], self.get_patch(self.coord_list[i], self.snr_list[i])] for i in range(self.num_spots)]
 		return spot_list
