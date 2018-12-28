@@ -4,10 +4,10 @@
 import cv2, math, random
 import matplotlib.pyplot as plt
 import numpy as np
+from matplotlib.lines import Line2D
 from skimage import filters
 from skimage.restoration import estimate_sigma
 from sklearn.neighbors import KDTree
-from matplotlib.lines import Line2D
 
 # ------- #
 
@@ -353,5 +353,4 @@ class SpotImage():
 		plt.ylim(0, self.img_sz)
 		plt.title('Coordinates')
 		plt.show()
-
 

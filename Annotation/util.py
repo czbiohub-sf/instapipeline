@@ -396,7 +396,7 @@ Functions for sorting clusters by clumpiness and declumping
 """
 
 
-def get_clumpiness_threshold(clusters, bin_size, cutoff_fraction):
+def get_clumpiness_threshold(clusters):
 	""" Calculate a clumpiness threshold for all clusters
 	by finding the value between the tail and the main mode. 
 	Assumes a left-skewed unimodal distribution.
@@ -426,35 +426,24 @@ def get_clumpiness_threshold(clusters, bin_size, cutoff_fraction):
 	single_fraction_list = []
 	for i in range(len(clusters.index)):
 		row = clusters.iloc[[i]]
-		members = row.iloc[0]['members']
-		x_coords = []
-		y_coords = []
-		workers = []
-		for member in members:
-			x_coords.append(member[0])
-			y_coords.append(member[1])
-			workers.append(member[3])
-
-		# Calculate replication of unique workers for each cluster
+		workers = [member[3] for member in row.iloc[0]['members']]
 		unique_workers = np.unique(workers)
-		num_instances_list = []
-		for unique_worker in unique_workers:
-			num_instances_list.append(workers.count(unique_worker))
-		singles = num_instances_list.count(1)
-		single_fraction = singles/len(unique_workers)
-		single_fraction_list.append(single_fraction)
+		num_instances_list = [workers.count(unique_worker) for unique_worker in unique_workers]
+		single_fraction_list.append(num_instances_list.count(1)/len(unique_workers))
 
-	(n, bins, patches) = plt.hist(single_fraction_list, bins=np.arange(0, 1+2*bin_size, bin_size) - bin_size/2)
-	total_counts_reversed = list(reversed(n))
-
-	threshold = 0
-	prev_count = 0
-	for i in range(len(total_counts_reversed)):
-		count = total_counts_reversed[i]
+	fig = plt.figure()
+	(n, bins, patches) = plt.hist(single_fraction_list, bins = np.arange(0,1.2,0.1)-0.05)
+	plt.close()
+	# calculate threshold
+	total_counts_rev = list(reversed(n))
+	threshold, prev_count, bin_width = 0, 0, 0.1
+	for i in range(len(total_counts_rev)):
+		count = total_counts_rev[i]
 		if (count != 0):
-			if((count < prev_count/cutoff_fraction) and (count != 0) and (prev_count != 0)):
-				threshold = 1 - i*bin_size - bin_size/2
+			if((count < prev_count/3) and (count != 0) and (prev_count != 0)):
+				threshold = bin_width*10-i*bin_width-bin_width/2
 		prev_count = count
+
 	return threshold
 
 def plot_clumpiness_threshold(clusters):
@@ -592,9 +581,10 @@ def declump(clusters, i, declumping_params):
 
 	row = clusters.iloc[[i]]
 	members = row.iloc[0]['members']
-	workers = [member[3] for member in members]
 	x_coords = [member[0] for member in members]
 	y_coords = [member[1] for member in members]
+	timestamps = [member[3] for member in members]
+	workers = [member[3] for member in members]
 	unique_workers = np.unique(workers)
 	coords = np.stack((x_coords, y_coords), axis = -1)
 
@@ -604,10 +594,11 @@ def declump(clusters, i, declumping_params):
 		centers = km.cluster_centers_
 		labels = km.labels_
 		num_subclusters = k
-	
+
+	members = np.stack((x_coords, y_coords, timestamps, workers), axis = -1)
 	subclusters_list = [[center[0], center[1], []] for center in centers]
-	for coord, label in zip(coords, labels):
-		subclusters_list[label][2].append(coord)
+	for member, label in zip(members, labels):
+		subclusters_list[label][2].append(member)
 
 	subclusters = pd.DataFrame(index = range(num_subclusters), columns = ['centroid_x','centroid_y','members'])
 
