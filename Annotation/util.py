@@ -583,7 +583,7 @@ def declump(clusters, i, declumping_params):
 	members = row.iloc[0]['members']
 	x_coords = [member[0] for member in members]
 	y_coords = [member[1] for member in members]
-	timestamps = [member[3] for member in members]
+	timestamps = [member[2] for member in members]
 	workers = [member[3] for member in members]
 	unique_workers = np.unique(workers)
 	coords = np.stack((x_coords, y_coords), axis = -1)
@@ -929,7 +929,7 @@ def visualize_clusters(clusters, show_workers, show_centroids, show_ref_points, 
 Functions to measure quality
 """
 
-def calc_fpr_tpr(clusters, csv_filepath, correctness_threshold, plot_tpr, plot_fpr, img_filepath, img_height, cluster_marker_size, bigger_window_size):
+def calc_fpr_tpr(clusters=None, csv_filepath=None, correctness_threshold=4, plot_tpr=False, plot_fpr=False, img_filepath=None, img_height=300, cluster_marker_size=40, bigger_window_size=True):
 	""" Compare the centroids in the clusters dataframe with the reference
 	values to calculate the false positive and true positive rates.
 	
