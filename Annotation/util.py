@@ -376,8 +376,8 @@ def sort_clusters_by_size(clusters, threshold):
 		else:
 			large_clusters_list.append([centroid_x, centroid_y, members])
 
-	small_clusters = pd.DataFrame(index = range(len(small_clusters_list)), columns = ['centroid_x','centroid_y','members'])
-	large_clusters = pd.DataFrame(index = range(len(large_clusters_list)), columns = ['centroid_x','centroid_y','members'])
+	small_clusters = pd.DataFrame(index=range(len(small_clusters_list)), columns=['centroid_x','centroid_y','members'])
+	large_clusters = pd.DataFrame(index=range(len(large_clusters_list)), columns=['centroid_x','centroid_y','members'])
 
 	for i in range(len(small_clusters_list)):
 		small_clusters['centroid_x'][i] = small_clusters_list[i][0]
@@ -432,7 +432,7 @@ def get_clumpiness_threshold(clusters):
 		single_fraction_list.append(num_instances_list.count(1)/len(unique_workers))
 
 	fig = plt.figure()
-	(n, bins, patches) = plt.hist(single_fraction_list, bins = np.arange(0,1.2,0.1)-0.05)
+	(n, bins, patches) = plt.hist(single_fraction_list, bins=np.arange(0,1.2,0.1)-0.05)
 	plt.close()
 	# calculate threshold
 	total_counts_rev = list(reversed(n))
@@ -471,7 +471,7 @@ def plot_clumpiness_threshold(clusters):
 		single_fraction_list.append(num_instances_list.count(1)/len(unique_workers))
 
 	fig = plt.figure()
-	(n, bins, patches) = plt.hist(single_fraction_list, bins = np.arange(0,1.2,0.1)-0.05)
+	(n, bins, patches) = plt.hist(single_fraction_list, bins=np.arange(0,1.2,0.1)-0.05)
 
 	# calculate threshold
 	total_counts_rev = list(reversed(n))
@@ -540,8 +540,8 @@ def sort_clusters_by_clumpiness(clusters, threshold):
 			nonclumpy_clusters_list.append([centroid_x, centroid_y, members])
 			nonclumpy_counter += 1
 
-	clumpy_clusters = pd.DataFrame(index = range(clumpy_counter), columns = ['centroid_x','centroid_y','members'])
-	nonclumpy_clusters = pd.DataFrame(index = range(nonclumpy_counter), columns = ['centroid_x','centroid_y','members'])
+	clumpy_clusters = pd.DataFrame(index=range(clumpy_counter), columns=['centroid_x','centroid_y','members'])
+	nonclumpy_clusters = pd.DataFrame(index=range(nonclumpy_counter), columns=['centroid_x','centroid_y','members'])
 
 	for k in range(clumpy_counter):
 		clumpy_clusters['centroid_x'][k] = clumpy_clusters_list[k][0]
@@ -586,7 +586,7 @@ def declump(clusters, i, declumping_params):
 	timestamps = [member[2] for member in members]
 	workers = [member[3] for member in members]
 	unique_workers = np.unique(workers)
-	coords = np.stack((x_coords, y_coords), axis = -1)
+	coords = np.stack((x_coords, y_coords), axis=-1)
 
 	if (declumping_params[0] == 'KMeans'):
 		k = declumping_params[1]
@@ -595,12 +595,12 @@ def declump(clusters, i, declumping_params):
 		labels = km.labels_
 		num_subclusters = k
 
-	members = np.stack((x_coords, y_coords, timestamps, workers), axis = -1)
+	members = np.stack((x_coords, y_coords, timestamps, workers), axis=-1)
 	subclusters_list = [[center[0], center[1], []] for center in centers]
 	for member, label in zip(members, labels):
 		subclusters_list[label][2].append(member)
 
-	subclusters = pd.DataFrame(index = range(num_subclusters), columns = ['centroid_x','centroid_y','members'])
+	subclusters = pd.DataFrame(index=range(num_subclusters), columns=['centroid_x','centroid_y','members'])
 
 	for ind in range(num_subclusters):
 		subclusters['centroid_x'][ind] = subclusters_list[ind][0]
@@ -686,7 +686,7 @@ def get_pair_scores(df):
 	"""
 
 	worker_list = get_workers(df)
-	pair_scores = pd.DataFrame(index = worker_list, columns = worker_list)
+	pair_scores = pd.DataFrame(index=worker_list, columns=worker_list)
 	for worker in worker_list:
 		worker_df = slice_by_worker(df, worker)
 		worker_coords = get_click_properties(worker_df)[:,:2]
@@ -731,7 +731,7 @@ def get_worker_pair_scores(df):
 	"""
 	worker_list = get_workers(df)
 	pair_scores = get_pair_scores(df)
-	worker_scores = pd.DataFrame(index = worker_list, columns = ["score"])
+	worker_scores = pd.DataFrame(index=worker_list, columns=["score"])
 	for worker in worker_list:
 		worker_scores["score"][worker] = sum(pair_scores[worker].values)
 	return worker_scores
@@ -777,7 +777,7 @@ def slice_by_worker_pair_score(df, threshold):
 Functions for visualizing annotations and clusters
 """
 
-def plot_annotations(df, show_workers, show_correctness_workers, show_centroids, show_correctness_centroids, show_ref_points, show_NN_inc, centroid_and_ref_df, correctness_threshold, worker_marker_size, cluster_marker_size, img_filepath, csv_filepath, bigger_window_size):
+def plot_annotations(df=None, show_workers=False, show_correctness_workers=False, show_centroids=False, show_correctness_centroids=False, show_ref_points=False, show_NN_inc=False, centroid_and_ref_df=None, correctness_threshold=4, worker_marker_size=8, cluster_marker_size=40, ref_marker_size=20, img_filepath=None, csv_filepath=None, bigger_window_size=True):
 	""" Quick visualization of worker annotations, clusters, and/or annotation and cluster "correctness." 
 	
 	Parameters
@@ -820,7 +820,7 @@ def plot_annotations(df, show_workers, show_correctness_workers, show_centroids,
 					color = 'm'
 				for member in member_list:
 					coords = member[:2]
-					plt.scatter([coords[0]], flip([coords[1]], img_height), s = worker_marker_size, facecolors = color, alpha = 0.5)
+					plt.scatter([coords[0]], flip([coords[1]], img_height), s=worker_marker_size, facecolors=color, alpha=0.5)
 			handle_list.append(Line2D([0],[0], marker='o', color='w', markerfacecolor='g', label='anno of correct cluster'))
 			handle_list.append(Line2D([0],[0], marker='o', color='w', markerfacecolor='m', label='anno of incorrect cluster'))
 		else:
@@ -831,7 +831,7 @@ def plot_annotations(df, show_workers, show_correctness_workers, show_centroids,
 				x_coords = coords[:,0]
 				y_coords = coords[:,1]
 				y_coords_flipped = flip(y_coords, img_height)
-				handle = plt.scatter(x_coords, y_coords_flipped, s = worker_marker_size, facecolors = color, alpha = 0.5, label = worker)
+				handle = plt.scatter(x_coords, y_coords_flipped, s=worker_marker_size, facecolors=color, alpha=0.5, label=worker)
 				handle_list.append(handle)
 		if not show_centroids:
 			plt.title('Worker Annotations')	
@@ -849,14 +849,14 @@ def plot_annotations(df, show_workers, show_correctness_workers, show_centroids,
 					if show_NN_inc:
 						color = colors[color_index]							
 						color_index = (color_index+1)%len(colors)
-						plt.scatter([centroid_and_ref_df['NN_x'].values[i]], [img_height-centroid_and_ref_df['NN_y'].values[i]], s = worker_marker_size*2, facecolors = color, edgecolors = color)
+						plt.scatter([centroid_and_ref_df['NN_x'].values[i]], [img_height-centroid_and_ref_df['NN_y'].values[i]], s=worker_marker_size*2, facecolors=color, edgecolors=color)
 					else:
 						color = 'm'
-				plt.scatter(x_coords[i], y_coords_flipped[i], s = cluster_marker_size, facecolors = 'none', edgecolors = color)					
+				plt.scatter(x_coords[i], y_coords_flipped[i], s=cluster_marker_size, facecolors='none', edgecolors=color)					
 			handle_list.append(Line2D([0],[0], marker='o', color='w', markerfacecolor=None, markeredgecolor='g', label='centroid of correct cluster'))
 			handle_list.append(Line2D([0],[0], marker='o', color='w', markerfacecolor=None, markeredgecolor='m', label='centroid of incorrect cluster'))
 		else:
-			plt.scatter(x_coords, y_coords_flipped, s = cluster_marker_size, facecolors = 'none', edgecolors = 'cyan')
+			plt.scatter(x_coords, y_coords_flipped, s=cluster_marker_size, facecolors='none', edgecolors='cyan')
 			handle_list.append(Line2D([0],[0], marker='o', color='w', markerfacecolor=None, markeredgecolor='cyan', label='cluster centroid'))
 		if not show_workers:
 			plt.title('Cluster Centroids')
@@ -868,15 +868,15 @@ def plot_annotations(df, show_workers, show_correctness_workers, show_centroids,
 		ref_df = pd.read_csv(csv_filepath)								
 		ref_points = ref_df.loc[:, ['col', 'row']].as_matrix()
 		for point in ref_points:													
-			plt.scatter([point[0]], [point[1]], s = 20, facecolors = 'y')
+			plt.scatter([point[0]], [point[1]], s=ref_marker_size, facecolors = 'y')
 		handle_list.append(Line2D([0],[0], marker='o', color='w', markerfacecolor='y', label='reference points'))
 	
 	img = mpimg.imread(img_filepath)
 	plt.imshow(img, cmap = 'gray')
-	plt.legend(handles = handle_list, loc = 9, bbox_to_anchor = (1.2, 1.015))	
+	plt.legend(handles=handle_list, loc=9, bbox_to_anchor = (1.2, 1.015))	
 	plt.show()
 
-def visualize_clusters(clusters, show_workers, show_centroids, show_ref_points, worker_marker_size, cluster_marker_size, ref_marker_size, csv_filepath, img_filepath, img_height, x_bounds, y_bounds, plot_title, bigger_window_size):
+def visualize_clusters(clusters=None, worker_marker_size=8, cluster_marker_size=40, ref_marker_size=20, csv_filepath=None, img_filepath=None, img_height=None, x_bounds=None, y_bounds=None, plot_title=None, show_workers=False, show_centroids=False, show_ref_points=False, bigger_window_size=True):
 	""" Visualize clusters, each with a different color.
 	
 	Parameters
@@ -899,7 +899,7 @@ def visualize_clusters(clusters, show_workers, show_centroids, show_ref_points, 
 	-------
 	none
 	"""
-	fig = plt.figure(figsize = (12,7))
+	fig = plt.figure(figsize=(12,7))
 	if bigger_window_size:
 		fig = plt.figure(figsize=(14,12))
 	if x_bounds:
@@ -907,21 +907,23 @@ def visualize_clusters(clusters, show_workers, show_centroids, show_ref_points, 
 	if y_bounds:
 		plt.ylim(y_bounds[0], y_bounds[1])
 	img = mpimg.imread(img_filepath)
-	plt.imshow(img, cmap = 'gray')
+	plt.imshow(img, cmap='gray')
 	if show_workers:
 		for color, member_list in zip(colors*10, clusters['members'].values):
 			for member in member_list:
-				plt.scatter([member[0]], [img_height-member[1]], s = worker_marker_size, facecolors = color, edgecolors = 'None')
+				x = int(member[0])
+				y = int(img_height)-int(member[1])
+				plt.scatter([x], [y], s=worker_marker_size, facecolors=color, edgecolors='None')
 
 	if show_ref_points:
 		ref_df = pd.read_csv(csv_filepath)								
 		ref_points = ref_df.loc[:, ['col', 'row']].as_matrix()
 		for point in ref_points:													
-			plt.scatter([point[0]], [point[1]], s = ref_marker_size, facecolors = 'y')
-		plt.legend(handles = [Line2D([0],[0], marker='o', color='w', markerfacecolor='y', label='reference points')], loc = 9, bbox_to_anchor = (1.2, 1.015))	
+			plt.scatter([point[0]], [point[1]], s=ref_marker_size, facecolors='y')
+		plt.legend(handles=[Line2D([0],[0], marker='o', color='w', markerfacecolor='y', label='reference points')], loc=9, bbox_to_anchor=(1.2, 1.015))	
 	
 	if show_centroids:
-		plt.scatter(clusters['centroid_x'].values, flip(clusters['centroid_y'].values, img_height), s = cluster_marker_size, facecolors = 'none', edgecolors = '#ffffff')
+		plt.scatter(clusters['centroid_x'].values, flip(clusters['centroid_y'].values, img_height), s=cluster_marker_size, facecolors='none', edgecolors='#ffffff')
 	plt.title(plot_title)
 	plt.show()
 
@@ -979,10 +981,10 @@ def calc_fpr_tpr(clusters=None, csv_filepath=None, correctness_threshold=4, plot
 		if dist[0] <= correctness_threshold:
 			num_spots_detected += 1
 			if plot_tpr:
-				plt.scatter([ref_coord[0]], flip([ref_coord[1]], img_height), s = cluster_marker_size, facecolors = 'g')
+				plt.scatter([ref_coord[0]], flip([ref_coord[1]], img_height), s=cluster_marker_size, facecolors = 'g')
 		else:
 			if plot_tpr:
-				plt.scatter([ref_coord[0]], flip([ref_coord[1]], img_height), s = cluster_marker_size, facecolors = 'm')
+				plt.scatter([ref_coord[0]], flip([ref_coord[1]], img_height), s=cluster_marker_size, facecolors = 'm')
 	num_spots_total = len(ref_coords)
 	tpr = num_spots_detected/num_spots_total
 
@@ -994,10 +996,10 @@ def calc_fpr_tpr(clusters=None, csv_filepath=None, correctness_threshold=4, plot
 		if dist[0] > correctness_threshold:
 			num_centroids_wout_spot += 1
 			if plot_fpr:
-				plt.scatter([centroid_coord[0]], flip([centroid_coord[1]], img_height), s = cluster_marker_size, edgecolors = 'm', facecolors = 'none')
+				plt.scatter([centroid_coord[0]], flip([centroid_coord[1]], img_height), s=cluster_marker_size, edgecolors='m', facecolors='none')
 		else:
 			if plot_fpr:
-				plt.scatter([centroid_coord[0]], flip([centroid_coord[1]], img_height), s = cluster_marker_size, edgecolors = 'g', facecolors = 'none')
+				plt.scatter([centroid_coord[0]], flip([centroid_coord[1]], img_height), s=cluster_marker_size, edgecolors='g', facecolors='none')
 	num_centroids_total = len(centroid_coords)
 	fpr = num_centroids_wout_spot/num_centroids_total
 
@@ -1016,7 +1018,7 @@ def calc_fpr_tpr(clusters=None, csv_filepath=None, correctness_threshold=4, plot
 	if plot_tpr or plot_fpr:
 		img = mpimg.imread(img_filepath)
 		plt.imshow(img, cmap = 'gray')
-		plt.legend(handles = handle_list, loc = 9, bbox_to_anchor = (1.2, 1.015))
+		plt.legend(handles=handle_list, loc=9, bbox_to_anchor=(1.2, 1.015))
 		plt.show()	
 
 	return tpr, fpr
