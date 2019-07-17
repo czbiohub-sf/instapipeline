@@ -275,7 +275,7 @@ class SpotImage():
 		patch = np.zeros([self.patch_sz, self.patch_sz])
 		for row in range(self.patch_sz):
 			for col in range(self.patch_sz):
-				patch[row][col] = self.bg_array[origin_y + row][origin_x + col]
+				patch[int(row)][int(col)] = self.bg_array[int(origin_y + row)][int(origin_x + col)]
 		return estimate_sigma(patch, multichannel=True, average_sigmas=True)			# get noise from equiv. patch on background
 
 	"""

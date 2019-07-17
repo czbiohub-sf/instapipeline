@@ -52,11 +52,9 @@ def get_timestamps(df):
 
 def get_click_properties(df):
 	""" Return a numpy array containing properties for all clicks in df
-
 	Parameters
 	----------
 	df : pandas dataframe
-
 	Returns
 	-------
 	numpy array
@@ -83,12 +81,10 @@ def get_click_properties(df):
 
 def get_time_per_click(df):
 	""" Get time spent on each annotation.
-
 	Parameters
 	----------
 	df : pandas dataframe 
 		(timestamp | x | y | annotation_type | height | width image_filename | time_when_completed | worker_id)
-
 	Returns
 	-------
 	time_spent_list : list of the amount of time spent on all clicks in df
@@ -106,13 +102,11 @@ def get_time_per_click(df):
 
 def get_avg_time_per_click(df, uid):
 	""" Get the average amount of time that a worker spent on one click.
-
 	Parameters
 	----------
 	df : pandas dataframe 
 		(timestamp | x | y | annotation_type | height | width image_filename | time_when_completed | worker_id)
 	uid : string worker ID
-
 	Returns
 	-------
 	the average time that the worker spent per click
@@ -126,12 +120,10 @@ def get_avg_time_per_click(df, uid):
 def get_nnd_per_click(df, ref_kdt):
 	""" Get the distance to the nearest neighbor (found in
 		the k-d tree of reference points).
-
 	Parameters
 	----------
 	df : pandas dataframe 
 		(timestamp | x | y | annotation_type | height | width image_filename | time_when_completed | worker_id)
-
 	Returns
 	-------
 	list of distances to the nearest neighbor (found in
@@ -144,12 +136,10 @@ def get_nnd_per_click(df, ref_kdt):
 
 def slice_by_worker(df, uid):
 	""" Return a dataframe with annotations for only one worker
-
 	Parameters
 	----------
 	df : pandas dataframe
 	uid : user ID of worker
-
 	Returns
 	-------
 	Dataframe with annotations for only that worker 
@@ -184,12 +174,10 @@ Functions for other data structure manipulation
 
 def csv_to_kdt(csv_filepath, img_height):
 	""" Fit reference spot coordinates to a k-d tree
-
 	Parameters
 	----------
 	csv_filepath : string filepath to csv file containing reference points
 	img_height : height of image
-
 	Returns
 	-------
 	ref_kdt : sklearn.neighbors.kd_tree.KDTree object containing reference points 
@@ -221,7 +209,6 @@ def centroid_and_ref_df(clusters, csv_filepath, img_height):
 			each member is a list of properties of the annotation 
 			i.e. [x coord, y coord, time spent, worker ID]
 	csv_filepath : contains reference data
-
 	Returns
 	-------
 	this dataframe: centroid_x | centroid_y | x of nearest ref | y of nearest ref | NN_dist | members
@@ -263,12 +250,10 @@ def centroid_and_ref_df(clusters, csv_filepath, img_height):
 def flip(vec, height):
 	""" Flip the values of a list about a height
 	Useful for flipping y axis to plotting over an image with a flipped coordinate system.
-
 	Parameters
 	----------
 	vec : list of values to be flipped
 	height : height about which to flip values
-
 	Returns
 	-------
 	flipped list
@@ -285,12 +270,10 @@ Functions for sorting clusters by size
 def get_cluster_size_threshold(clusters):
 	""" Calculate a cluster size threshold for all clusters
 	using K-means in 1D. Assumes a bimodal distribution.
-
 	Parameters
 	----------
 	clusters : pandas dataframe 
 		(centroid_x | centroid_y | members)
-
 	Returns
 	-------
 	cluster size threshold
@@ -342,13 +325,11 @@ def plot_cluster_size_threshold(clusters, threshold):
 
 def sort_clusters_by_size(clusters, threshold):
 	""" Sort clusters by quantity of unique annotators.
-
 	Parameters
 	----------
 	clusters : pandas dataframe 
 		(centroid_x | centroid_y | members)
 	threshold : threshold quantity of unique annotators
-
 	Returns
 	-------
 	small_clusters : pandas dataframe containing clusters 
@@ -400,7 +381,6 @@ def get_clumpiness_threshold(clusters):
 	""" Calculate a clumpiness threshold for all clusters
 	by finding the value between the tail and the main mode. 
 	Assumes a left-skewed unimodal distribution.
-
 	Protocol for finding threshold:
 	Sort all clusters into bins.
 		e.g. if bin_size = 0.1, then sort clusters into bins 100-95%, 95-85%, ..., 5-0% 
@@ -411,14 +391,12 @@ def get_clumpiness_threshold(clusters):
 	threshold is the lowest of these values minus 0.1 (in order to move one bin to the left, 
 		to minimize the number of clusters which are actually single in the group of clusters 
 		detected as clumpy), or 0 if no such values exist.
-
 	Parameters
 	----------
 	clusters : pandas dataframe 
 		(centroid_x | centroid_y | members)
 	bin_size : see protocol
 	cutoff_fraction : see protocol
-
 	Returns
 	-------
 	clumpiness threshold
@@ -496,13 +474,11 @@ def plot_clumpiness_threshold(clusters):
 def sort_clusters_by_clumpiness(clusters, threshold):
 	""" Sort clusters by fraction of contributors who contribute once
 	to the cluster.
-
 	Parameters
 	----------
 	clusters : pandas dataframe 
 		(centroid_x | centroid_y | members)
 	threshold : threshold fraction of contributors who only contribute once
-
 	Returns
 	-------
 	clumpy_clusters : pandas dataframe containing clusters 
@@ -574,7 +550,6 @@ def declump(clusters, i, declumping_params):
 	Returns
 	-------
 	declumped_clusters : pandas df containing resulting declumped clusters
-
 	"""
 	if (declumping_params[0] not in declumping_algs):
 		raise ValueError('Invalid declumping algorithm name entered.')
@@ -618,12 +593,10 @@ def get_cluster_means(clusters):
 	""" Get the mean x and y of each cluster.
 	(Different from cluster centroids, which are the exemplar
 	annotation for each cluster.)
-
 	Parameters
 	----------
 	clusters : pandas dataframe 
 		(centroid_x | centroid_y | members)
-
 	Returns
 	-------
 	numpy array of coords
@@ -651,7 +624,6 @@ def get_cluster_correctness(df, correctness_threshold):
 		* the index is the Centroid ID
 	correctness_threshold : tolerance for correctness in pixels, None if correctness will not be visualized
 		for each centroid, if NN_dist <= threshold, centroid is "correct"
-
 	Returns
 	-------
 	2-column array with a row for each centroid
@@ -672,11 +644,9 @@ def get_cluster_correctness(df, correctness_threshold):
 
 def get_pair_scores(df):
 	""" Calculate pair scores for each pair of workers in df.
-
 	Parameters
 	----------
 	df : pandas dataframe
-
 	Returns
 	-------
 	pair_scores : pandas dataframe
@@ -717,11 +687,9 @@ def get_pair_scores(df):
 
 def get_worker_pair_scores(df):
 	""" Calculate the total pairwise score for each workers in df.
-
 	Parameters
 	----------
 	df : pandas dataframe
-
 	Returns
 	-------
 	worker_scores : pandas dataframe
@@ -739,11 +707,9 @@ def get_worker_pair_scores(df):
 def get_worker_pair_score_threshold(df):
 	""" Calculate a pairwise score threshold for all workers in
 	df using Otsu's method. Assumes a bimodal distribution.
-
 	Parameters
 	----------
 	df : pandas dataframe
-
 	Returns
 	-------
 	pairwise score threshold value
@@ -755,12 +721,10 @@ def get_worker_pair_score_threshold(df):
 def slice_by_worker_pair_score(df, threshold):
 	""" Drop all annotations in df by workers with average pairwise 
 	score greater than threshold
-
 	Parameters
 	----------
 	df : pandas dataframe
 	threshold : pairwise score threshold
-
 	Returns
 	-------
 	df : pandas dataframe
@@ -793,7 +757,6 @@ def plot_annotations(df=None, show_workers=False, show_correctness_workers=False
 	worker_marker_size, cluster_marker_size : plot parameters
 	img_filepath, csv_filepath : paths to image and reference csv files
 	bigger_window_size : bool whether to use bigger window size (for jupyter notebook)
-
 	Returns
 	-------
 	none
@@ -894,7 +857,6 @@ def visualize_clusters(clusters=None, worker_marker_size=8, cluster_marker_size=
 	img_height : height of image in pixels
 	plot_title : title of plot
 	bigger_window_size : bool whether to use bigger window size (for jupyter notebook)
-
 	Returns
 	-------
 	none
@@ -1022,7 +984,3 @@ def calc_fpr_tpr(clusters=None, csv_filepath=None, correctness_threshold=4, plot
 		plt.show()	
 
 	return tpr, fpr
-
-
-
-
