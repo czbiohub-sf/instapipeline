@@ -8,10 +8,18 @@ import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 import numpy as np
 import pandas as pd
+import math
+
 from matplotlib.lines import Line2D
 from skimage import filters
-from sklearn.cluster import KMeans
+from skimage.io import imread
+from skimage.feature import blob_log
+
 from sklearn.neighbors import KDTree
+from sklearn.cluster import AffinityPropagation, KMeans
+from scipy import ndimage
+from scipy import ndimage, optimize
+
 
 # ----- #
 
@@ -28,8 +36,14 @@ colors = ['#3399FF', '#CC33FF', '#FFFF00', '#FF33CC',
 # list of declumping algs handled
 declumping_algs = ['KMeans']
 
+# autocrop parameters
+pref_param = -50000
+crosshair_ratio = 0.04
+
 """
-Functions for data frame manipulation
+
+Functions for interacting with / manipulating dataframes
+
 """
 
 def get_workers(df):
@@ -151,25 +165,10 @@ def print_head(df):
 	"""
 	print(df.head(n=5))
 
-# def slice_by_image(df, img_filename):
-# 	""" Return a dataframe with annotations for one image
-
-# 	Parameters
-# 	----------
-# 	df : pandas dataframe
-# 	img_filename : string filename of image
-
-# 	Returns
-# 	-------
-# 	Dataframe with annotations for only that image 
-#	
-#	No longer useful because each qa object gets data from only one image
-
-# 	"""
-# 	return df[df.image_filename == img_filename]
-
 """
+
 Functions for other data structure manipulation
+
 """
 
 def csv_to_kdt(csv_filepath, img_height):
@@ -373,7 +372,9 @@ def sort_clusters_by_size(clusters, threshold):
 	return small_clusters, large_clusters
 
 """
+
 Functions for sorting clusters by clumpiness and declumping
+
 """
 
 
@@ -738,7 +739,9 @@ def slice_by_worker_pair_score(df, threshold):
 	return df
 
 """
+
 Functions for visualizing annotations and clusters
+
 """
 
 def plot_annotations(df=None, show_workers=False, show_correctness_workers=False, show_centroids=False, show_correctness_centroids=False, show_ref_points=False, show_NN_inc=False, centroid_and_ref_df=None, correctness_threshold=4, worker_marker_size=8, cluster_marker_size=40, ref_marker_size=20, img_filepath=None, csv_filepath=None, bigger_window_size=True):
@@ -889,98 +892,288 @@ def visualize_clusters(clusters=None, worker_marker_size=8, cluster_marker_size=
 	plt.title(plot_title)
 	plt.show()
 
-"""
-Functions to measure quality
+
 """
 
-def calc_fpr_tpr(clusters=None, csv_filepath=None, correctness_threshold=4, plot_tpr=False, plot_fpr=False, img_filepath=None, img_height=300, cluster_marker_size=40, bigger_window_size=True):
-	""" Compare the centroids in the clusters dataframe with the reference
-	values to calculate the false positive and true positive rates.
-	
-	Parameters
-	----------
-	clusters : pandas dataframe (centroid_x | centroid_y | members) ~ output of sort_clusters_by_clumpiness()
-		centroid_x = x coord of cluster centroid
-		centroid_y = y coord of cluster centroid
-		members = list of annotations belonging to the cluster
-			each member is a list of properties of the annotation 
-			i.e. [x coord, y coord, time spent, worker ID]
-	csv_filepath : string filepath to csv file containing reference points
-	correctness_threshold : tolerance for correctness in pixels
-	plot_tpr : boolean whether to visualize tpr
-	plot_fpr : boolean whether to visualize fpr
-	img_filepath : string filepath to image file
-	img_heit : height of image in pixels
-	cluster_marker_size : plotting parameter
-	bigger_window_size : bool whether to use bigger window size (for jupyter notebook)
-	
-	Returns
-	-------
-	tpr : num spots detected / num spots total
-	fpr : num clusters don’t correspond with a spot / num clusters total
+Functions for Autocropping
+
+"""
+
+
+def get_nnd(coord, kdt):
+	dist, ind = kdt.query([coord], k=2)
+	return dist[0][1]
+
+def get_bb_tuples(coords, crosshair_arm_length, max_num_crops):
+	"""
+	Get the list of bounding boxes which will become crops
 	"""
 
-	if plot_tpr or plot_fpr:
-		fig = plt.figure(figsize = (12,7))
-		if bigger_window_size:
-			fig = plt.figure(figsize=(14,12))
+	# 1. Identify crowded spots
+	kdt = KDTree(coords, leaf_size=2, metric='euclidean')
+	crowded_spots = []
+	for coord in coords:
+		nnd = get_nnd(coord, kdt)
+		if nnd < crosshair_arm_length:
+			crowded_spots.append(coord)
 
-	ref_df = pd.read_csv(csv_filepath)
-	ref_coords = ref_df.loc[:, ['col', 'row']].as_matrix()
-	for i in range(len(ref_coords)):
-		point = ref_coords[i]
-		first_elem = point[0]
-		second_elem = img_height - point[1]
-		point = np.array([first_elem, second_elem])
-		ref_coords[i] = point
-	centroid_coords = clusters.loc[:, ['centroid_x', 'centroid_y']].as_matrix()
-	centroid_kdt = KDTree(centroid_coords, leaf_size=2, metric='euclidean')	# kdt is a kd tree with all the reference points
+	crowd_ratio = len(crowded_spots)/len(coords)
 
-	# calc tpr
-	num_spots_detected = 0
-	for ref_coord in ref_coords:
-		dist, ind = centroid_kdt.query([ref_coord], k=1)
-		if dist[0] <= correctness_threshold:
-			num_spots_detected += 1
-			if plot_tpr:
-				plt.scatter([ref_coord[0]], flip([ref_coord[1]], img_height), s=cluster_marker_size, facecolors = 'g')
-		else:
-			if plot_tpr:
-				plt.scatter([ref_coord[0]], flip([ref_coord[1]], img_height), s=cluster_marker_size, facecolors = 'm')
-	num_spots_total = len(ref_coords)
-	tpr = num_spots_detected/num_spots_total
+	# 2. Identify regions with many crowded spots
 
-	# calc fpr
-	ref_kdt = csv_to_kdt(csv_filepath, img_height)
-	num_centroids_wout_spot = 0
-	for centroid_coord in centroid_coords:
-		dist, ind = ref_kdt.query([centroid_coord], k=1)
-		if dist[0] > correctness_threshold:
-			num_centroids_wout_spot += 1
-			if plot_fpr:
-				plt.scatter([centroid_coord[0]], flip([centroid_coord[1]], img_height), s=cluster_marker_size, edgecolors='m', facecolors='none')
-		else:
-			if plot_fpr:
-				plt.scatter([centroid_coord[0]], flip([centroid_coord[1]], img_height), s=cluster_marker_size, edgecolors='g', facecolors='none')
-	num_centroids_total = len(centroid_coords)
-	fpr = num_centroids_wout_spot/num_centroids_total
+	crowded_coords = np.asarray(crowded_spots)
 
-	handle_list = []
+	# If crowded ratio is small, first try AffinityPropagaion, adjusting the preference parameter
+	num_centers = 0
+	if crowd_ratio < 0.4:
+		num_centers = max_num_crops + 1
+		pref_param = -500
+		for j in range(3):
+			af = AffinityPropagation(preference = pref_param).fit(crowded_coords)
+			centers = [crowded_coords[index] for index in af.cluster_centers_indices_]
+			num_centers = len(centers)
+			cluster_members_lists = [[] for i in range(len(centers))]
+			for label_index, coord in zip(af.labels_, crowded_coords):
+				cluster_members_lists[label_index].append(coord)
+			pref_param *= 10
+			if num_centers <= max_num_crops:
+				break
+	
+	# If still too many clusters, or if we didn't try AP, partition using K-means
+	if num_centers > max_num_crops or num_centers==0:
+		km = KMeans(n_clusters=max_num_crops).fit(crowded_coords)
+		centers = km.cluster_centers_
+		cluster_members_lists = [[] for center in centers]
+		for label_index, coord in zip(km.labels_, crowded_coords):
+			cluster_members_lists[label_index].append(coord)
 
-	if plot_tpr:
-		plt.title("TPR = " + str(round(tpr, 2)))
-		handle_list.append(Line2D([0],[0], marker='o', color='w', markerfacecolor='g', label='detected spot'))
-		handle_list.append(Line2D([0],[0], marker='o', color='w', markerfacecolor='m', label='undetected spot'))
+		# 3. Define bounding box around each region with many crowded spots.
+		cluster_members_lists = [[] for center in centers]
+		for label_index, coord in zip(km.labels_, crowded_coords):
+			cluster_members_lists[label_index].append(coord)
 
-	if plot_fpr:
-		plt.title("FPR = " + str(round(fpr, 2)))
-		handle_list.append(Line2D([0],[0], marker='o', color='w', markerfacecolor=None, markeredgecolor='g', label='correct centroid'))
-		handle_list.append(Line2D([0],[0], marker='o', color='w', markerfacecolor=None, markeredgecolor='m', label='incorrect centroid'))
+	else:
+		cluster_members_lists = [[] for center in centers]
+		for label_index, coord in zip(af.labels_, crowded_coords):
+			cluster_members_lists[label_index].append(coord)
 
-	if plot_tpr or plot_fpr:
-		img = mpimg.imread(img_filepath)
-		plt.imshow(img, cmap = 'gray')
-		plt.legend(handles=handle_list, loc=9, bbox_to_anchor=(1.2, 1.015))
-		plt.show()	
+	bb_list = []
+	for l in cluster_members_lists:
+		l = np.asarray(l)
+		x = l[:,0]
+		y = l[:,1]
+		bb_list.append((min(x), max(x), min(y), max(y)))
 
-	return tpr, fpr
+	return bb_list
+
+def crop(parent_img_name, bb):
+	"""
+	Crop a parent image based on a bounding box and return the crop
+	"""
+
+	img = imread(parent_img_name+'.png', as_gray=True)                  # img is a numpy 2D array
+	return img[int(bb[2]) : int(bb[3]), int(bb[0]) : int(bb[1])]
+
+def blackout(im, bb):
+	"""
+	Set values at all locations on im within bounding box bb
+	to 0.
+	"""
+	blacked_out = im
+	for r in range(blacked_out.shape[0]):
+		for c in range(blacked_out.shape[1]):
+			if (r >= bb[2]) and (r <= bb[3]):
+				if (c >= bb[0]) and (c <= bb[1]):
+					blacked_out[r][c] = 0
+	return blacked_out
+
+def get_crop_coords(coords, bb):
+	"""
+	Get all coordinates in coords which are within bounding box bb.
+	"""
+	crop_coords = []
+	for coord in coords:
+		if (coord[0] >= bb[0]) and (coord[0] <= bb[1]):
+			if (coord[1] >= bb[2]) and (coord[1] <= bb[3]):
+				crop_coords.append(coord)
+	return crop_coords
+
+def get_crowded_spots(crop_coords, new_crosshair_arm_length):
+	"""
+	get all crops in crop_coords which are smaller than new_crosshair_arm_length
+	"""
+	crop_kdt = KDTree(crop_coords, leaf_size=2, metric='euclidean')
+	crowded_spots = []
+	for coord in crop_coords:
+		nnd = get_nnd(coord, crop_kdt)
+		if nnd < new_crosshair_arm_length:
+			crowded_spots.append(coord)
+	return crowded_spots
+
+def autocrop(coords, parent_img_name, crosshair_arm_length, max_num_crops, max_crowded_ratio):
+	"""
+	Autocrop the parent image (parent_img_name) based on the coordinates (coords),
+	recursing with a maximum number of crops (max_num_crops) at each level until 
+	the percentage of spots which are crowded as dictated by crosshair_arm_length
+	is less than max_crowded_ratio
+	"""
+
+	bb_list = get_bb_tuples(coords, crosshair_arm_length, max_num_crops)
+	im = imread(parent_img_name+'.png', as_gray=True)
+	parent_width = im.shape[1]
+
+	for i, bb in enumerate(bb_list):
+
+		# black out bb area in parent img
+		blacked_out = blackout(im, bb)
+
+		new_img_name = parent_img_name + '_' + str(i)
+		img_array = crop(parent_img_name, bb)
+		zoom_factor = float(parent_width)/(bb[1] - bb[0])
+		img_array_scaled = ndimage.zoom(img_array, zoom_factor)
+		plt.imsave(new_img_name + '.png', img_array_scaled, cmap = 'gray')
+
+		to_save = [x for x in bb] + [zoom_factor]
+		np.savetxt(new_img_name + '.csv', to_save, delimiter=",", comments='')
+
+		crop_coords = get_crop_coords(coords, bb)
+		new_crosshair_arm_length = (bb[1] - bb[0]) * crosshair_ratio
+
+		crowded_spots = get_crowded_spots(crop_coords, new_crosshair_arm_length)
+
+		crowd_ratio = float(len(crowded_spots))/len(coords)
+		if crowd_ratio > max_crowded_ratio:
+			autocrop(crop_coords, new_img_name, new_crosshair_arm_length, max_num_crops, max_crowded_ratio)
+
+	plt.imsave(parent_img_name+'_blacked.png', blacked_out, cmap = 'gray')
+
+
+"""
+
+Functions for Parameter Extraction
+
+"""
+
+def gaussian(height, center_x, center_y, width_x, width_y):
+	"""Returns a gaussian function with the given parameters.
+	From https://scipy-cookbook.readthedocs.io/items/FittingData.html
+	"""
+	width_x = float(width_x)
+	width_y = float(width_y)
+	return lambda x,y: height*np.exp(-(((center_x-x)/width_x)**2+((center_y-y)/width_y)**2)/2)
+
+def moments(data):
+	"""Returns (height, x, y, width_x, width_y)
+	the gaussian parameters of a 2D distribution by calculating its
+	moments. 
+	From https://scipy-cookbook.readthedocs.io/items/FittingData.html
+	"""
+	total = data.sum()
+	X, Y = np.indices(data.shape)
+	x = (X*data).sum()/total
+	y = (Y*data).sum()/total
+	col = data[:, int(y)]
+	width_x = np.sqrt(np.abs((np.arange(col.size)-y)**2*col).sum()/col.sum())
+	row = data[int(x), :]
+	width_y = np.sqrt(np.abs((np.arange(row.size)-x)**2*row).sum()/row.sum())
+	height = data.max()
+	return height, x, y, width_x, width_y
+
+def fitgaussian(data):
+	"""Returns (height, x, y, width_x, width_y)
+	the gaussian parameters of a 2D distribution found by a fit.
+	From https://scipy-cookbook.readthedocs.io/items/FittingData.html
+	"""
+	params = moments(data)
+	errorfunction = lambda p: np.ravel(gaussian(*p)(*np.indices(data.shape)) - data)
+	p, success = optimize.leastsq(errorfunction, params)
+	return p
+
+
+def get_sigma_limits(sample_img_path, ref_coords, margin):
+	"""Returns (min_sigma, max_sigma)
+	"""
+
+	im = imread(sample_img_path, as_gray=True)
+
+	sigma_max_list = []
+	
+	for x, y in ref_coords:
+
+		x_min = int(x)-margin if int(x)-margin >= 0 else 0
+		x_max = int(x)+margin if int(x)+margin < im.shape[1] else im.shape[1]-1
+		y_min = int(y)-margin if int(y)-margin >= 0 else 0
+		y_max = int(y)+margin if int(y)+margin < im.shape[0] else im.shape[0]-1
+
+		little_crop = im[y_min:y_max, x_min:x_max]
+		params = fitgaussian(little_crop)
+		fit = gaussian(*params)
+		(height, x_param, y_param, width_x, width_y) = params
+		q = max(width_x, width_y)/2
+		if q < 0:
+			continue
+		sigma_max = math.sqrt(q)
+		sigma_max_list.append(sigma_max)
+
+	max_sigma = max(sigma_max_list)
+	min_sigma = min(sigma_max_list)
+
+	return min_sigma, max_sigma
+
+def get_best_threshold(sample_coords_path, sample_img_path, min_sigma, max_sigma, ref_coords, correctness_threshold, thresholds):
+	"""Tries blob detection with various intensity thresholds and picks the best one
+	"""
+	best_precision_x_recall = 0
+	precision_list = []
+	recall_list = []
+
+	im = imread(sample_img_path, as_gray=True)
+	img_height = len(im)
+	ref_kdt = csv_to_kdt(sample_coords_path, img_height)
+
+	for threshold in thresholds:
+		
+		print('Threshold = %f' % round(threshold, 2))
+		
+		blobs_log = blob_log(im, min_sigma=min_sigma, max_sigma=max_sigma, num_sigma=10, threshold=threshold)
+		blobs = []
+		for r, c, sigma in blobs_log:
+			blobs.append([c, r])
+		blobs_kdt = KDTree(blobs, leaf_size=2, metric='euclidean')	# kdt is a kd tree with all the reference points
+
+		num_blobs_total = len(blobs_log)
+		num_ref_total = len(ref_coords)
+
+		correct_blobs = []
+		incorrect_blobs = []
+		detected_ref = []
+		undetected_ref = []
+
+		# correct vs. incorrect
+		for r, c, sigma in blobs_log:
+			dist, ind = ref_kdt.query([[c, img_height-r]], k=1)
+			if dist[0][0] < correctness_threshold:
+				correct_blobs.append((r, c, sigma))
+			else:
+				incorrect_blobs.append((r, c, sigma))
+
+		# detected vs. undetected
+		for x, y in ref_coords:
+			dist, ind = blobs_kdt.query([[x, y]], k=1)
+			if dist[0][0] < correctness_threshold:
+				detected_ref.append([x, y])
+			else:
+				undetected_ref.append([x, y])
+
+		# calculate precision and recall and see if this is the best precision_x_recall we've found yet
+		precision = len(correct_blobs)/(len(blobs_log))
+		recall = len(detected_ref)/(len(ref_coords))
+		if (precision * recall) > best_precision_x_recall:
+			best_precision_x_recall = precision * recall
+			best_precision = precision
+			best_recall = recall
+			best_threshold = threshold
+		precision_list.append(precision)
+		recall_list.append(recall)
+
+	return best_threshold, best_recall, best_precision, recall_list, precision_list
