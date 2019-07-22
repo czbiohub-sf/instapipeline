@@ -894,7 +894,7 @@ def visualize_clusters(clusters=None, worker_marker_size=8, cluster_marker_size=
 
 """
 
-Functions for Autocropping
+Functions for autocropping
 
 """
 
@@ -1049,7 +1049,7 @@ def autocrop(coords, parent_img_name, crosshair_arm_length, max_num_crops, max_c
 
 """
 
-Functions for Parameter Extraction
+Functions for parameter extraction
 
 """
 
