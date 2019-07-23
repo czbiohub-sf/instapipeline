@@ -1,10 +1,10 @@
-from distutils.core import setup
+from setuptools import setup, find_packages
 
 setup(
-	name='fishannotation',
+	name='fishanno',
 	version='0.1',
-	packages=['fishannotation',],
+	packages=find_packages(),
 	license='MIT',
-	long_description=open('README.txt').read(),
+	long_description=open('README.md').read(),
 	author='jenny.vophamhi'
 )
