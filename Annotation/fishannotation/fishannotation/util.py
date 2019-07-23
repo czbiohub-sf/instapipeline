@@ -45,6 +45,9 @@ Functions for interacting with / manipulating dataframes
 
 """
 
+def say_hi():
+	print('hi')
+
 def get_workers(df):
 	""" Return a numpy array of unique workers in df 
 	"""

@@ -13,6 +13,22 @@ import numpy as np
 # ----- #
 
 def sort_correct_detected(consensus_coords, reference_coords, correctness_threshold):
+    """
+    
+    Input:
+    - consensus coords (2D array object)
+    - reference coords (2D array objenct)
+    
+    Returns:
+    - all consensus coords
+    - correct consensus coords
+    - incorrect consensus coords
+    - all reference coords
+    - correct reference coords
+    - incorrect reference coords
+
+    """
+
     consensus_kdt = KDTree(consensus_coords, leaf_size=2, metric='euclidean')
     reference_kdt = KDTree(reference_coords, leaf_size=2, metric='euclidean')
 
