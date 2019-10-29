@@ -1,1 +1,1 @@
-# FISH Annotation package
+# fishanno package

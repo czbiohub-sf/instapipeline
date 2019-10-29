@@ -69,7 +69,7 @@ def visualize_precision_recall(coords_sorted, img_filepath):
     app = QApplication.instance() or QApplication([])
 
     # Load the image
-    image = io.imread(img_filepath, name='dots')
+    image = io.imread(img_filepath, name='image')
 
     # initialize the viewer
     viewer = Viewer()

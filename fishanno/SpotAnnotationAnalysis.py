@@ -2,7 +2,7 @@
 This module contains the SpotAnnotationAnalysis class.
 """
 
-import fishanno.util
+import util
 import numpy as np
 import pandas as pd
 from sklearn.cluster import AffinityPropagation
@@ -12,9 +12,6 @@ from sklearn.cluster import AffinityPropagation
 class SpotAnnotationAnalysis():
 	""" Tools for annotation analysis
 
-	SpotAnnotationAnalysis takes in a BaseAnnotation 
-	object as input and saves it as a property of
-	the class.
 	"""
 
 	# list of clustering algs handled
