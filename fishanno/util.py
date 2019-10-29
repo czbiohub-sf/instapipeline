@@ -45,9 +45,6 @@ Functions for interacting with / manipulating dataframes
 
 """
 
-def say_hi():
-    print('hi')
-
 def get_workers(df):
     """ Return a numpy array of unique workers in df 
     """
@@ -968,12 +965,12 @@ def get_bb_tuples(coords, crosshair_arm_length, max_num_crops):
 
     return bb_list
 
-def crop(parent_img_name, bb):
+def crop(parent_img_path, bb):
     """
     Crop a parent image based on a bounding box and return the crop
     """
 
-    img = imread(parent_img_name+'.png', as_gray=True)                  # img is a numpy 2D array
+    img = imread(parent_img_path+'.png', as_gray=True)                  # img is a numpy 2D array
     return img[int(bb[2]) : int(bb[3]), int(bb[0]) : int(bb[1])]
 
 def blackout(im, bb):
@@ -1013,7 +1010,7 @@ def get_crowded_spots(crop_coords, new_crosshair_arm_length):
             crowded_spots.append(coord)
     return crowded_spots
 
-def autocrop(coords, parent_img_name, crosshair_arm_length, max_num_crops, max_crowded_ratio):
+def autocrop(coords, parent_img_name, crosshair_arm_length, max_num_crops, max_crowded_ratio, crop_dir, parent_dir):
     """
     Autocrop the parent image (parent_img_name) based on the coordinates (coords),
     recursing with a maximum number of crops (max_num_crops) at each level until 
@@ -1022,7 +1019,7 @@ def autocrop(coords, parent_img_name, crosshair_arm_length, max_num_crops, max_c
     """
 
     bb_list = get_bb_tuples(coords, crosshair_arm_length, max_num_crops)
-    im = imread(parent_img_name+'.png', as_gray=True)
+    im = imread('./' + parent_dir + '/' + parent_img_name+'.png', as_gray=True)
     parent_width = im.shape[1]
 
     for i, bb in enumerate(bb_list):
@@ -1031,13 +1028,14 @@ def autocrop(coords, parent_img_name, crosshair_arm_length, max_num_crops, max_c
         blacked_out = blackout(im, bb)
 
         new_img_name = parent_img_name + '_' + str(i)
-        img_array = crop(parent_img_name, bb)
+        parent_img_path = './' + parent_dir + '/' + parent_img_name
+        img_array = crop(parent_img_path, bb)
         zoom_factor = float(parent_width)/(bb[1] - bb[0])
         img_array_scaled = ndimage.zoom(img_array, zoom_factor)
-        plt.imsave(new_img_name + '.png', img_array_scaled, cmap = 'gray')
+        plt.imsave('./' + crop_dir + '/' + new_img_name + '.png', img_array_scaled, cmap = 'gray')
 
         to_save = [x for x in bb] + [zoom_factor]
-        np.savetxt(new_img_name + '.csv', to_save, delimiter=",", comments='')
+        np.savetxt('./' + crop_dir + '/' + new_img_name + '.csv', to_save, delimiter=",", comments='')
 
         crop_coords = get_crop_coords(coords, bb)
         new_crosshair_arm_length = (bb[1] - bb[0]) * crosshair_ratio
@@ -1048,7 +1046,7 @@ def autocrop(coords, parent_img_name, crosshair_arm_length, max_num_crops, max_c
         if crowd_ratio > max_crowded_ratio:
             autocrop(crop_coords, new_img_name, new_crosshair_arm_length, max_num_crops, max_crowded_ratio)
 
-    plt.imsave(parent_img_name+'_blacked.png', blacked_out, cmap = 'gray')
+    plt.imsave('./' + crop_dir + '/' + parent_img_name + '_blacked.png', blacked_out, cmap = 'gray')
 
 
 """
