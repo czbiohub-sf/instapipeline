@@ -1,4 +1,2 @@
 # FISH-annotation
-This repository explores using crowd-sourced annotations for spot detection in RNA FISH images.
-
-Within Annotation, fishannotation contains the codebase which is being packaged.
+This repository explores using crowd-sourced annotations for spot detection in RNA in situ transcriptomics images.
