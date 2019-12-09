@@ -2,7 +2,7 @@
 This module contains the QuantiusAnnotation class.
 """
 
-from BaseAnnotation import BaseAnnotation
+from fishanno import BaseAnnotation
 
 import json
 import matplotlib.pyplot as plt
