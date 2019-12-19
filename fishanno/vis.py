@@ -7,6 +7,7 @@ import matplotlib.image as mpimg
 import pandas as pd
 from matplotlib.lines import Line2D
 from skimage.io import imread
+from fishanno import clus
 
 # colors used by plotters
 colors = ['#3399FF', '#CC33FF', '#FFFF00', '#FF33CC', 
@@ -48,7 +49,7 @@ def plot_annotations(df=None, show_workers=False, show_correctness_workers=False
     img_height = df['height'].values[0]
 
     if correctness_threshold is not None:
-        cluster_correctness = get_cluster_correctness(centroid_and_ref_df, correctness_threshold)
+        cluster_correctness = clus.get_cluster_correctness(centroid_and_ref_df, correctness_threshold)
 
     if show_workers:
         if show_correctness_workers:

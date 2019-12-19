@@ -12,6 +12,7 @@ from matplotlib.lines import Line2D
 from skimage import filters
 from sklearn.neighbors import KDTree
 from sklearn.cluster import KMeans
+from fishanno import util
 
 # list of declumping algs handled
 declumping_algs = ['KMeans']
@@ -374,7 +375,7 @@ def get_cluster_correctness(df, correctness_threshold):
     
     Parameters
     ----------
-    centroid_and_ref_df : outputted by centroid_and_ref_df()
+    centroid_and_ref_df : outputted by util.centroid_and_ref_df()
         centroid_x | centroid_y | x of nearest ref | y of nearest ref | NN_dist | members (x | y | time_spent | worker_id)
         * the index is the Centroid ID
     correctness_threshold : tolerance for correctness in pixels, None if correctness will not be visualized

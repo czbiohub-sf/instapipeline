@@ -9,6 +9,7 @@ from skimage.feature import blob_log
 from sklearn.neighbors import KDTree
 from sklearn.cluster import KMeans
 from scipy import optimize
+from fishanno import util, clus
 
 def gaussian(height, center_x, center_y, width_x, width_y):
     """Returns a gaussian function with the given parameters.
@@ -155,8 +156,8 @@ def sort_clusters_by_correctness(clusters=None, correctness_threshold=4, csv_fil
     incorrect_list = []
     total_list = []
 
-    df = centroid_and_ref_df(clusters, csv_filepath, img_height)
-    cluster_correctness = get_cluster_correctness(df, correctness_threshold)
+    df = util.centroid_and_ref_df(clusters, csv_filepath, img_height)
+    cluster_correctness = clus.get_cluster_correctness(df, correctness_threshold)
 
     for i in range(len(clusters.index)):
         row = clusters.iloc[[i]]

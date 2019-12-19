@@ -23,6 +23,9 @@ class QuantiusAnnotation(BaseAnnotation):
 	for annotations from Quantius
 	"""
 
+	def __init__(self, json_filepath, img_filename):
+		super().__init__(json_filepath, img_filename)
+
 	def _import_annotations(self, json_filepath, img_filename):
 		
 		to_return = pd.DataFrame()
