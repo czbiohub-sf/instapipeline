@@ -15,3 +15,21 @@ The directory `fishanno` contains the codebase
 - `util.py` contains functions for:
     - interacting with / manipulating dataframes
     - other data structure manipulation
+
+## Installation
+fishanno supports python 3.6 and above. To install fishanno, first verify that your python version is compatible by running `python -version`.
+
+To install and create a virtualenv:
+
+% python3 -m pip install --user virtualenv
+% python3 -m virtualenv venv
+% source venv/bin/activate
+
+To install fishanno:
+
+% git clone https://github.com/czbiohub/FISH-annotation.git
+% pip install fishanno
+
+To install jupyter (to view test and figure notebooks):
+
+% pip install jupyter

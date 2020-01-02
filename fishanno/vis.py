@@ -40,7 +40,6 @@ def plot_annotations(df=None, show_workers=False, show_correctness_workers=False
     none
     """
 
-
     fig = plt.figure(figsize = (12,7))
     if bigger_window_size:
         fig = plt.figure(figsize=(14,12))
