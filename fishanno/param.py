@@ -159,14 +159,11 @@ def sort_clusters_by_correctness(clusters=None, correctness_threshold=4, csv_fil
     df = util.centroid_and_ref_df(clusters, csv_filepath, img_height)
     cluster_correctness = clus.get_cluster_correctness(df, correctness_threshold)
 
-    for i in range(len(clusters.index)):
-        row = clusters.iloc[[i]]
-        members = row.iloc[0]['members']
-        worker_list = []
-        for member in members:
-            worker_list.append(member[3])
+    for index, row in df.iterrows():
+        members = row['members']
+        worker_list = [member[3] for member in members]
         num_members = len(np.unique(worker_list))
-        if (cluster_correctness[i][1]):     # if cluster is correct
+        if (cluster_correctness[index][1]):     # if cluster is correct
             correct_list.append(num_members)
         else:
             incorrect_list.append(num_members)

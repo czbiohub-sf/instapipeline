@@ -33,9 +33,8 @@ def get_cluster_size_threshold(clusters):
     cluster size threshold
     """
     total_list = []
-    for i in range(len(clusters.index)):
-        row = clusters.iloc[[i]]
-        members = row.iloc[0]['members']
+    for index, row in clusters.iterrows():
+        members = row['members']
         worker_list = [member[3] for member in members]
         num_members = len(np.unique(worker_list))
         total_list.append(num_members)
@@ -59,13 +58,13 @@ def plot_cluster_size_threshold(clusters, threshold):
     
     Returns
     -------
-    none
+    figure
+    axes
     """
     fig = plt.figure()
     hist_list = []
-    for i in range(len(clusters.index)):
-        row = clusters.iloc[[i]]
-        members = row.iloc[0]['members']
+    for index, row in clusters.iterrows():
+        members = row['members']
         worker_list = [member[3] for member in members]
         hist_list.append(len(np.unique(worker_list)))
     width = max(hist_list)
@@ -76,6 +75,8 @@ def plot_cluster_size_threshold(clusters, threshold):
     plt.xlabel('Number of unique annotators for cluster')
     plt.ylabel('Number of clusters')
     plt.show()
+
+    return fig, fig.axes
 
 def sort_clusters_by_size(clusters, threshold):
     """ Sort clusters by quantity of unique annotators.
@@ -95,11 +96,10 @@ def sort_clusters_by_size(clusters, threshold):
     """
     small_clusters_list = []
     large_clusters_list = []
-    for i in range(len(clusters.index)):
-        row = clusters.iloc[[i]]
-        members = row.iloc[0]['members']
-        centroid_x = row.iloc[0]['centroid_x']
-        centroid_y = row.iloc[0]['centroid_y']
+    for index, row in clusters.iterrows():
+        members = row['members']
+        centroid_x = row['centroid_x']
+        centroid_y = row['centroid_y']
 
         worker_list = []
         for member in members:
@@ -114,15 +114,15 @@ def sort_clusters_by_size(clusters, threshold):
     small_clusters = pd.DataFrame(index=range(len(small_clusters_list)), columns=['centroid_x','centroid_y','members'])
     large_clusters = pd.DataFrame(index=range(len(large_clusters_list)), columns=['centroid_x','centroid_y','members'])
 
-    for i in range(len(small_clusters_list)):
-        small_clusters['centroid_x'][i] = small_clusters_list[i][0]
-        small_clusters['centroid_y'][i] = small_clusters_list[i][1]
-        small_clusters['members'][i] = small_clusters_list[i][2]
+    for i, small_cluster in enumerate(small_clusters_list):
+        small_clusters['centroid_x'][i] = small_cluster[0]
+        small_clusters['centroid_y'][i] = small_cluster[1]
+        small_clusters['members'][i] = small_cluster[2]
 
-    for i in range(len(large_clusters_list)):
-        large_clusters['centroid_x'][i] = large_clusters_list[i][0]
-        large_clusters['centroid_y'][i] = large_clusters_list[i][1]
-        large_clusters['members'][i] = large_clusters_list[i][2]
+    for i, large_cluster in enumerate(large_clusters_list):
+        large_clusters['centroid_x'][i] = large_cluster[0]
+        large_clusters['centroid_y'][i] = large_cluster[1]
+        large_clusters['members'][i] = large_cluster[2]
 
     return small_clusters, large_clusters
 
@@ -131,7 +131,6 @@ def sort_clusters_by_size(clusters, threshold):
 Functions for sorting clusters by clumpiness and declumping
 
 """
-
 
 def get_clumpiness_threshold(clusters):
     """ Calculate a clumpiness threshold for all clusters
@@ -158,9 +157,9 @@ def get_clumpiness_threshold(clusters):
     clumpiness threshold
     """
     single_fraction_list = []
-    for i in range(len(clusters.index)):
-        row = clusters.iloc[[i]]
-        workers = [member[3] for member in row.iloc[0]['members']]
+    for index, row in clusters.iterrows():
+        members = row['members']
+        workers = [member[3] for member in members]
         unique_workers = np.unique(workers)
         num_instances_list = [workers.count(unique_worker) for unique_worker in unique_workers]
         single_fraction_list.append(num_instances_list.count(1)/len(unique_workers))
@@ -195,12 +194,14 @@ def plot_clumpiness_threshold(clusters):
     Returns
     -------
     threshold : the fraction of workers who contribute to the threshold cluster value only once
+    figure
+    axes
     """
     single_fraction_list = []
-    for i in range(len(clusters.index)):
-        row = clusters.iloc[[i]]
-        workers = [member[3] for member in row.iloc[0]['members']]
-        unique_workers = np.unique(workers)
+    for index, row in clusters.iterrows():
+        members = row['members']
+        worker_list = [member[3] for member in members]
+        unique_workers = np.unique(worker_list)
         num_instances_list = [workers.count(unique_worker) for unique_worker in unique_workers]
         single_fraction_list.append(num_instances_list.count(1)/len(unique_workers))
 
@@ -225,7 +226,7 @@ def plot_clumpiness_threshold(clusters):
     plt.ylabel('Number of clusters')
     plt.title('Finding the Clumpiness Threshold')
     plt.show()
-    return threshold
+    return threshold, fig, fig.axes
 
 def sort_clusters_by_clumpiness(clusters, threshold):
     """ Sort clusters by fraction of contributors who contribute once
@@ -248,11 +249,10 @@ def sort_clusters_by_clumpiness(clusters, threshold):
     nonclumpy_clusters_list = []
     clumpy_counter = 0
     nonclumpy_counter = 0
-    for j in range(len(clusters.index)):
-        row = clusters.iloc[[j]]
-        members = row.iloc[0]['members']
-        centroid_x = row.iloc[0]['centroid_x']
-        centroid_y = row.iloc[0]['centroid_y']
+    for index, row in clusters.iterrows():
+        members = row['members']
+        centroid_x = row['centroid_x']
+        centroid_y = row['centroid_y']
 
         workers = []
         for member in members:
@@ -358,9 +358,9 @@ def get_cluster_means(clusters):
     numpy array of coords
     """
     mean_coords = []
-    for i in range(len(clusters.index)):
-        row = clusters.iloc[[i]]
-        members = row.iloc[0]['members']
+
+    for index, row in clusters.iterrows():
+        members = row['members']
         x_coords = []
         y_coords = []
         for member in members:
@@ -391,8 +391,8 @@ def get_cluster_correctness(df, correctness_threshold):
     to_return = np.empty([num_centroids, 2])
     for i in range(num_centroids):
         to_return[i] = i
-        NN_dist = df['NN_dist'][i]
-        if (NN_dist <= correctness_threshold):
+        nn_dist = df['NN_dist'][i]
+        if (nn_dist <= correctness_threshold):
             to_return[i][1] = True
         else:
             to_return[i][1] = False
