@@ -1,4 +1,4 @@
-""" 
+"""
 This module contains functions for parameter extraction.
 """
 
@@ -11,18 +11,20 @@ from sklearn.cluster import KMeans
 from scipy import optimize
 from fishanno import util, clus
 
-def gaussian(height, center_x, center_y, width_x, width_y):
+
+def gaussian(height, c_x, c_y, width_x, width_y):
     """Returns a gaussian function with the given parameters.
     From https://scipy-cookbook.readthedocs.io/items/FittingData.html
     """
-    width_x = float(width_x)
-    width_y = float(width_y)
-    return lambda x,y: height*np.exp(-(((center_x-x)/width_x)**2+((center_y-y)/width_y)**2)/2)
+    w_x = float(width_x)
+    w_y = float(width_y)
+    return lambda x, y: height*np.exp(-(((c_x-x)/w_x)**2+((c_y-y)/w_y)**2)/2)
+
 
 def moments(data):
     """Returns (height, x, y, width_x, width_y)
     the gaussian parameters of a 2D distribution by calculating its
-    moments. 
+    moments.
     From https://scipy-cookbook.readthedocs.io/items/FittingData.html
     """
     total = data.sum()
@@ -37,13 +39,15 @@ def moments(data):
     height = data.max()
     return height, x, y, width_x, width_y
 
+
 def fitgaussian(data):
     """Returns (height, x, y, width_x, width_y)
     the gaussian parameters of a 2D distribution found by a fit.
     From https://scipy-cookbook.readthedocs.io/items/FittingData.html
     """
     params = moments(data)
-    errorfunction = lambda p: np.ravel(gaussian(*p)(*np.indices(data.shape)) - data)
+    ds = data.shape
+    errorfunction = lambda p: np.ravel(gaussian(*p)(*np.indices(ds)) - data)
     p, success = optimize.leastsq(errorfunction, params)
     return p
 
@@ -55,7 +59,7 @@ def get_sigma_list(sample_img_path, ref_coords, margin):
     im = imread(sample_img_path, as_gray=True)
 
     sigma_max_list = []
-    
+
     for x, y in ref_coords:
 
         x_min = int(x)-margin if int(x)-margin >= 0 else 0
@@ -65,11 +69,10 @@ def get_sigma_list(sample_img_path, ref_coords, margin):
 
         little_crop = im[y_min:y_max, x_min:x_max]
 
-        if np.count_nonzero(little_crop)==0:
+        if np.count_nonzero(little_crop) == 0:
             continue
 
         params = fitgaussian(little_crop)
-        fit = gaussian(*params)
         (height, x_param, y_param, width_x, width_y) = params
         q = max(width_x, width_y)/2
         if q < 0:
@@ -79,8 +82,11 @@ def get_sigma_list(sample_img_path, ref_coords, margin):
 
     return sigma_max_list
 
-def get_best_threshold(sample_coords, sample_img_path, min_sigma, max_sigma, correctness_threshold, thresholds):
-    """Tries blob detection with various intensity thresholds and picks the best one
+
+def get_best_threshold(sample_coords, sample_img_path, min_sigma,
+                       max_sigma, correctness_threshold, thresholds):
+    """Tries blob detection with various intensity thresholds and
+    picks the best one
     """
     best_precision_x_recall = 0
     precision_list = []
@@ -96,25 +102,21 @@ def get_best_threshold(sample_coords, sample_img_path, min_sigma, max_sigma, cor
         point = np.array([first_elem, second_elem])
         sample_coords[i] = point
 
-    sample_kdt = KDTree(sample_coords, leaf_size=2, metric='euclidean') # kdt is a kd tree with all the reference points
+    sample_kdt = KDTree(sample_coords, leaf_size=2, metric='euclidean')
 
-    best_threshold, best_recall, best_precision = 0, 0, 0
+    best_threshold = 0
 
     for threshold in thresholds:
 
-        # print(threshold)
-        
-        blobs_log = blob_log(im, min_sigma=min_sigma, max_sigma=max_sigma, num_sigma=10, threshold=threshold)
+        blobs_log = blob_log(im, min_sigma=min_sigma, max_sigma=max_sigma,
+                             num_sigma=10, threshold=threshold)
         blobs = []
         for r, c, sigma in blobs_log:
             blobs.append([c, r])
         blobs = np.asarray(blobs)
         if len(blobs) == 0:
             continue
-        blobs_kdt = KDTree(blobs, leaf_size=2, metric='euclidean')  # kdt is a kd tree with all the reference points
-
-        num_blobs_total = len(blobs_log)
-        num_ref_total = len(sample_coords)
+        blobs_kdt = KDTree(blobs, leaf_size=2, metric='euclidean')
 
         correct_blobs = []
         incorrect_blobs = []
@@ -137,27 +139,31 @@ def get_best_threshold(sample_coords, sample_img_path, min_sigma, max_sigma, cor
             else:
                 undetected_ref.append([x, y])
 
-        # calculate precision and recall and see if this is the best precision_x_recall we've found yet
+        # calculate precision and recall and see if this is
+        # the best precision_x_recall we've found yet
         precision = len(correct_blobs)/(len(blobs_log))
         recall = len(detected_ref)/(len(sample_coords))
         if (precision * recall) > best_precision_x_recall:
             best_precision_x_recall = precision * recall
-            best_precision = precision
-            best_recall = recall
+            best_prec = precision
+            best_rec = recall
             best_threshold = threshold
         precision_list.append(precision)
         recall_list.append(recall)
 
-    return best_threshold, best_recall, best_precision, recall_list, precision_list
+    return best_threshold, best_rec, best_prec, recall_list, precision_list
 
-def sort_clusters_by_correctness(clusters=None, correctness_threshold=4, csv_filepath=None, img_height=0):
+
+def sort_clusters_by_correctness(clusters=None, correctness_threshold=4,
+                                 csv_filepath=None, img_height=0):
 
     correct_list = []
     incorrect_list = []
     total_list = []
 
     df = util.centroid_and_ref_df(clusters, csv_filepath, img_height)
-    cluster_correctness = clus.get_cluster_correctness(df, correctness_threshold)
+    cluster_correctness = clus.get_cluster_correctness(df,
+                                                       correctness_threshold)
 
     for index, row in df.iterrows():
         members = row['members']
@@ -171,16 +177,18 @@ def sort_clusters_by_correctness(clusters=None, correctness_threshold=4, csv_fil
     width = max(correct_list)
     if (max(incorrect_list) > width):
         width = max(incorrect_list)
-    
+
     # threshold kmeans
     total_array = np.asarray(total_list)
-    km = KMeans(n_clusters = 2).fit(total_array.reshape(-1,1))
+    km = KMeans(n_clusters=2).fit(total_array.reshape(-1, 1))
     cluster_centers = km.cluster_centers_
     threshold = (cluster_centers[0][0]+cluster_centers[1][0])/2
 
     return (correct_list, incorrect_list, total_list, threshold)
 
-def get_precision_recall(test_coords=None, ref_coords=None, correctness_threshold=4):
+
+def get_precision_recall(test_coords=None, ref_coords=None,
+                         correctness_threshold=4):
     '''
     correct test
     incorrect test
@@ -208,7 +216,7 @@ def get_precision_recall(test_coords=None, ref_coords=None, correctness_threshol
             detected_ref.append(ref_coord)
         else:
             undetected_ref.append(ref_coord)
-    
+
     precision = len(correct_test)/len(test_coords)
     recall = len(detected_ref)/len(ref_coords)
 
