@@ -11,6 +11,7 @@ setup(
 	name='fishanno',
 	install_requires=install_requires,
 	version='0.1',
+	package_dir={'fishanno':'fishanno'},
 	packages=find_packages(),
 	license='MIT',
 	long_description=open('README.md').read(),

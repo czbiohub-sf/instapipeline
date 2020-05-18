@@ -101,6 +101,7 @@ class SpotAnnotationAnalysis():
             num_clusters = len(cluster_centers_indices)
             cluster_members_lists = [[] for i in range(num_clusters)]
             labels = af.labels_
+
             for label_index, click_property in zip(labels, click_properties):
                 cluster_members_lists[label_index].append(click_property)
             for cluster_centers_index in cluster_centers_indices:
