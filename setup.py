@@ -8,10 +8,10 @@ install_requires = [
 ]
 
 setup(
-	name='fishanno',
+	name='instapipeline',
 	install_requires=install_requires,
 	version='0.1',
-	package_dir={'fishanno':'fishanno'},
+	package_dir={'instapipeline':'instapipeline'},
 	packages=find_packages(),
 	license='MIT',
 	long_description=open('README.md').read(),

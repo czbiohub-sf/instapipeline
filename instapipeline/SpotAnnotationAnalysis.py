@@ -4,7 +4,7 @@ This module contains the SpotAnnotationAnalysis class.
 
 import numpy as np
 import pandas as pd
-from fishanno import util
+from instapipeline import util
 from sklearn.cluster import AffinityPropagation
 
 
@@ -54,9 +54,11 @@ class SpotAnnotationAnalysis():
                 if np.array_equal(coords, coords_done):
                     if clus_params == clustering_params_done:
                         return self.cluster_objects[i]
-            af = AffinityPropagation(preference=clus_params[1]).fit(coords)
-            self.clusters_done.append([coords, clus_params])
+
+            af = AffinityPropagation(preference=clus_params[1]).fit(coords_1)
+            self.clusters_done.append([coords_1, clus_params])
             self.cluster_objects.append(af)
+
             return af
 
     def get_clusters(self, df, clus_params):
@@ -80,13 +82,14 @@ class SpotAnnotationAnalysis():
                 each member is a list of properties of the annotation
                 i.e. [x coord, y coord, time spent, worker ID]
         """
+        print("getting clusters")
 
         clustering_alg = clus_params[0]
         if (clustering_alg not in self.clustering_algs):
             raise ValueError('Invalid clustering algorithm name entered.')
 
         if (clustering_alg == 'AffinityPropagation'):
-            cluster_centroids_list = []
+
 
             if(len(clus_params) != 2):
                 s = 'Please enter a list containing the preference parameter.'
@@ -95,26 +98,52 @@ class SpotAnnotationAnalysis():
             click_properties = util.get_click_properties(df)
             coords = click_properties[:, :2]
 
-            af = self.get_cluster_object(coords, clus_params)
+            x_mid= max(coords[:,0])/2
+            y_mid = max(coords[:,1])/2
 
-            cluster_centers_indices = af.cluster_centers_indices_
-            num_clusters = len(cluster_centers_indices)
-            cluster_members_lists = [[] for i in range(num_clusters)]
-            labels = af.labels_
+            four_sets_of_coords = [], [], [], []
+            
+            for x, y in coords:
+                dist, ind = ref_kdt.query([[x, y]], k=3)
+                nnd = dist[0][1]
+                nnds.append(nnd)
+                if x < x_mid and y < y_mid:
+                    four_sets_of_coords[0].append([x, y])
+                elif x < x_mid and y > y_mid:
+                    four_sets_of_coords[1].append([x, y])
+                elif x > x_mid and y < y_mid:
+                    four_sets_of_coords[2].append([x, y])
+                elif x > x_mid and y > y_mid:
+                    four_sets_of_coords[3].append([x, y])
 
-            for label_index, click_property in zip(labels, click_properties):
-                cluster_members_lists[label_index].append(click_property)
-            for cluster_centers_index in cluster_centers_indices:
-                cluster_centers = coords[cluster_centers_index]
-                cluster_centroids_list.append(cluster_centers)
+            total_num_clusters = 0
+            cluster_centroids_list = []
+            total_cluster_members_lists = []
+            for coord_ind in range(4):
 
-        centroid_IDs = range(num_clusters)
+                af = self.get_cluster_object(four_sets_of_coords[coord_ind], clus_params)
+
+                cluster_centers_indices = af.cluster_centers_indices_
+                num_clusters = len(cluster_centers_indices)
+                cluster_members_lists = [[] for i in range(num_clusters)]
+                labels = af.labels_
+
+                for label_index, click_property in zip(labels, click_properties):
+                    cluster_members_lists[label_index].append(click_property)
+                for cluster_centers_index in cluster_centers_indices:
+                    cluster_centers = four_sets_of_coords[coord_ind][cluster_centers_index]
+                    cluster_centroids_list.append(cluster_centers)
+
+                total_num_clusters += num_clusters
+                total_cluster_members_lists += cluster_members_lists
+
+        centroid_IDs = range(total_num_clusters)
         column_names = ['centroid_x', 'centroid_y', 'members']
         to_return = pd.DataFrame(index=centroid_IDs, columns=column_names)
 
-        for i in range(num_clusters):
+        for i in range(total_num_clusters):
             to_return['centroid_x'][i] = cluster_centroids_list[i][0]
             to_return['centroid_y'][i] = cluster_centroids_list[i][1]
-            to_return['members'][i] = cluster_members_lists[i]
+            to_return['members'][i] = total_cluster_members_lists[i]
 
         return to_return
