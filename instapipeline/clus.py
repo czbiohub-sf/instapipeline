@@ -12,7 +12,7 @@ from matplotlib.lines import Line2D
 from skimage import filters
 from sklearn.neighbors import KDTree
 from sklearn.cluster import KMeans
-from instapipeline import util
+from fishanno import util
 
 
 # list of declumping algs handled

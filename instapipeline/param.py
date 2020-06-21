@@ -9,7 +9,7 @@ from skimage.feature import blob_log
 from sklearn.neighbors import KDTree
 from sklearn.cluster import KMeans
 from scipy import optimize
-from instapipeline import util, clus
+from fishanno import util, clus
 
 
 def gaussian(height, c_x, c_y, width_x, width_y):

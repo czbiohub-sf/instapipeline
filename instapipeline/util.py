@@ -33,7 +33,7 @@ def get_img_filenames(df):
 def get_timestamps(df):
     """ Return a list of timestamps in df
     """
-    matrix = df[["timestamp"]].values
+    matrix = df.loc[:, ['timestamp']].to_numpy()
     return [x[0] for x in matrix]
 
 
@@ -54,12 +54,12 @@ def get_click_properties(df):
             time spent (time_spent = 0 indicates first click of an occasion)
             string worker ID
     """
-    occasions = np.unique(df[['time_when_completed']].values)
+    occasions = np.unique(df.loc[:, ['time_when_completed']].to_numpy())
     to_return = np.array([]).reshape(0, 4)
     for occasion in occasions:
         one_occasion_df = df[df.time_when_completed == occasion]
         columns = ['x', 'y', 'timestamp', 'worker_id']
-        one_occ_arr = one_occasion_df.loc[:, columns].values
+        one_occ_arr = one_occasion_df.loc[:, columns].to_numpy()
         for i in range(len(one_occ_arr)-1, -1, -1):
             if(i == 0):
                 time_spent = 0
@@ -169,7 +169,7 @@ def csv_to_kdt(csv_filepath, img_height):
                 y-coordinates are flipped about img_height
     """
     ref_df = pd.read_csv(csv_filepath)
-    ref_points = ref_df[["col", "row"]].values
+    ref_points = ref_df.loc[:, ['col', 'row']].to_numpy()
 
     for i in range(len(ref_points)):
         point = ref_points[i]

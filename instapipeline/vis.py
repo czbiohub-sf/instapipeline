@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 import pandas as pd
 from matplotlib.lines import Line2D
-from instapipeline import clus, util
+from fishanno import clus, util
 
 # colors used by plotters
 colors = ['#3399FF', '#CC33FF', '#FFFF00', '#FF33CC',

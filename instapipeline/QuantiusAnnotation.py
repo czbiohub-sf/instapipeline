@@ -2,7 +2,7 @@
 This module contains the QuantiusAnnotation class.
 """
 
-from instapipeline import BaseAnnotation
+from fishanno import BaseAnnotation
 
 import json
 import pandas as pd
