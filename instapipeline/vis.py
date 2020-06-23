@@ -162,7 +162,8 @@ def visualize_clusters(clusters=None, worker_marker_size=8,
                        img_height=None, x_bounds=None,
                        y_bounds=None, plot_title=None,
                        show_workers=False, show_centroids=False,
-                       show_ref_points=False, bigger_window_size=True):
+                       show_ref_points=False, bigger_window_size=True,
+                       show_ticks=False, title_font_size=16):
     """ Visualize clusters, each with a different color.
 
     Parameters
@@ -193,6 +194,9 @@ def visualize_clusters(clusters=None, worker_marker_size=8,
         plt.ylim(y_bounds[0], y_bounds[1])
     img = mpimg.imread(img_filepath)
     plt.imshow(img, cmap='gray')
+
+    legend_handles = []
+
     if show_workers:
         for color, member_list in zip(colors*10, clusters['members'].values):
             for member in member_list:
@@ -203,18 +207,29 @@ def visualize_clusters(clusters=None, worker_marker_size=8,
 
     if show_ref_points:
         ref_df = pd.read_csv(csv_filepath)
-        ref_points = ref_df.loc[:, ['col', 'row']].as_matrix()
+        ref_points = ref_df.loc[:, ['col', 'row']].to_numpy()
         for point in ref_points:
             plt.scatter([point[0]], [point[1]],
                         s=ref_marker_size, facecolors='y')
-        plt.legend(handles=[Line2D([0], [0], marker='o', color='w',
-                   markerfacecolor='y', label='reference points')],
-                   loc=9, bbox_to_anchor=(1.2, 1.015))
+        legend_handles += [Line2D([0], [0], marker='o', color='w',
+                   markerfacecolor='y', label='reference points',
+                   markersize=10)]
 
     if show_centroids:
         plt.scatter(clusters['centroid_x'].values,
                     util.flip(clusters['centroid_y'].values, img_height),
                     s=cluster_marker_size, facecolors='none',
-                    edgecolors='#ffffff')
-    plt.title(plot_title)
+                    edgecolors='c')
+        legend_handles += [Line2D([0], [0], marker='o', color='w',
+        			markeredgecolor='c', markerfacecolor=None,
+        			label='centroids', markersize=10)]
+
+    if show_ticks == False:
+    	plt.xticks([])
+    	plt.yticks([])
+
+    plt.legend(handles=legend_handles, loc=9, 
+    	bbox_to_anchor=(1.3, 1.015), prop={'size': 15})
+
+    plt.title(plot_title, fontsize=title_font_size)
     plt.show()
