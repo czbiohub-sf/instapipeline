@@ -16,6 +16,8 @@ The directory `instapipeline` contains the codebase
     - interacting with / manipulating dataframes
     - other data structure manipulation
 
+The directory `demos` contains notebooks that demonstrate INSTA's preprocessing and postprocessing functionality.
+
 ## Installation
 instapipeline supports python 3.6 and above. To install instapipeline, first verify that your python version is compatible by running `python -version`.
 
