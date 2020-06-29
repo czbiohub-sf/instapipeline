@@ -3,21 +3,28 @@ This module contains the QuantiusAnnotation class.
 """
 
 from instapipeline import BaseAnnotation
-
 import json
 import pandas as pd
 
 
 class QuantiusAnnotation(BaseAnnotation):
-    """ Implementation of _import_annotations
+    """
+    Implementation of _import_annotations
     for annotations from Quantius
     """
-
     def __init__(self, json_filepath, img_filename):
         super().__init__(json_filepath, img_filename)
 
     def _import_annotations(self, json_filepath, img_filename):
+        """
+        Import annotations to a dataframe and save the
+        dataframe as a property of the QuantiusAnnotation class
 
+        Parameters
+        ----------
+        json_filepath : path to json containing annotation data
+        img_filename : name of image file that was annotated
+        """
         to_return = pd.DataFrame()
         json_string = open(json_filepath).read()
         results = json.loads(json_string)

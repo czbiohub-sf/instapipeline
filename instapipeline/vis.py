@@ -27,7 +27,8 @@ def plot_annotations(df=None, show_workers=False,
                      cluster_marker_size=40, ref_marker_size=20,
                      img_filepath=None, csv_filepath=None,
                      bigger_window_size=True):
-    """ Quick visualization of worker annotations, clusters, and/or
+    """
+    Quick visualization of worker annotations, clusters, and/or
     annotation and cluster "correctness."
 
     Parameters
@@ -46,11 +47,11 @@ def plot_annotations(df=None, show_workers=False,
     worker_marker_size, cluster_marker_size : plot parameters
     img_filepath, csv_filepath : paths to image and reference csv files
     bigger_window_size : bool whether to use bigger window size
+
     Returns
     -------
     none
     """
-
     plt.figure(figsize=(12, 7))
     if bigger_window_size:
         plt.figure(figsize=(14, 12))
@@ -164,7 +165,8 @@ def visualize_clusters(clusters=None, worker_marker_size=8,
                        show_workers=False, show_centroids=False,
                        show_ref_points=False, bigger_window_size=True,
                        show_ticks=False, title_font_size=16):
-    """ Visualize clusters, each with a different color.
+    """
+    Visualize clusters, each with a different color.
 
     Parameters
     ----------
@@ -181,6 +183,7 @@ def visualize_clusters(clusters=None, worker_marker_size=8,
     img_height : height of image in pixels
     plot_title : title of plot
     bigger_window_size : bool whether to use bigger window size
+
     Returns
     -------
     none
@@ -212,8 +215,8 @@ def visualize_clusters(clusters=None, worker_marker_size=8,
             plt.scatter([point[0]], [point[1]],
                         s=ref_marker_size, facecolors='y')
         legend_handles += [Line2D([0], [0], marker='o', color='w',
-                   markerfacecolor='y', label='reference points',
-                   markersize=10)]
+                           markerfacecolor='y', label='reference points',
+                           markersize=10)]
 
     if show_centroids:
         plt.scatter(clusters['centroid_x'].values,
@@ -221,15 +224,15 @@ def visualize_clusters(clusters=None, worker_marker_size=8,
                     s=cluster_marker_size, facecolors='none',
                     edgecolors='c')
         legend_handles += [Line2D([0], [0], marker='o', color='w',
-        			markeredgecolor='c', markerfacecolor=None,
-        			label='centroids', markersize=10)]
+                                  markeredgecolor='c', markerfacecolor=None,
+                                  label='centroids', markersize=10)]
 
-    if show_ticks == False:
-    	plt.xticks([])
-    	plt.yticks([])
+    if not show_ticks:
+        plt.xticks([])
+        plt.yticks([])
 
-    plt.legend(handles=legend_handles, loc=9, 
-    	bbox_to_anchor=(1.3, 1.015), prop={'size': 15})
+    plt.legend(handles=legend_handles, loc=9,
+               bbox_to_anchor=(1.3, 1.015), prop={'size': 15})
 
     plt.title(plot_title, fontsize=title_font_size)
     plt.show()

@@ -17,33 +17,39 @@ Functions for interacting with / manipulating dataframes
 
 
 def get_workers(df):
-    """ Return a numpy array of unique workers in df
+    """
+    Return a numpy array of unique workers in df
     """
     uid_list = df.loc[:, ['worker_id']]
     return np.unique(uid_list)
 
 
 def get_img_filenames(df):
-    """ Return a numpy array of unique image filenames in df
+    """
+    Returns a numpy array of unique image filenames in df
     """
     img_list = df.loc[:, ['image_filename']]
     return np.unique(img_list)
 
 
 def get_timestamps(df):
-    """ Return a list of timestamps in df
+    """
+    Returns a list of timestamps in df
     """
     matrix = df.loc[:, ['timestamp']].to_numpy()
     return [x[0] for x in matrix]
 
 
 def get_click_properties(df):
-    """ Return a numpy array containing properties for all clicks in df
+    """
+    Returns a numpy array containing properties for all clicks in df
+
     Parameters
     ----------
     df : pandas dataframe
         timestamp | x | y | annotation_type | height |
         width image_filename | time_when_completed | worker_id
+
     Returns
     -------
     numpy array
@@ -71,12 +77,15 @@ def get_click_properties(df):
 
 
 def get_time_per_click(df):
-    """ Get time spent on each annotation.
+    """
+    Get time spent on each annotation.
+
     Parameters
     ----------
     df : pandas dataframe
         timestamp | x | y | annotation_type | height |
         width image_filename | time_when_completed | worker_id
+
     Returns
     -------
     time_spent_list : list of the amount of time spent on all clicks in df
@@ -94,13 +103,16 @@ def get_time_per_click(df):
 
 
 def get_avg_time_per_click(df, uid):
-    """ Get the average amount of time that a worker spent on one click.
+    """
+    Get the average amount of time that a worker spent on one click.
+
     Parameters
     ----------
     df : pandas dataframe
         timestamp | x | y | annotation_type | height |
         width image_filename | time_when_completed | worker_id
     uid : string worker ID
+
     Returns
     -------
     the average time that the worker spent per click
@@ -113,13 +125,16 @@ def get_avg_time_per_click(df, uid):
 
 
 def get_nnd_per_click(df, ref_kdt):
-    """ Get the distance to the nearest neighbor (found in
-        the k-d tree of reference points).
+    """
+    Get the distance to the nearest neighbor (found in
+    the k-d tree of reference points).
+
     Parameters
     ----------
     df : pandas dataframe
         timestamp | x | y | annotation_type | height |
         width image_filename | time_when_completed | worker_id
+
     Returns
     -------
     list of distances to the nearest neighbor (found in
@@ -132,11 +147,14 @@ def get_nnd_per_click(df, ref_kdt):
 
 
 def slice_by_worker(df, uid):
-    """ Return a dataframe with annotations for only one worker
+    """
+    Return a dataframe with annotations for only one worker
+
     Parameters
     ----------
     df : pandas dataframe
     uid : user ID of worker
+
     Returns
     -------
     Dataframe with annotations for only that worker
@@ -145,7 +163,8 @@ def slice_by_worker(df, uid):
 
 
 def print_head(df):
-    """ Print the first five lines of df
+    """
+    Print the first five lines of df
     """
     print(df.head(n=5))
 
@@ -158,11 +177,14 @@ Functions for other data structure manipulation
 
 
 def csv_to_kdt(csv_filepath, img_height):
-    """ Fit reference spot coordinates to a k-d tree
+    """
+    Fit reference spot coordinates to a k-d tree
+
     Parameters
     ----------
     csv_filepath : string filepath to csv file containing reference points
     img_height : height of image
+
     Returns
     -------
     ref_kdt : sklearn.neighbors.kd_tree.KDTree containing reference points
@@ -183,7 +205,8 @@ def csv_to_kdt(csv_filepath, img_height):
 
 
 def centroid_and_ref_df(clusters, csv_filepath, img_height):
-    """ Assemble a dataframe of centroids found with annotation and
+    """
+    Assemble a dataframe of centroids found with annotation and
     reference data consolidated.
 
     Parameters
@@ -196,6 +219,7 @@ def centroid_and_ref_df(clusters, csv_filepath, img_height):
             each member is a list of properties of the annotation
             i.e. [x coord, y coord, time spent, worker ID]
     csv_filepath : contains reference data
+
     Returns
     -------
     this dataframe:
@@ -210,7 +234,6 @@ def centroid_and_ref_df(clusters, csv_filepath, img_height):
             each annotation is a list of click properties:
             x_coord | y_coord | time_spent | worker_ID
     """
-
     ref_kdt = csv_to_kdt(csv_filepath, img_height)
     ref_array = np.asarray(ref_kdt.data)
 
@@ -239,7 +262,8 @@ def centroid_and_ref_df(clusters, csv_filepath, img_height):
 
 
 def flip(vec, height):
-    """ Flip the values of a list about a height
+    """
+    Flip the values of a list about a height
     Useful for flipping y axis to plotting over an
     image with a flipped coordinate system.
 

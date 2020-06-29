@@ -18,6 +18,20 @@ crosshair_ratio = 0.04
 
 
 def get_nnd(coord, kdt):
+    """
+    Get the nearest neighbor distance between the given coordinate
+    and the contents of the k-D tree.
+
+    Parameters
+    ----------
+    coord : list or 1D np array of coordinates
+    kdt : k-D tree of coordinates to compare coord with
+
+    Returns
+    -------
+    The nearest neighbor distance between the given coordinate
+    and the contents of the k-D tree
+    """
     dist, ind = kdt.query([coord], k=2)
     return dist[0][1]
 
@@ -25,8 +39,19 @@ def get_nnd(coord, kdt):
 def get_bb_tuples(coords, crosshair_arm_length, max_num_crops):
     """
     Get the list of bounding boxes which will become crops
-    """
 
+    Parameters
+    ----------
+    coords : np array of spot locations
+    crosshair_arm_length : pixel length of one arm of the crosshairs
+        symbol used for annotation
+    max_num_crops : user-specified maximum number of crops
+
+    Returns
+    -------
+    bb_list : list of bounding boxes tuples
+        Each tuple: (x_min, x_max, y_min, y_max)
+    """
     # 1. Identify crowded spots
     kdt = KDTree(coords, leaf_size=2, metric='euclidean')
     crowded_spots = []
@@ -90,16 +115,34 @@ def get_bb_tuples(coords, crosshair_arm_length, max_num_crops):
 def crop(parent_img_path, bb):
     """
     Crop a parent image based on a bounding box and return the crop
-    """
 
+    Parameters
+    ----------
+    parent_img_path : path to the parent image to be cropped
+    bb : bounding box typle structured as (x_min, x_max, y_min, y_max)
+
+    Returns
+    -------
+    the cropped image
+    """
     img = imread(parent_img_path+'.png', as_gray=True)
     return img[int(bb[2]): int(bb[3]), int(bb[0]): int(bb[1])]
 
 
 def blackout(im, bb):
     """
-    Set values at all locations on im within bounding box bb
-    to 0.
+    Set intensity values at all locations on the given image im
+    within bounding box bb to 0.
+
+    Parameters
+    ----------
+    im : image with region to be blacked out
+    bb : bounding box typle structured as (x_min, x_max, y_min, y_max)
+
+    Returns
+    -------
+    blacked out : the image with all locations within bounding box bb
+        set to 0
     """
     blacked_out = im
     for r in range(blacked_out.shape[0]):
@@ -113,6 +156,15 @@ def blackout(im, bb):
 def get_crop_coords(coords, bb):
     """
     Get all coordinates in coords which are within bounding box bb.
+
+    Parameters
+    ----------
+    coords : np array of coordinates
+    bb : bounding box typle structured as (x_min, x_max, y_min, y_max)
+
+    Returns
+    -------
+    crop_coords : all coordinates in coords which are within bb
     """
     crop_coords = []
     for coord in coords:
@@ -124,8 +176,19 @@ def get_crop_coords(coords, bb):
 
 def get_crowded_spots(crop_coords, new_crosshair_arm_length):
     """
-    get all crops in crop_coords which are
-    smaller than new_crosshair_arm_length
+    Get all coords in crop_coords which are smaller than
+        new_crosshair_arm_length
+
+    Parameters
+    ----------
+    crop_coords : np array of coordinates
+    new_crosshair_arm_length : length of crosshair arm scaled
+        within autocrop.autocrop()
+
+    Returns
+    -------
+    crowded_spots : coords in crop_coords which are smaller than
+        new_crosshair_arm_length
     """
     crop_coords = np.asarray(crop_coords)
     crop_kdt = KDTree(crop_coords, leaf_size=2, metric='euclidean')
@@ -146,8 +209,24 @@ def autocrop(coords, parent_img_name, crosshair_arm_length,
     level until the percentage of spots which are
     crowded as dictated by crosshair_arm_length is
     less than max_crowded_ratio
-    """
 
+    Parameters
+    ----------
+    coords : np array of coordinates
+    parent_img_name : string name of parent image
+    crosshair_arm_length : pixel length of one arm of the crosshairs
+        symbol used for annotation
+    max_num_crops : user-specified maximum number of crops
+    max_crowded_ratio : threshold ratio of crowded spots to non-crowded spots
+        which prompts another level of cropping
+    crop_dir : path to directory where crops will be saved
+    parent_dir : path to directory containing the parent image
+
+    Returns
+    -------
+    crowded_spots : coords in crop_coords which are smaller than
+        new_crosshair_arm_length
+    """
     bb_list = get_bb_tuples(coords, crosshair_arm_length, max_num_crops)
     im = imread('./' + parent_dir + '/' + parent_img_name+'.png', as_gray=True)
     parent_width = im.shape[1]

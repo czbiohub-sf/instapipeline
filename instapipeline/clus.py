@@ -20,17 +20,22 @@ declumping_algs = ['KMeans']
 
 
 """
+
 Functions for sorting clusters by size
+
 """
 
 
 def get_cluster_size_threshold(clusters):
-    """ Calculate a cluster size threshold for all clusters
+    """
+    Calculate a cluster size threshold for all clusters
     using K-means in 1D. Assumes a bimodal distribution.
+
     Parameters
     ----------
     clusters : pandas dataframe
         (centroid_x | centroid_y | members)
+
     Returns
     -------
     cluster size threshold
@@ -48,7 +53,8 @@ def get_cluster_size_threshold(clusters):
 
 
 def plot_cluster_size_threshold(clusters, threshold):
-    """ Visualize cluster sizes in a histogram with threshold demarcated.
+    """
+    Visualize cluster sizes in a histogram with threshold demarcated.
 
     Parameters
     ----------
@@ -85,12 +91,15 @@ def plot_cluster_size_threshold(clusters, threshold):
 
 
 def sort_clusters_by_size(clusters, threshold):
-    """ Sort clusters by quantity of unique annotators.
+    """
+    Sort clusters by quantity of unique annotators.
+
     Parameters
     ----------
     clusters : pandas dataframe
         (centroid_x | centroid_y | members)
     threshold : threshold quantity of unique annotators
+
     Returns
     -------
     small_clusters : pandas dataframe containing clusters
@@ -144,7 +153,8 @@ Functions for sorting clusters by clumpiness and declumping
 
 
 def get_clumpiness_threshold(clusters):
-    """ Calculate a clumpiness threshold for all clusters
+    """
+    Calculate a clumpiness threshold for all clusters
     by finding the value between the tail and the main mode.
     Assumes a left-skewed unimodal distribution.
     Protocol for finding threshold:
@@ -159,12 +169,14 @@ def get_clumpiness_threshold(clusters):
         one bin to the left, to minimize the number of clusters which
         are actually single in the group of clusters detected as clumpy),
         or 0 if no such values exist.
+
     Parameters
     ----------
     clusters : pandas dataframe
         (centroid_x | centroid_y | members)
     bin_size : see protocol
     cutoff_fraction : see protocol
+
     Returns
     -------
     clumpiness threshold
@@ -195,7 +207,8 @@ def get_clumpiness_threshold(clusters):
 
 
 def plot_clumpiness_threshold(clusters):
-    """ Get cluster clumpiness threshold, visualize cluster clumpiness
+    """
+    Get cluster clumpiness threshold, visualize cluster clumpiness
     in a histogram with threshold demarcated.
 
     Parameters
@@ -248,13 +261,16 @@ def plot_clumpiness_threshold(clusters):
 
 
 def sort_clusters_by_clumpiness(clusters, threshold):
-    """ Sort clusters by fraction of contributors who contribute once
+    """
+    Sort clusters by fraction of contributors who contribute once
     to the cluster.
+
     Parameters
     ----------
     clusters : pandas dataframe
         (centroid_x | centroid_y | members)
     threshold : threshold fraction of contributors who only contribute 1x
+
     Returns
     -------
     clumpy_clusters : pandas dataframe containing clusters
@@ -311,7 +327,8 @@ def sort_clusters_by_clumpiness(clusters, threshold):
 
 
 def declump(clusters, i, declumping_params):
-    """ Declump the cluster at the ith index of clusters,
+    """
+    Declump the cluster at the ith index of clusters,
     a df only containing clumpy clusters.
 
     Parameters
@@ -366,18 +383,23 @@ def declump(clusters, i, declumping_params):
 
 
 """
+
 Functions for other cluster analyses
+
 """
 
 
 def get_cluster_means(clusters):
-    """ Get the mean x and y of each cluster.
+    """
+    Get the mean x and y of each cluster.
     (Different from cluster centroids, which are the exemplar
     annotation for each cluster.)
+
     Parameters
     ----------
     clusters : pandas dataframe
         (centroid_x | centroid_y | members)
+
     Returns
     -------
     numpy array of coords
@@ -397,7 +419,8 @@ def get_cluster_means(clusters):
 
 
 def get_cluster_correctness(df, correctness_threshold):
-    """ Assemble a dataframe of centroids found with
+    """
+    Assemble a dataframe of centroids found with
     annotation and reference data consolidated.
 
     Parameters
@@ -406,17 +429,16 @@ def get_cluster_correctness(df, correctness_threshold):
         centroid_x | centroid_y | x of nearest ref | y of nearest ref
             | NN_dist | members (x | y | time_spent | worker_id)
         * the index is the Centroid ID
-    correctness_threshold:
-        tolerance for correctness in pixels
+    correctness_threshold: tolerance for correctness in pixels
         None if correctness will not be visualized
         for each centroid, if NN_dist <= threshold, centroid is "correct"
+
     Returns
     -------
     2-column array with a row for each centroid
         column 0 = Centroid ID
         column 1 = T if centroid is "correct" else F
     """
-
     num_centroids = df.shape[0]
     to_return = np.empty([num_centroids, 2])
     for i in range(num_centroids):
@@ -430,10 +452,13 @@ def get_cluster_correctness(df, correctness_threshold):
 
 
 def get_pair_scores(df):
-    """ Calculate pair scores for each pair of workers in df.
+    """
+    Calculate pair scores for each pair of workers in df.
+
     Parameters
     ----------
     df : pandas dataframe
+
     Returns
     -------
     pair_scores : pandas dataframe
@@ -442,7 +467,6 @@ def get_pair_scores(df):
         pair score between worker_A and worker_B
             = ((avg A->B NND) + (avg B->A NND))/2
     """
-
     worker_list = util.get_workers(df)
     pair_scores = pd.DataFrame(index=worker_list, columns=worker_list)
     for worker in worker_list:
@@ -480,10 +504,13 @@ def get_pair_scores(df):
 
 
 def get_worker_pair_scores(df):
-    """ Calculate the total pairwise score for each workers in df.
+    """
+    Calculate the total pairwise score for each workers in df.
+
     Parameters
     ----------
     df : pandas dataframe
+
     Returns
     -------
     worker_scores : pandas dataframe
@@ -500,11 +527,14 @@ def get_worker_pair_scores(df):
 
 
 def get_worker_pair_score_threshold(df):
-    """ Calculate a pairwise score threshold for all workers in
+    """
+    Calculate a pairwise score threshold for all workers in
     df using Otsu's method. Assumes a bimodal distribution.
+
     Parameters
     ----------
     df : pandas dataframe
+
     Returns
     -------
     pairwise score threshold value
@@ -517,17 +547,19 @@ def get_worker_pair_score_threshold(df):
 
 
 def slice_by_worker_pair_score(df, threshold):
-    """ Drop all annotations in df by workers with average pairwise
+    """
+    Drop all annotations in df by workers with average pairwise
     score greater than threshold
+
     Parameters
     ----------
     df : pandas dataframe
     threshold : pairwise score threshold
+
     Returns
     -------
     df : pandas dataframe
     """
-
     worker_pair_scores = get_worker_pair_scores(df)
     high_scores = worker_pair_scores[worker_pair_scores.score > threshold]
     high_scoring_workers = high_scores.index.values

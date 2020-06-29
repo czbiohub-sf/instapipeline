@@ -9,10 +9,9 @@ from sklearn.cluster import AffinityPropagation
 
 
 class SpotAnnotationAnalysis():
-    """ Tools for annotation analysis
-
     """
-
+    Tools for annotation analysis
+    """
     # list of clustering algs handled
     clustering_algs = ['AffinityPropagation']
 
@@ -20,19 +19,20 @@ class SpotAnnotationAnalysis():
         """
         Take in a BaseAnnotation object and save it as
         a property of the SpotAnnotationAnalysis class
+
+        Parameters
+        ----------
+        ba_obj : BaseAnnotation object to be saved as
+            a property of the SpotAnnotationAnalysis class
         """
         self.ba = ba_obj
         self.clusters_done = []
         self.cluster_objects = []
 
-    """
-    Checks to see whether the cluster object has already been generated
-    for the given df and clustering parameters, and returns or calculates
-    appropriately.
-    """
     def get_cluster_object(self, coords, clus_params):
-        """ Checks whether the cluster object has already been generated
-        for the given df and clustering parameters, and returns or calculates
+        """
+        Check whether the cluster object has already been generated
+        for the given df and clustering parameters, and return or calculate
         appropriately.
 
         Parameters
@@ -60,7 +60,8 @@ class SpotAnnotationAnalysis():
             return af
 
     def get_clusters(self, df, clus_params):
-        """ Cluster all annotations in df and arrange result as a dataframe.
+        """
+        Cluster all annotations in df and arrange result as a dataframe.
         Verifies clustering parameters and calls self.get_cluster_object()
         to check whether identical clustering has already been accomplished.
 
@@ -80,7 +81,6 @@ class SpotAnnotationAnalysis():
                 each member is a list of properties of the annotation
                 i.e. [x coord, y coord, time spent, worker ID]
         """
-
         clustering_alg = clus_params[0]
         if (clustering_alg not in self.clustering_algs):
             raise ValueError('Invalid clustering algorithm name entered.')

@@ -12,50 +12,22 @@ from scipy import optimize
 from instapipeline import util, clus
 
 
-def gaussian(height, c_x, c_y, width_x, width_y):
-    """Returns a gaussian function with the given parameters.
-    From https://scipy-cookbook.readthedocs.io/items/FittingData.html
-    """
-    w_x = float(width_x)
-    w_y = float(width_y)
-    return lambda x, y: height*np.exp(-(((c_x-x)/w_x)**2+((c_y-y)/w_y)**2)/2)
-
-
-def moments(data):
-    """Returns (height, x, y, width_x, width_y)
-    the gaussian parameters of a 2D distribution by calculating its
-    moments.
-    From https://scipy-cookbook.readthedocs.io/items/FittingData.html
-    """
-    total = data.sum()
-    X, Y = np.indices(data.shape)
-    x = (X*data).sum()/total
-    y = (Y*data).sum()/total
-
-    col = data[:, int(y)]
-    width_x = np.sqrt(np.abs((np.arange(col.size)-y)**2*col).sum()/col.sum())
-    row = data[int(x), :]
-    width_y = np.sqrt(np.abs((np.arange(row.size)-x)**2*row).sum()/row.sum())
-    height = data.max()
-    return height, x, y, width_x, width_y
-
-
-def fitgaussian(data):
-    """Returns (height, x, y, width_x, width_y)
-    the gaussian parameters of a 2D distribution found by a fit.
-    From https://scipy-cookbook.readthedocs.io/items/FittingData.html
-    """
-    params = moments(data)
-    ds = data.shape
-    errorfunction = lambda p: np.ravel(gaussian(*p)(*np.indices(ds)) - data)
-    p, success = optimize.leastsq(errorfunction, params)
-    return p
-
-
 def get_sigma_list(sample_img_path, ref_coords, margin):
-    """Returns list of sigma values
     """
+    Get the sigma values of the spots at the ref_coords in the sample
+    image at sample_img_path, excluding spots at the edge of the sample image
 
+    Parameters
+    ----------
+    sample_img_path : path to the sample image
+    ref_coords : locations of the spots on the sample image to be analyzed
+    margin : minimum distance from the edge of the sample image
+        for a spot to be included and analyzed
+
+    Returns
+    -------
+    sigma_max_list : list of sigma values of the spots
+    """
     im = imread(sample_img_path, as_gray=True)
 
     sigma_max_list = []
@@ -85,8 +57,32 @@ def get_sigma_list(sample_img_path, ref_coords, margin):
 
 def get_best_threshold(sample_coords, sample_img_path, min_sigma,
                        max_sigma, correctness_threshold, thresholds):
-    """Tries blob detection with various intensity thresholds and
-    picks the best one
+    """
+    Tries blob detection with various intensity thresholds and
+    picks the best one.
+
+    Parameters
+    ----------
+    sample_coords : known locations of spots on the sample image
+    sample_img_path : path to the sample image
+    min_sigma : minimum sigma value to be considered for blob detection
+        found using sigma_max_list returned by param.get_sigma_list()
+    max_sigma : minimum sigma value to be considered for blob detection
+        found using sigma_max_list returned by param.get_sigma_list()
+    correctness_threshold : user-specified min distance from a reference
+        coord for a detected spot to be considered incorrect
+    thresholds: list of intensity threshold values to try
+
+    Returns
+    -------
+    best_threshold : of the inputted thresholds, the one with the best
+        precision * recall resulting from blob detection using that threshold
+    best_rec : recall resulting from blob detection using best_threshold
+    best_prec : precision resulting from blob detection using best_threshold
+    recall_list : recall values resulting from blob detection using
+        inputted thresholds
+    precision_list : precision values resulting from blob detection using
+        inputted thresholds
     """
     best_precision_x_recall = 0
     precision_list = []
@@ -156,7 +152,25 @@ def get_best_threshold(sample_coords, sample_img_path, min_sigma,
 
 def sort_clusters_by_correctness(clusters=None, correctness_threshold=4,
                                  csv_filepath=None, img_height=0):
+    """
+    Sort clusters by correctness.
 
+    Parameters
+    ----------
+    clusters : dataframe of clusters to sort.
+    correctness_threshold : user-defined min distance from a reference coord
+        for a cluster centroid to be considered incorrect
+    csv_filepath : path to csv file with reference spot coordinates
+    img_height : pixel height of annotated image
+
+    Returns
+    -------
+    correct_list : list of unique member counts of correct clusters
+    incorrect_list : list of unique member counts of incorrect clusters
+    total_list : list of unique member counts of all clusters
+    threshold : threshold unique member count above which a cluster is
+        predicted to be correct
+    """
     correct_list = []
     incorrect_list = []
     total_list = []
@@ -189,13 +203,19 @@ def sort_clusters_by_correctness(clusters=None, correctness_threshold=4,
 
 def get_precision_recall(test_coords=None, ref_coords=None,
                          correctness_threshold=4):
-    '''
-    correct test
-    incorrect test
-    detected ref
-    undetected ref
-    '''
+    """
+    Get precision and recall of test_coords based on ref_coords.
 
+    Parameters
+    ----------
+    test_coords : np array of test spot coordinates
+    ref_coords : np array of known spot coordinates
+
+    Returns
+    -------
+    precision
+    recall
+    """
     ref_kdt = KDTree(ref_coords, leaf_size=2, metric='euclidean')
     test_kdt = KDTree(test_coords, leaf_size=2, metric='euclidean')
 
@@ -221,3 +241,44 @@ def get_precision_recall(test_coords=None, ref_coords=None,
     recall = len(detected_ref)/len(ref_coords)
 
     return precision, recall
+
+
+def gaussian(height, c_x, c_y, width_x, width_y):
+    """
+    Return a gaussian function with the given parameters.
+    From https://scipy-cookbook.readthedocs.io/items/FittingData.html
+    """
+    w_x = float(width_x)
+    w_y = float(width_y)
+    return lambda x, y: height*np.exp(-(((c_x-x)/w_x)**2+((c_y-y)/w_y)**2)/2)
+
+
+def moments(data):
+    """
+    Return the gaussian parameters of a 2D distribution by calculating
+    its moments.
+    From https://scipy-cookbook.readthedocs.io/items/FittingData.html
+    """
+    total = data.sum()
+    X, Y = np.indices(data.shape)
+    x = (X*data).sum()/total
+    y = (Y*data).sum()/total
+
+    col = data[:, int(y)]
+    width_x = np.sqrt(np.abs((np.arange(col.size)-y)**2*col).sum()/col.sum())
+    row = data[int(x), :]
+    width_y = np.sqrt(np.abs((np.arange(row.size)-x)**2*row).sum()/row.sum())
+    height = data.max()
+    return height, x, y, width_x, width_y
+
+
+def fitgaussian(data):
+    """
+    Return the gaussian parameters of a 2D distribution found by a fit.
+    From https://scipy-cookbook.readthedocs.io/items/FittingData.html
+    """
+    params = moments(data)
+    ds = data.shape
+    errorfunction = lambda p: np.ravel(gaussian(*p)(*np.indices(ds)) - data)
+    p, success = optimize.leastsq(errorfunction, params)
+    return p
