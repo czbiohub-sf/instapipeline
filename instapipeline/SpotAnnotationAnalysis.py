@@ -4,7 +4,7 @@ This module contains the SpotAnnotationAnalysis class.
 
 import numpy as np
 import pandas as pd
-from fishanno import util
+from instapipeline import util
 from sklearn.cluster import AffinityPropagation
 
 

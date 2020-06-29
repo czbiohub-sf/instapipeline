@@ -23,5 +23,6 @@ The directory `instapipeline` contains the codebase.
 
 - Create a new anaconda environment: `conda create --name <environment name> python=3.7`
 - Enter the new environment: `conda activate <environment name>`
+- Install jupyter notebook: `conda install -c conda-forge notebook`
 - Clone the instapipeline repo
 - Install: `pip install <path to directory with setup.py>`
