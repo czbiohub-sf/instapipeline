@@ -24,4 +24,4 @@ The directory `instapipeline` contains the codebase.
 - Create a new anaconda environment: `conda create --name <environment name> python=3.7`
 - Enter the new environment: `conda activate <environment name>`
 - Clone the instapipeline repo
-- Install: `pip install -e <path to directory with setup.py>`
+- Install: `pip install <path to directory with setup.py>`
