@@ -38,9 +38,9 @@ class SpotAnnotationAnalysis():
         Parameters
         ----------
         coords : np_array
-            each row is an annotation [x_coord, y_coord]
+            each row is an annotation [int x_coord, int y_coord]
         clus_params : list of clustering parameters
-            first element is string name of clustering algorithm
+            first element is str name of clustering algorithm
             subsequent elements are additional parameters
 
         Returns
@@ -69,17 +69,17 @@ class SpotAnnotationAnalysis():
         ----------
         df : pandas dataframe
         clus_params : list of clustering parameters
-            first element is string name of clustering algorithm
+            first element is str name of clustering algorithm
             subsequent elements are additional parameters
 
         Returns
         -------
-        to_return : pandas dataframe (centroid_x | centroid_y | members)
-            centroid_x = x coord of cluster centroid
-            centroid_y = y coord of cluster centroid
+        clusters : pandas dataframe (centroid_x | centroid_y | members)
+            centroid_x = int x coord of cluster centroid
+            centroid_y = int y coord of cluster centroid
             members = list of annotations belonging to the cluster
-                each member is a list of properties of the annotation
-                i.e. [x coord, y coord, time spent, worker ID]
+                each annotation is a numpy ndarray of properties:
+                [int x coord, int y coord, int time spent, str worker ID]
         """
         clustering_alg = clus_params[0]
         if (clustering_alg not in self.clustering_algs):

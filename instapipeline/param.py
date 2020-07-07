@@ -19,9 +19,10 @@ def get_sigma_list(sample_img_path, ref_coords, margin):
 
     Parameters
     ----------
-    sample_img_path : path to the sample image
-    ref_coords : locations of the spots on the sample image to be analyzed
-    margin : minimum distance from the edge of the sample image
+    sample_img_path : str path to the sample image
+    ref_coords : np array with locations of the spots on the sample image
+        to be analyzed
+    margin : int minimum distance from the edge of the sample image
         for a spot to be included and analyzed
 
     Returns
@@ -63,25 +64,25 @@ def get_best_threshold(sample_coords, sample_img_path, min_sigma,
 
     Parameters
     ----------
-    sample_coords : known locations of spots on the sample image
-    sample_img_path : path to the sample image
-    min_sigma : minimum sigma value to be considered for blob detection
+    sample_coords : np array of known locations of spots on the sample image
+    sample_img_path : str path to the sample image
+    min_sigma : float minimum sigma value to be considered for blob detection
         found using sigma_max_list returned by param.get_sigma_list()
-    max_sigma : minimum sigma value to be considered for blob detection
+    max_sigma : float maximum sigma value to be considered for blob detection
         found using sigma_max_list returned by param.get_sigma_list()
-    correctness_threshold : user-specified min distance from a reference
+    correctness_threshold : float user-specified min distance from a reference
         coord for a detected spot to be considered incorrect
-    thresholds: list of intensity threshold values to try
+    thresholds: list of float intensity threshold values to try
 
     Returns
     -------
-    best_threshold : of the inputted thresholds, the one with the best
-        precision * recall resulting from blob detection using that threshold
-    best_rec : recall resulting from blob detection using best_threshold
-    best_prec : precision resulting from blob detection using best_threshold
-    recall_list : recall values resulting from blob detection using
+    best_threshold : of the inputted float thresholds, the one with the best
+        precision * recall from blob detection using that threshold
+    best_rec : float recall from blob detection using best_threshold
+    best_prec : float precision from blob detection using best_threshold
+    recall_list : float recall values from blob detection using
         inputted thresholds
-    precision_list : precision values resulting from blob detection using
+    precision_list : float precision values from blob detection using
         inputted thresholds
     """
     best_precision_x_recall = 0
@@ -157,11 +158,17 @@ def sort_clusters_by_correctness(clusters=None, correctness_threshold=4,
 
     Parameters
     ----------
-    clusters : dataframe of clusters to sort.
-    correctness_threshold : user-defined min distance from a reference coord
-        for a cluster centroid to be considered incorrect
-    csv_filepath : path to csv file with reference spot coordinates
-    img_height : pixel height of annotated image
+    clusters : pandas dataframe of clusters to sort
+        (centroid_x | centroid_y | members)
+        centroid_x = int x coord of cluster centroid
+        centroid_y = int y coord of cluster centroid
+        members = list of annotations belonging to the cluster
+            each annotation is a numpy ndarray of properties:
+            [int x coord, int y coord, int time spent, str worker ID]
+    correctness_threshold : float user-defined min distance from a reference
+        coord for a cluster centroid to be considered incorrect
+    csv_filepath : str path to csv file with reference spot coordinates
+    img_height : int pixel height of annotated image
 
     Returns
     -------
@@ -213,8 +220,8 @@ def get_precision_recall(test_coords=None, ref_coords=None,
 
     Returns
     -------
-    precision
-    recall
+    float precision
+    float recall
     """
     ref_kdt = KDTree(ref_coords, leaf_size=2, metric='euclidean')
     test_kdt = KDTree(test_coords, leaf_size=2, metric='euclidean')

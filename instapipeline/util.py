@@ -18,7 +18,22 @@ Functions for interacting with / manipulating dataframes
 
 def get_workers(df):
     """
-    Return a numpy array of unique workers in df
+    Parameters
+    ----------
+    df : pandas dataframe with the following columns:
+        int timestamp
+        int x
+        int y
+        str annotation_type
+        int height
+        int width
+        str image_filename
+        str time_when_completed
+        str worker_id
+
+    Returns
+    -------
+    numpy array of unique workers IDs (str) in df
     """
     uid_list = df.loc[:, ['worker_id']]
     return np.unique(uid_list)
@@ -26,7 +41,22 @@ def get_workers(df):
 
 def get_img_filenames(df):
     """
-    Returns a numpy array of unique image filenames in df
+    Parameters
+    ----------
+    df : pandas dataframe with the following columns:
+        int timestamp
+        int x
+        int y
+        str annotation_type
+        int height
+        int width
+        str image_filename
+        str time_when_completed
+        str worker_id
+
+    Returns
+    -------
+    numpy array of unique image filenames (str) in df
     """
     img_list = df.loc[:, ['image_filename']]
     return np.unique(img_list)
@@ -34,7 +64,22 @@ def get_img_filenames(df):
 
 def get_timestamps(df):
     """
-    Returns a list of timestamps in df
+    Parameters
+    ----------
+    df : pandas dataframe with the following columns:
+        int timestamp
+        int x
+        int y
+        str annotation_type
+        int height
+        int width
+        str image_filename
+        str time_when_completed
+        str worker_id
+
+    Returns
+    -------
+    list of numpy.int64 timestamps in df
     """
     matrix = df.loc[:, ['timestamp']].to_numpy()
     return [x[0] for x in matrix]
@@ -46,19 +91,26 @@ def get_click_properties(df):
 
     Parameters
     ----------
-    df : pandas dataframe
-        timestamp | x | y | annotation_type | height |
-        width image_filename | time_when_completed | worker_id
+    df : pandas dataframe with the following columns:
+        int timestamp
+        int x
+        int y
+        str annotation_type
+        int height
+        int width
+        str image_filename
+        str time_when_completed
+        str worker_id
 
     Returns
     -------
     numpy array
         each row corresponds with one annotation in the dataframe
         columns:
-            x coord
-            y coord
-            time spent (time_spent = 0 indicates first click of an occasion)
-            string worker ID
+            int x coord
+            int y coord
+            int time spent (time_spent = 0 indicates 1st click of an occasion)
+            str worker ID
     """
     occasions = np.unique(df.loc[:, ['time_when_completed']].to_numpy())
     to_return = np.array([]).reshape(0, 4)
@@ -82,9 +134,16 @@ def get_time_per_click(df):
 
     Parameters
     ----------
-    df : pandas dataframe
-        timestamp | x | y | annotation_type | height |
-        width image_filename | time_when_completed | worker_id
+    df : pandas dataframe with the following columns:
+        int timestamp
+        int x
+        int y
+        str annotation_type
+        int height
+        int width
+        str image_filename
+        str time_when_completed
+        str worker_id
 
     Returns
     -------
@@ -108,14 +167,21 @@ def get_avg_time_per_click(df, uid):
 
     Parameters
     ----------
-    df : pandas dataframe
-        timestamp | x | y | annotation_type | height |
-        width image_filename | time_when_completed | worker_id
-    uid : string worker ID
+    df : pandas dataframe with the following columns:
+        int timestamp
+        int x
+        int y
+        str annotation_type
+        int height
+        int width
+        str image_filename
+        str time_when_completed
+        str worker_id
+    uid : str worker ID
 
     Returns
     -------
-    the average time that the worker spent per click
+    float average time that the worker spent per click
     """
 
     worker_timestamps = get_timestamps(df, uid)
@@ -131,9 +197,16 @@ def get_nnd_per_click(df, ref_kdt):
 
     Parameters
     ----------
-    df : pandas dataframe
-        timestamp | x | y | annotation_type | height |
-        width image_filename | time_when_completed | worker_id
+    df : pandas dataframe with the following columns:
+        int timestamp
+        int x
+        int y
+        str annotation_type
+        int height
+        int width
+        str image_filename
+        str time_when_completed
+        str worker_id
 
     Returns
     -------
@@ -152,7 +225,16 @@ def slice_by_worker(df, uid):
 
     Parameters
     ----------
-    df : pandas dataframe
+    df : pandas dataframe with the following columns:
+        int timestamp
+        int x
+        int y
+        str annotation_type
+        int height
+        int width
+        str image_filename
+        str time_when_completed
+        str worker_id
     uid : user ID of worker
 
     Returns
@@ -165,6 +247,10 @@ def slice_by_worker(df, uid):
 def print_head(df):
     """
     Print the first five lines of df
+
+    Parameters
+    ----------
+    df : pandas dataframe
     """
     print(df.head(n=5))
 
@@ -182,8 +268,8 @@ def csv_to_kdt(csv_filepath, img_height):
 
     Parameters
     ----------
-    csv_filepath : string filepath to csv file containing reference points
-    img_height : height of image
+    csv_filepath : str path to csv file containing reference points
+    img_height : int height of image
 
     Returns
     -------
@@ -218,11 +304,11 @@ def centroid_and_ref_df(clusters, csv_filepath, img_height):
         members = list of annotations belonging to the cluster
             each member is a list of properties of the annotation
             i.e. [x coord, y coord, time spent, worker ID]
-    csv_filepath : contains reference data
+    csv_filepath : str path to csv with reference data
 
     Returns
     -------
-    this dataframe:
+    this pandas dataframe:
     centroid_x | centroid_y | nearest ref x | nearest ref y | NN_dist | members
         * (the index is the Cluster ID)
         centroid_x = x coord of cluster centroid
@@ -270,7 +356,7 @@ def flip(vec, height):
     Parameters
     ----------
     vec : list of values to be flipped
-    height : height about which to flip values
+    height : ing height about which to flip values
 
     Returns
     -------

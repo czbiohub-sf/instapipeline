@@ -42,10 +42,10 @@ def plot_annotations(df=None, show_workers=False,
     centroid_and_ref_df = pandas dataframe outputted by centroid_and_ref_df()
         centroid_x | centroid_y | x of nearest ref |
         y of nearest ref | NN_dist | members
-    corr_threshold : tolerance for correctness in pixels,
+    corr_threshold : int tolerance for correctness in pixels,
         None if correctness will not be visualized
-    worker_marker_size, cluster_marker_size : plot parameters
-    img_filepath, csv_filepath : paths to image and reference csv files
+    worker_marker_size, cluster_marker_size : int plot parameters
+    img_filepath, csv_filepath : str paths to image and reference csv files
     bigger_window_size : bool whether to use bigger window size
 
     Returns
@@ -171,17 +171,17 @@ def visualize_clusters(clusters=None, worker_marker_size=8,
     Parameters
     ----------
     clusters : pandas dataframe (centroid_x | centroid_y | members)
-        centroid_x = x coord of cluster centroid
-        centroid_y = y coord of cluster centroid
+        centroid_x = int x coord of cluster centroid
+        centroid_y = int y coord of cluster centroid
         members = list of annotations belonging to the cluster
-            each member is a list of properties of the annotation
-            i.e. [x coord, y coord, time spent, worker ID]
+            each annotation is a numpy ndarray of properties:
+            [int x coord, int y coord, int time spent, str worker ID]
     show_workers : bool whether to plot workers
     show_centroids : bool whether to plot cluster centroids
     worker_marker_size, cluster_marker_size : plot parameters
-    img_filepath : path to image file
-    img_height : height of image in pixels
-    plot_title : title of plot
+    img_filepath : str path to image file
+    img_height : int height of image in pixels
+    plot_title : str title of plot
     bigger_window_size : bool whether to use bigger window size
 
     Returns

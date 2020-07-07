@@ -33,12 +33,17 @@ def get_cluster_size_threshold(clusters):
 
     Parameters
     ----------
-    clusters : pandas dataframe
+    clusters : pandas dataframe returned by sa.get_clusters()
         (centroid_x | centroid_y | members)
+        centroid_x = int x coord of cluster centroid
+        centroid_y = int y coord of cluster centroid
+        members = list of annotations belonging to the cluster
+            each annotation is a numpy ndarray of properties:
+            [int x coord, int y coord, int time spent, str worker ID]
 
     Returns
     -------
-    cluster size threshold
+    float cluster size threshold
     """
     total_list = []
     for index, row in clusters.iterrows():
@@ -58,18 +63,19 @@ def plot_cluster_size_threshold(clusters, threshold):
 
     Parameters
     ----------
-    clusters : pandas dataframe (centroid_x | centroid_y | members)
-        centroid_x = x coord of cluster centroid
-        centroid_y = y coord of cluster centroid
+    clusters : pandas dataframe returned by sa.get_clusters()
+        (centroid_x | centroid_y | members)
+        centroid_x = int x coord of cluster centroid
+        centroid_y = int y coord of cluster centroid
         members = list of annotations belonging to the cluster
-            each member is a list of properties of the annotation
-            i.e. [x coord, y coord, time spent, worker ID]
-    threshold : value to show threshold demarcation on histogram
+            each annotation is a numpy ndarray of properties:
+            [int x coord, int y coord, int time spent, str worker ID]
+    threshold : float threshold demarcation shown on histogram
 
     Returns
     -------
-    figure
-    axes
+    figure : matplotlib figure object
+    axes : matplotlib axes object
     """
     fig = plt.figure()
     hist_list = []
@@ -96,18 +102,23 @@ def sort_clusters_by_size(clusters, threshold):
 
     Parameters
     ----------
-    clusters : pandas dataframe
+    clusters : pandas dataframe returned by sa.get_clusters()
         (centroid_x | centroid_y | members)
-    threshold : threshold quantity of unique annotators
+        centroid_x = int x coord of cluster centroid
+        centroid_y = int y coord of cluster centroid
+        members = list of annotations belonging to the cluster
+            each annotation is a numpy ndarray of properties:
+            [int x coord, int y coord, int time spent, str worker ID]
+    threshold : float threshold quantity of unique annotators
 
     Returns
     -------
     small_clusters : pandas dataframe containing clusters
         for which num unique annotators < threshold
-        (centroid_x | centroid_y | members)
+        Same structure as input dataframe.
     large_clusters : pandas dataframe containing clusters
         for which num unique annotators >= threshold
-        (centroid_x | centroid_y | members)
+        Same structure as input dataframe.
     """
     small_clusters_list = []
     large_clusters_list = []
@@ -172,14 +183,19 @@ def get_clumpiness_threshold(clusters):
 
     Parameters
     ----------
-    clusters : pandas dataframe
+    clusters : pandas dataframe returned by sa.get_clusters()
         (centroid_x | centroid_y | members)
-    bin_size : see protocol
-    cutoff_fraction : see protocol
+        centroid_x = int x coord of cluster centroid
+        centroid_y = int y coord of cluster centroid
+        members = list of annotations belonging to the cluster
+            each annotation is a numpy ndarray of properties:
+            [int x coord, int y coord, int time spent, str worker ID]
+    bin_size : float (see protocol)
+    cutoff_fraction : float (see protocol)
 
     Returns
     -------
-    clumpiness threshold
+    float clumpiness threshold
     """
     single_fraction_list = []
     for index, row in clusters.iterrows():
@@ -213,18 +229,19 @@ def plot_clumpiness_threshold(clusters):
 
     Parameters
     ----------
-    clusters : pandas dataframe (centroid_x | centroid_y | members)
-        centroid_x = x coord of cluster centroid
-        centroid_y = y coord of cluster centroid
+    clusters : pandas dataframe returned by sa.get_clusters()
+        (centroid_x | centroid_y | members)
+        centroid_x = int x coord of cluster centroid
+        centroid_y = int y coord of cluster centroid
         members = list of annotations belonging to the cluster
-            each member is a list of properties of the annotation
-            i.e. [x coord, y coord, time spent, worker ID]
+            each annotation is a numpy ndarray of properties:
+            [int x coord, int y coord, int time spent, str worker ID]
 
     Returns
     -------
-    threshold : the fraction of workers who contribute 1x
-    figure
-    axes
+    threshold : float fraction of workers who contribute 1x
+    figure : matplotlib figure object
+    axes : matplotlib axes object
     """
     single_fraction_list = []
     for index, row in clusters.iterrows():
@@ -267,18 +284,23 @@ def sort_clusters_by_clumpiness(clusters, threshold):
 
     Parameters
     ----------
-    clusters : pandas dataframe
+    clusters : pandas dataframe returned by sa.get_clusters()
         (centroid_x | centroid_y | members)
-    threshold : threshold fraction of contributors who only contribute 1x
+        centroid_x = int x coord of cluster centroid
+        centroid_y = int y coord of cluster centroid
+        members = list of annotations belonging to the cluster
+            each annotation is a numpy ndarray of properties:
+            [int x coord, int y coord, int time spent, str worker ID]
+    threshold : float threshold fraction of contributors who only contribute 1x
 
     Returns
     -------
     clumpy_clusters : pandas dataframe containing clusters
         for which fraction of contributors who only contribute 1x < threshold
-        (centroid_x | centroid_y | members)
+        Same structure as input dataframe.
     nonclumpy_clusters : pandas dataframe containing clusters
         for which fraction of contributors who only contribute 1x >= threshold
-        (centroid_x | centroid_y | members)
+        Same structure as input dataframe.
     """
     clumpy_clusters_list = []
     nonclumpy_clusters_list = []
@@ -333,15 +355,16 @@ def declump(clusters, i, declumping_params):
 
     Parameters
     ----------
-    clusters : pandas dataframe (centroid_x | centroid_y | members)
-        centroid_x = x coord of cluster centroid
-        centroid_y = y coord of cluster centroid
+    clusters : pandas dataframe returned by sa.get_clusters()
+        (centroid_x | centroid_y | members)
+        centroid_x = int x coord of cluster centroid
+        centroid_y = int y coord of cluster centroid
         members = list of annotations belonging to the cluster
-            each member is a list of properties of the annotation
-            i.e. [x coord, y coord, time spent, worker ID]
-    i : index of cluster in clusters to declump
+            each annotation is a numpy ndarray of properties:
+            [int x coord, int y coord, int time spent, str worker ID]
+    i : int index of cluster in clusters to declump
     declumping_params : list of clustering parameters
-        first element is string name of declumping algorithm
+        first element is str name of declumping algorithm
         subsequent elements are additional parameters
 
     Returns
@@ -397,12 +420,17 @@ def get_cluster_means(clusters):
 
     Parameters
     ----------
-    clusters : pandas dataframe
+    clusters : pandas dataframe returned by sa.get_clusters()
         (centroid_x | centroid_y | members)
+        centroid_x = int x coord of cluster centroid
+        centroid_y = int y coord of cluster centroid
+        members = list of annotations belonging to the cluster
+            each annotation is a numpy ndarray of properties:
+            [int x coord, int y coord, int time spent, str worker ID]
 
     Returns
     -------
-    numpy array of coords
+    numpy array of coordinates
     """
     mean_coords = []
 
@@ -429,7 +457,7 @@ def get_cluster_correctness(df, correctness_threshold):
         centroid_x | centroid_y | x of nearest ref | y of nearest ref
             | NN_dist | members (x | y | time_spent | worker_id)
         * the index is the Centroid ID
-    correctness_threshold: tolerance for correctness in pixels
+    correctness_threshold: int tolerance for correctness in pixels
         None if correctness will not be visualized
         for each centroid, if NN_dist <= threshold, centroid is "correct"
 
@@ -457,7 +485,16 @@ def get_pair_scores(df):
 
     Parameters
     ----------
-    df : pandas dataframe
+    df : pandas dataframe with the following columns:
+            int timestamp
+            int x
+            int y
+            str annotation_type
+            int height
+            int width
+            str image_filename
+            str time_when_completed
+            str worker_id
 
     Returns
     -------
@@ -537,7 +574,7 @@ def get_worker_pair_score_threshold(df):
 
     Returns
     -------
-    pairwise score threshold value
+    float pairwise score threshold
     """
     # score workers based on pairwise matching
     worker_pairwise_scores = get_worker_pair_scores(df)
@@ -554,7 +591,7 @@ def slice_by_worker_pair_score(df, threshold):
     Parameters
     ----------
     df : pandas dataframe
-    threshold : pairwise score threshold
+    threshold : float pairwise score threshold
 
     Returns
     -------

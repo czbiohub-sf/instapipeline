@@ -22,8 +22,8 @@ class QuantiusAnnotation(BaseAnnotation):
 
         Parameters
         ----------
-        json_filepath : path to json containing annotation data
-        img_filename : name of image file that was annotated
+        json_filepath : str path to json containing annotation data
+        img_filename : str name of image file that was annotated
         """
         to_return = pd.DataFrame()
         json_string = open(json_filepath).read()

@@ -12,8 +12,8 @@ class BaseAnnotation:
 
         Parameters
         ----------
-        json_filepath : path to json containing annotation data
-        img_filename : name of image file that was annotated
+        json_filepath : str path to json containing annotation data
+        img_filename : str name of image file that was annotated
         """
         self.annotations = self._import_annotations(json_filepath,
                                                     img_filename)
@@ -26,8 +26,8 @@ class BaseAnnotation:
 
         Parameters
         ----------
-        json_filepath : path to json containing annotation data
-        img_filename : name of image file that was annotated
+        json_filepath : str path to json containing annotation data
+        img_filename : str name of image file that was annotated
         """
         raise NotImplementedError
 
