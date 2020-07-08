@@ -1,5 +1,5 @@
 """
-This module contains functions for visualizing annotations and clusters
+This module contains functions for visualizing annotations and clusters.
 """
 
 import matplotlib.pyplot as plt
@@ -8,7 +8,7 @@ import pandas as pd
 from matplotlib.lines import Line2D
 from instapipeline import clus, util
 
-# colors used by plotters
+# colors used by plotter functions
 colors = ['#3399FF', '#CC33FF', '#FFFF00', '#FF33CC',
           '#9966FF', '#009999', '#99E3FF', '#B88A00',
           '#33FFCC', '#FF3366', '#F5B800', '#FF6633',

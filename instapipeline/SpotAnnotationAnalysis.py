@@ -12,13 +12,13 @@ class SpotAnnotationAnalysis():
     """
     Tools for annotation analysis
     """
-    # list of clustering algs handled
+    # list of clustering algorithms handled
     clustering_algs = ['AffinityPropagation']
 
     def __init__(self, ba_obj):
         """
         Take in a BaseAnnotation object and save it as
-        a property of the SpotAnnotationAnalysis class
+        a property of the SpotAnnotationAnalysis class.
 
         Parameters
         ----------
@@ -37,7 +37,7 @@ class SpotAnnotationAnalysis():
 
         Parameters
         ----------
-        coords : np_array
+        coords : numpy array
             each row is an annotation [int x_coord, int y_coord]
         clus_params : list of clustering parameters
             first element is str name of clustering algorithm

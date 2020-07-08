@@ -15,12 +15,12 @@ from instapipeline import util, clus
 def get_sigma_list(sample_img_path, ref_coords, margin):
     """
     Get the sigma values of the spots at the ref_coords in the sample
-    image at sample_img_path, excluding spots at the edge of the sample image
+    image at sample_img_path, excluding spots at the edge of the sample image.
 
     Parameters
     ----------
     sample_img_path : str path to the sample image
-    ref_coords : np array with locations of the spots on the sample image
+    ref_coords : numpy array with locations of the spots on the sample image
         to be analyzed
     margin : int minimum distance from the edge of the sample image
         for a spot to be included and analyzed
@@ -64,7 +64,7 @@ def get_best_threshold(sample_coords, sample_img_path, min_sigma,
 
     Parameters
     ----------
-    sample_coords : np array of known locations of spots on the sample image
+    sample_coords : numpy array of known locations of spots on the sample image
     sample_img_path : str path to the sample image
     min_sigma : float minimum sigma value to be considered for blob detection
         found using sigma_max_list returned by param.get_sigma_list()
@@ -215,8 +215,8 @@ def get_precision_recall(test_coords=None, ref_coords=None,
 
     Parameters
     ----------
-    test_coords : np array of test spot coordinates
-    ref_coords : np array of known spot coordinates
+    test_coords : numpy array of test spot coordinates
+    ref_coords : numpy array of known spot coordinates
 
     Returns
     -------

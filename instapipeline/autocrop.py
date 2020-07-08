@@ -9,7 +9,7 @@ from sklearn.neighbors import KDTree
 from sklearn.cluster import AffinityPropagation, KMeans
 from scipy import ndimage
 
-# list of declumping algs handled
+# list of declumping algorithms handled
 declumping_algs = ['KMeans']
 
 # autocrop parameters
@@ -20,11 +20,11 @@ crosshair_ratio = 0.04
 def get_nnd(coord, kdt):
     """
     Get the nearest neighbor distance between the given coordinate
-    and the contents of the k-D tree.
+    and the contents of the k-D tree
 
     Parameters
     ----------
-    coord : list or 1D np array of coordinates
+    coord : list or 1D numpy array of coordinates
     kdt : sklearn.neighbors.kd_tree.KDTree of coordinates to compare coord with
 
     Returns
@@ -38,11 +38,11 @@ def get_nnd(coord, kdt):
 
 def get_bb_tuples(coords, crosshair_arm_length, max_num_crops):
     """
-    Get the list of bounding boxes which will become crops
+    Get the list of bounding boxes which will become crops.
 
     Parameters
     ----------
-    coords : np array of spot locations
+    coords : numpy array of spot locations
     crosshair_arm_length : int pixel length of one arm of the crosshairs
         symbol used for annotation
     max_num_crops : int user-specified maximum number of crops
@@ -114,7 +114,7 @@ def get_bb_tuples(coords, crosshair_arm_length, max_num_crops):
 
 def crop(parent_img_path, bb):
     """
-    Crop a parent image based on a bounding box and return the crop
+    Crop a parent image based on a bounding box and return the crop.
 
     Parameters
     ----------
@@ -159,7 +159,7 @@ def get_crop_coords(coords, bb):
 
     Parameters
     ----------
-    coords : np array of coordinates
+    coords : numpy array of coordinates
     bb : bounding box tuple of ints structured as (x_min, x_max, y_min, y_max)
 
     Returns
@@ -177,11 +177,11 @@ def get_crop_coords(coords, bb):
 def get_crowded_spots(crop_coords, new_crosshair_arm_length):
     """
     Get all coords in crop_coords which are smaller than
-        new_crosshair_arm_length
+    new_crosshair_arm_length.
 
     Parameters
     ----------
-    crop_coords : np array of coordinates
+    crop_coords : numpy array of coordinates
     new_crosshair_arm_length : int length of crosshair arm scaled
         within autocrop.autocrop()
 
@@ -208,11 +208,11 @@ def autocrop(coords, parent_img_name, crosshair_arm_length,
     maximum number of crops (max_num_crops) at each
     level until the percentage of spots which are
     crowded as dictated by crosshair_arm_length is
-    less than max_crowded_ratio
+    less than max_crowded_ratio.
 
     Parameters
     ----------
-    coords : np array of coordinates
+    coords : numpy array of coordinates
     parent_img_name : str name of parent image
     crosshair_arm_length : int pixel length of one arm of the crosshairs
         symbol used for annotation

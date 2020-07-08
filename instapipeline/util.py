@@ -18,6 +18,8 @@ Functions for interacting with / manipulating dataframes
 
 def get_workers(df):
     """
+    Get a list of unique worker IDs in df.
+
     Parameters
     ----------
     df : pandas dataframe with the following columns:
@@ -41,6 +43,8 @@ def get_workers(df):
 
 def get_img_filenames(df):
     """
+    Get a list of unique image filenames in df.
+
     Parameters
     ----------
     df : pandas dataframe with the following columns:
@@ -64,6 +68,8 @@ def get_img_filenames(df):
 
 def get_timestamps(df):
     """
+    Get a list of timestamps of annotations in df.
+
     Parameters
     ----------
     df : pandas dataframe with the following columns:
@@ -87,7 +93,7 @@ def get_timestamps(df):
 
 def get_click_properties(df):
     """
-    Returns a numpy array containing properties for all clicks in df
+    Returns a numpy array containing properties for all clicks in df.
 
     Parameters
     ----------
@@ -221,7 +227,7 @@ def get_nnd_per_click(df, ref_kdt):
 
 def slice_by_worker(df, uid):
     """
-    Return a dataframe with annotations for only one worker
+    Return a dataframe with annotations for only one worker.
 
     Parameters
     ----------
@@ -246,7 +252,7 @@ def slice_by_worker(df, uid):
 
 def print_head(df):
     """
-    Print the first five lines of df
+    Print the first five lines of df.
 
     Parameters
     ----------
@@ -264,7 +270,7 @@ Functions for other data structure manipulation
 
 def csv_to_kdt(csv_filepath, img_height):
     """
-    Fit reference spot coordinates to a k-d tree
+    Fit reference spot coordinates to a k-d tree.
 
     Parameters
     ----------
@@ -274,7 +280,7 @@ def csv_to_kdt(csv_filepath, img_height):
     Returns
     -------
     ref_kdt : sklearn.neighbors.kd_tree.KDTree containing reference points
-                y-coordinates are flipped about img_height
+        y-coordinates are flipped about img_height
     """
     ref_df = pd.read_csv(csv_filepath)
     ref_points = ref_df.loc[:, ['col', 'row']].to_numpy()
@@ -349,7 +355,7 @@ def centroid_and_ref_df(clusters, csv_filepath, img_height):
 
 def flip(vec, height):
     """
-    Flip the values of a list about a height
+    Flip the values of a list about a height.
     Useful for flipping y axis to plotting over an
     image with a flipped coordinate system.
 

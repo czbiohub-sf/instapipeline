@@ -15,7 +15,7 @@ from sklearn.cluster import KMeans
 from instapipeline import util
 
 
-# list of declumping algs handled
+# list of declumping algorithms handled
 declumping_algs = ['KMeans']
 
 
@@ -168,18 +168,19 @@ def get_clumpiness_threshold(clusters):
     Calculate a clumpiness threshold for all clusters
     by finding the value between the tail and the main mode.
     Assumes a left-skewed unimodal distribution.
+
     Protocol for finding threshold:
-    Sort all clusters into bins.
-        e.g. if bin_size = 0.1, then sort clusters into bins 100-95%, ..., 5-0%
-        (% of contributors contributed only once to this cluster)
-    Find all values between two adjacent bins where the number of
-        clusters in the higher-value bin is at least cutoff_fraction
-        times greater than the number of clusters in the lower-value bin,
-        and neither bin contains zero clusters.
-    threshold is the lowest of these values minus 0.1 (in order to move
-        one bin to the left, to minimize the number of clusters which
-        are actually single in the group of clusters detected as clumpy),
-        or 0 if no such values exist.
+        Sort all clusters into bins.
+            e.g. if bin_size = 0.1, sort clusters into bins 100-95%, ..., 5-0%
+            (% of contributors contributed only once to this cluster)
+        Find all values between two adjacent bins where the number of
+            clusters in the higher-value bin is at least cutoff_fraction
+            times greater than the number of clusters in the lower-value bin,
+            and neither bin contains zero clusters.
+        threshold is the lowest of these values minus 0.1 (in order to move
+            one bin to the left, to minimize the number of clusters which
+            are actually single in the group of clusters detected as clumpy),
+            or 0 if no such values exist.
 
     Parameters
     ----------
@@ -351,7 +352,7 @@ def sort_clusters_by_clumpiness(clusters, threshold):
 def declump(clusters, i, declumping_params):
     """
     Declump the cluster at the ith index of clusters,
-    a df only containing clumpy clusters.
+    a dataframe only containing clumpy clusters.
 
     Parameters
     ----------
@@ -369,7 +370,8 @@ def declump(clusters, i, declumping_params):
 
     Returns
     -------
-    declumped_clusters : pandas df containing resulting declumped clusters
+    declumped_clusters : pandas dataframe containing resulting
+        declumped clusters
     """
     if (declumping_params[0] not in declumping_algs):
         raise ValueError('Invalid declumping algorithm name entered.')
@@ -453,7 +455,8 @@ def get_cluster_correctness(df, correctness_threshold):
 
     Parameters
     ----------
-    centroid_and_ref_df : outputted by util.centroid_and_ref_df()
+    centroid_and_ref_df : pandas dataframe outputted
+        by util.centroid_and_ref_df()
         centroid_x | centroid_y | x of nearest ref | y of nearest ref
             | NN_dist | members (x | y | time_spent | worker_id)
         * the index is the Centroid ID
@@ -486,15 +489,15 @@ def get_pair_scores(df):
     Parameters
     ----------
     df : pandas dataframe with the following columns:
-            int timestamp
-            int x
-            int y
-            str annotation_type
-            int height
-            int width
-            str image_filename
-            str time_when_completed
-            str worker_id
+        int timestamp
+        int x
+        int y
+        str annotation_type
+        int height
+        int width
+        str image_filename
+        str time_when_completed
+        str worker_id
 
     Returns
     -------
@@ -546,7 +549,16 @@ def get_worker_pair_scores(df):
 
     Parameters
     ----------
-    df : pandas dataframe
+    df : pandas dataframe with the following columns:
+        int timestamp
+        int x
+        int y
+        str annotation_type
+        int height
+        int width
+        str image_filename
+        str time_when_completed
+        str worker_id
 
     Returns
     -------
@@ -570,7 +582,16 @@ def get_worker_pair_score_threshold(df):
 
     Parameters
     ----------
-    df : pandas dataframe
+    df : pandas dataframe with the following columns:
+        int timestamp
+        int x
+        int y
+        str annotation_type
+        int height
+        int width
+        str image_filename
+        str time_when_completed
+        str worker_id
 
     Returns
     -------
@@ -585,17 +606,26 @@ def get_worker_pair_score_threshold(df):
 
 def slice_by_worker_pair_score(df, threshold):
     """
-    Drop all annotations in df by workers with average pairwise
-    score greater than threshold
+    Drop all annotations in df from workers with average
+    pairwise score greater than threshold.
 
     Parameters
     ----------
-    df : pandas dataframe
+    df : pandas dataframe with the following columns:
+        int timestamp
+        int x
+        int y
+        str annotation_type
+        int height
+        int width
+        str image_filename
+        str time_when_completed
+        str worker_id
     threshold : float pairwise score threshold
 
     Returns
     -------
-    df : pandas dataframe
+    df : pandas dataframe with same structure as input
     """
     worker_pair_scores = get_worker_pair_scores(df)
     high_scores = worker_pair_scores[worker_pair_scores.score > threshold]

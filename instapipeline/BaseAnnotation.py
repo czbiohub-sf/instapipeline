@@ -8,7 +8,7 @@ class BaseAnnotation:
     def __init__(self, json_filepath, img_filename):
         """
         Import annotations to a dataframe and save the
-        dataframe as a property of the BaseAnnotation class
+        dataframe as a property of the BaseAnnotation class.
 
         Parameters
         ----------
@@ -20,9 +20,9 @@ class BaseAnnotation:
 
     def _import_annotations(self, json_filepath, img_filename):
         """
-        Import annotations from a file to a dataframe
+        Import annotations from a file to a dataframe.
         Raise an error if the method has not been
-        overwritten by a child class
+        overwritten by a child class.
 
         Parameters
         ----------

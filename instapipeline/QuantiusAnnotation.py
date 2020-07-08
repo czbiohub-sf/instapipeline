@@ -10,7 +10,7 @@ import pandas as pd
 class QuantiusAnnotation(BaseAnnotation):
     """
     Implementation of _import_annotations
-    for annotations from Quantius
+    for annotations from Quantius.
     """
     def __init__(self, json_filepath, img_filename):
         super().__init__(json_filepath, img_filename)
@@ -18,7 +18,7 @@ class QuantiusAnnotation(BaseAnnotation):
     def _import_annotations(self, json_filepath, img_filename):
         """
         Import annotations to a dataframe and save the
-        dataframe as a property of the QuantiusAnnotation class
+        dataframe as a property of the QuantiusAnnotation class.
 
         Parameters
         ----------
