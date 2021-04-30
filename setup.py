@@ -9,6 +9,8 @@ install_requires = [
 
 setup(
 	name='instapipeline',
+	# python_requires='>=3.6, !=3.8.*, !=3.9.*',
+	python_requires='>=3.6, <3.8',
 	install_requires=install_requires,
 	version='0.1',
 	package_dir={'instapipeline':'instapipeline'},
