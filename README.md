@@ -19,7 +19,7 @@ The directory `instapipeline` contains the codebase.
     - other data structure manipulation
 
 ## Installation
-`instapipeline` supports python 3.6 and above. To install instapipeline, first verify that your python version is compatible by running `python -version`.
+`instapipeline` supports python 3.6 and 3.7. To install instapipeline, first verify that your python version is compatible by running `python -version`.
 
 - Create a new anaconda environment: `conda create --name <environment name> python=3.7`
 - Enter the new environment: `conda activate <environment name>`
