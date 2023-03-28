@@ -1,5 +1,5 @@
 # INSTA
-The INSTA pipeline uses crowd-sourced annotations for spot detection in RNA _in situ_ transcriptomics images.
+The INSTA pipeline uses crowd-sourced annotations for spot detection in RNA _in situ_ transcriptomics images. This pipeline is described in detail in the paper [Validation and tuning of _in situ_ transcriptomics image processing workflows with crowdsourced annotations](https://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1009274).
 
 The directory `demos` contains notebooks that demonstrate INSTA's preprocessing and postprocessing functionality.
 
@@ -17,6 +17,8 @@ The directory `instapipeline` contains the codebase.
 - `util.py` contains functions for:
     - interacting with / manipulating dataframes
     - other data structure manipulation
+
+This repository is owned by the Bioengineering Platform.
 
 ## Installation
 `instapipeline` supports python 3.6 and 3.7. To install instapipeline, first verify that your python version is compatible by running `python -version`.
